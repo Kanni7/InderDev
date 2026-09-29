@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import {
   vocations, weekly, hourly, tierMeta, locations,
   aqiColor, uvColor, chatChips, formatTemp, type TemperatureUnit,
@@ -10,6 +10,8 @@ import { RainMapWidget, FullScreenRadar } from "./RainRadar";
 import { WidgetDetailModal, type DetailType } from "./screens";
 import { makeT, type Lang } from "./i18n";
 import * as I from "./icons";
+import { useProfile } from "../engine/profile";
+import { rankModules, type AlertOverride } from "../engine/ranking";
 
 /** Blocks that render as small gauges — these pair up two-across in the grid,
  * everything else spans the full width. */
@@ -39,6 +41,7 @@ function CondIcon({ c, className, style }: { c: Condition; className?: string; s
 
 export default function Home({
   userType, location, accent, lang, currentHour, onMenu, onChat, onAlerts, onSelectLocation,
+  alertOverrides = [],
 }: {
   userType: UserTypeKey;
   location: Location;
@@ -49,9 +52,18 @@ export default function Home({
   onChat?: () => void;
   onAlerts?: () => void;
   onSelectLocation?: (key: string) => void;
+  alertOverrides?: AlertOverride[];
 }) {
   const voc = vocations[userType];
   const theme = getWeatherTheme(location.condition, currentHour);
+  const { profile, updateProfile } = useProfile();
+
+  // Use ranking engine to determine module order
+  const rankedOrder = useMemo(
+    () => rankModules(profile.interestWeights, location, alertOverrides),
+    [profile.interestWeights, location, alertOverrides],
+  );
+
   const t = makeT(lang);
   const [unit, setUnit] = useState<TemperatureUnit>("C");
   const [citySearchQuery, setCitySearchQuery] = useState("");
@@ -64,10 +76,24 @@ export default function Home({
     l.region.toLowerCase().includes(citySearchQuery.toLowerCase())
   );
 
+  // Track module taps in the local profile
+  const trackTap = (moduleId: string) => {
+    updateProfile((p) => {
+      const prev = p.moduleInteractions[moduleId] ?? { taps: 0, scrollPasts: 0 };
+      return {
+        ...p,
+        moduleInteractions: {
+          ...p.moduleInteractions,
+          [moduleId]: { ...prev, taps: prev.taps + 1 },
+        },
+      };
+    });
+  };
+
   // ── the reorderable widget blocks (all present, order varies per vocation) ──
   const blocks: Record<Block, React.ReactNode> = {
     pollen: (
-      <div key="pollen" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("pollen")}>
+      <div key="pollen" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("pollen"); setActiveDetail("pollen"); }}>
         <PollenCard pollen={location.pollen} lang={lang} />
       </div>
     ),
@@ -77,54 +103,54 @@ export default function Home({
       </div>
     ),
     travel: (
-      <div key="travel" className="cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("travel")}>
+      <div key="travel" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("travel"); setActiveDetail("travel"); }}>
         <TravelCard travel={location.travel} accent={accent} lang={lang} />
       </div>
     ),
     packing: (
-      <div key="packing" className="cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("packing")}>
+      <div key="packing" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("packing"); setActiveDetail("packing"); }}>
         <PackingCard condition={location.condition} accent={accent} lang={lang} />
       </div>
     ),
     wind: (
-      <div key="wind" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("wind")}>
+      <div key="wind" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("wind"); setActiveDetail("wind"); }}>
         <WindCard wind={location.wind} accent={accent} lang={lang} />
       </div>
     ),
     humidity: (
-      <div key="humidity" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("humidity")}>
+      <div key="humidity" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("humidity"); setActiveDetail("humidity"); }}>
         <HumidityCard humidity={location.humidity} dewPoint={location.dewPoint} accent={accent} lang={lang} />
       </div>
     ),
     dewpoint: (
-      <div key="dewpoint" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("dewpoint")}>
+      <div key="dewpoint" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("dewpoint"); setActiveDetail("dewpoint"); }}>
         <DewPointCard dewPoint={location.dewPoint} lang={lang} />
       </div>
     ),
     pressure: (
-      <div key="pressure" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("pressure")}>
+      <div key="pressure" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("pressure"); setActiveDetail("pressure"); }}>
         <PressureCard pressure={location.pressure} accent={accent} lang={lang} />
       </div>
     ),
     moon: (
-      <div key="moon" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("moon")}>
+      <div key="moon" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("moon"); setActiveDetail("moon"); }}>
         <MoonCard moon={location.moon} lang={lang} />
       </div>
     ),
     air: (
-      <div key="air" className="grid grid-cols-3 gap-3 cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("air")}>
+      <div key="air" className="grid grid-cols-3 gap-3 cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("air"); setActiveDetail("air"); }}>
         <AirTile label="AQI" value={String(location.air.aqi)} sub={t(location.air.aqiLabel)} color={aqiColor(location.air.aqi)} ring={location.air.aqi} max={200} />
         <AirTile label="UV" value={String(location.air.uv)} sub={t(location.air.uvLabel)} color={uvColor(location.air.uv)} ring={location.air.uv} max={11} />
         <AirTile label={t("Heat idx")} value={formatTemp(location.air.heat, unit)} sub={t(location.air.heatLabel)} color={accent} ring={location.air.heat} max={45} />
       </div>
     ),
     precip: (
-      <div key="precip" className="cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("precip")}>
+      <div key="precip" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("precip"); setActiveDetail("precip"); }}>
         <PrecipCard precip={location.precip} accent={accent} lang={lang} />
       </div>
     ),
     sun: (
-      <div key="sun" className="cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("sun")}>
+      <div key="sun" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("sun"); setActiveDetail("sun"); }}>
         <SunArc sun={location.sun} accent={accent} lang={lang} />
       </div>
     ),
@@ -276,9 +302,20 @@ export default function Home({
               <span>{t(location.summary)}</span>
             </div>
 
-            {/* Alert banner — only rendered when this location has an active alert */}
-            {location.alert && (() => {
-              const al = location.alert!;
+            {/* Alert banner — rendered when location has an alert OR demo panel triggered one */}
+            {(location.alert || (alertOverrides && alertOverrides.length > 0)) && (() => {
+              const demoAlert = alertOverrides && alertOverrides.length > 0
+                ? {
+                    tier: (alertOverrides[0].tier === "critical" ? "critical" : "warning") as "critical" | "warning",
+                    title: alertOverrides[0].tier === "critical"
+                      ? "Red Alert: Severe weather"
+                      : "Orange Alert: Heavy rainfall",
+                    body: alertOverrides[0].tier === "critical"
+                      ? "Stay indoors. Dangerous conditions reported."
+                      : "Heavy rain expected. Low-lying areas at flood risk.",
+                  }
+                : null;
+              const al = location.alert ?? demoAlert!;
               const meta = tierMeta[al.tier];
               return (
                 <button
@@ -334,19 +371,33 @@ export default function Home({
             </div>
           </section>
 
-          {/* Reordered blocks per vocation — runs of compact gauges pair into a
-              2-up grid, rich panels span full width, so the scroll gets rhythm
-              instead of one endless identical column */}
-          {layoutRows(voc.order).map((row) =>
+          {/* Ranked blocks (non-pinned) — order determined by weight engine + live relevance.
+              Compact gauges pair 2-up; wide panels span full width.
+              CSS transitions animate position changes, respecting prefers-reduced-motion. */}
+          {layoutRows(rankedOrder).map((row, idx) =>
             row.length === 2 ? (
-              <div key={row[0]} className="grid grid-cols-2 items-stretch gap-3">
+              <div
+                key={row[0] + "-" + row[1]}
+                className="grid grid-cols-2 items-stretch gap-3 transition-all duration-500 motion-reduce:transition-none"
+                style={{ order: idx }}
+              >
                 {blocks[row[0]]}
                 {blocks[row[1]]}
               </div>
             ) : (
-              blocks[row[0]]
+              <div
+                key={row[0]}
+                className="transition-all duration-500 motion-reduce:transition-none"
+                style={{ order: idx }}
+              >
+                {blocks[row[0]]}
+              </div>
             )
           )}
+          {/* Footer note */}
+          <p className="mt-4 text-center text-[9px] font-mono text-white/30 leading-relaxed">
+            {t("Prototype uses Open-Meteo in place of IMD/CPCB feeds.")}
+          </p>
         </div>
       </div>
 

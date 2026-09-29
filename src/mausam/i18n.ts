@@ -1096,6 +1096,18 @@ const dict: Record<string, Tr> = {
   "Advisory": { hi: "परामर्श", te: "సలహా", ml: "ഉപദേശം", ta: "ஆலோசனை", pa: "ਸਲਾਹ" },
   "Warning": { hi: "चेतावनी", te: "హెచ్చరిక", ml: "മുന്നറിയിപ്പ്", ta: "எச்சரிக்கை", pa: "ਚੇਤਾਵਨੀ" },
   "Critical": { hi: "गंभीर", te: "క్లిష్టమైన", ml: "ഗുരുതരം", ta: "ஆபத்தான", pa: "ਗੰਭੀਰ" },
+
+  /* ── Demo panel & engine ── */
+  "Day": { hi: "दिन" },
+  "Prototype uses Open-Meteo in place of IMD/CPCB feeds.": { hi: "प्रोटोटाइप IMD/CPCB फ़ीड के स्थान पर Open-Meteo का उपयोग करता है।" },
+  "offline data": { hi: "ऑफ़लाइन डेटा" },
+  "offline answer": { hi: "ऑफ़लाइन उत्तर" },
+  "Ask Mausam AI": { hi: "मौसम AI से पूछें" },
+  "Good": { hi: "अच्छा" },
+  "Satisfactory": { hi: "संतोषजनक" },
+  "Poor": { hi: "खराब" },
+  "Very Poor": { hi: "बहुत खराब" },
+  "Severe": { hi: "गंभीर" },
 };
 
 /** Returns a translator for the active language, keyed by the English source string. */

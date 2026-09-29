@@ -3,6 +3,8 @@ import { userTypes, chatChips, alertsForLocation, tierMeta, packingTips, type Us
 import { getWeatherTheme } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
 import * as I from "./icons";
+import { askWhy } from "../ai/mausamAI";
+import { useProfile } from "../engine/profile";
 
 const PANEL = "#090d16";
 
@@ -257,18 +259,43 @@ export function Menu({
 }
 
 /* ───────────── 3. Mausam AI Assistant Chat Screen ───────────── */
-export function Chat({ onClose, lang, accent }: { onClose: () => void; lang: Lang; accent: string }) {
+export function Chat({ onClose, lang, accent, location }: { onClose: () => void; lang: Lang; accent: string; location?: Location }) {
   const t = makeT(lang);
-  const [thread, setThread] = useState<{ role: "user" | "ai"; text?: string }[]>([
+  const { updateProfile } = useProfile();
+  const [thread, setThread] = useState<{ role: "user" | "ai"; text?: string; isOffline?: boolean }[]>([
     { role: "user", text: t("Should I go for a run at noon?") },
     { role: "ai" },
   ]);
   const [typing, setTyping] = useState(false);
+  const [inputVal, setInputVal] = useState("");
 
   function ask(q: string) {
     setThread((th) => [...th, { role: "user", text: q }]);
     setTyping(true);
-    setTimeout(() => { setTyping(false); setThread((th) => [...th, { role: "ai" }]); }, 1000);
+
+    if (location) {
+      askWhy(q, location.city, location, lang).then((res) => {
+        setTyping(false);
+        setThread((th) => [...th, { role: "ai", text: res.text, isOffline: res.isOffline }]);
+        // Increment askWhyTopics for this interest
+        updateProfile((p) => ({
+          ...p,
+          askWhyTopics: {
+            ...p.askWhyTopics,
+            [res.interest]: (p.askWhyTopics[res.interest] ?? 0) + 1,
+          },
+        }));
+      });
+    } else {
+      setTimeout(() => { setTyping(false); setThread((th) => [...th, { role: "ai" }]); }, 1000);
+    }
+  }
+
+  function handleSubmit() {
+    const q = inputVal.trim();
+    if (!q) return;
+    setInputVal("");
+    ask(q);
   }
 
   return (
@@ -294,6 +321,16 @@ export function Chat({ onClose, lang, accent }: { onClose: () => void; lang: Lan
             <div key={i} className="flex justify-end">
               <p className="max-w-[82%] rounded-3xl rounded-br-md px-4 py-2.5 text-[14px] font-medium text-black shadow-lg" style={{ background: accent }}>{m.text}</p>
             </div>
+          ) : m.text ? (
+            <div key={i} className="max-w-[90%] space-y-2 rounded-3xl rounded-bl-md p-4.5 mausam-glass">
+              <p className="text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{m.text}</p>
+              {m.isOffline && (
+                <span className="inline-block rounded-full bg-yellow-600/20 px-2 py-0.5 text-[9px] font-mono text-yellow-300">{t("offline answer")}</span>
+              )}
+              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+                {t("Prototype uses Open-Meteo in place of IMD/CPCB feeds.")}
+              </p>
+            </div>
           ) : (
             <StructuredAnswer key={i} lang={lang} accent={accent} />
           )
@@ -314,12 +351,17 @@ export function Chat({ onClose, lang, accent }: { onClose: () => void; lang: Lan
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 rounded-full mausam-glass py-2 pl-4 pr-2">
-          <input className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[var(--color-ink-faint)]" placeholder={t("Ask Mausam AI about your day…")} />
-          <button className="grid h-9 w-9 place-items-center rounded-full text-black active:scale-95" style={{ background: accent }}>
+        <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex items-center gap-2 rounded-full mausam-glass py-2 pl-4 pr-2">
+          <input
+            className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[var(--color-ink-faint)]"
+            placeholder={t("Ask Mausam AI about your day…")}
+            value={inputVal}
+            onChange={(e) => setInputVal(e.target.value)}
+          />
+          <button type="submit" className="grid h-9 w-9 place-items-center rounded-full text-black active:scale-95" style={{ background: accent }}>
             <I.Send className="h-4 w-4" />
           </button>
-        </div>
+        </form>
       </div>
     </div>
   );

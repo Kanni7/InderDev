@@ -1,11 +1,16 @@
-import { useState, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, type CSSProperties } from "react";
 import Home from "./mausam/Home";
 import { Onboarding, Menu, Chat, Alerts } from "./mausam/screens";
 import TranslateScreen from "./mausam/TranslateScreen";
-import { locations, type UserTypeKey } from "./mausam/data";
+import { locations, type UserTypeKey, type Location } from "./mausam/data";
+import { fetchWeather, isLiveData } from "./data/openMeteo";
 import { getWeatherTheme, DEV_TIME_OVERRIDE } from "./mausam/theme";
 import { usePhotoAccent } from "./mausam/useAccent";
 import type { Lang } from "./mausam/i18n";
+import { useProfile, type Interest } from "./engine/profile";
+import { initWeights } from "./engine/weights";
+import type { AlertOverride } from "./engine/ranking";
+import DemoPanel from "./demo/DemoPanel";
 
 type Screen = "usertype" | "home" | "menu" | "chat" | "alerts" | "translate";
 
@@ -16,12 +21,39 @@ export default function App() {
   const [screen, setScreen] = useState<Screen>("home");
   const [pending, setPending] = useState<UserTypeKey | null>("fitness");
   const [onboarded, setOnboarded] = useState(false);
+  const [alertOverrides, setAlertOverrides] = useState<AlertOverride[]>([]);
+
+  const { updateProfile } = useProfile();
 
   // Simulated hour state for testing (null = system clock, DEV_TIME_OVERRIDE = code setting)
   const [simulatedHour, setSimulatedHour] = useState<number | null>(DEV_TIME_OVERRIDE);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
-  const location = locations.find((l) => l.key === locationKey) ?? locations[0];
+  const [liveLocation, setLiveLocation] = useState<Location | null>(null);
+  const [usingLiveData, setUsingLiveData] = useState(false);
+
+  // Sync UI state → profile
+  useEffect(() => {
+    updateProfile((p) => ({ ...p, language: lang, city: locationKey }));
+  }, [lang, locationKey, updateProfile]);
+
+  // Fetch live weather from Open-Meteo
+  const fetchLive = useCallback(async () => {
+    const data = await fetchWeather(locationKey);
+    if (data) {
+      setLiveLocation(data);
+      setUsingLiveData(true);
+    } else {
+      setUsingLiveData(false);
+    }
+  }, [locationKey]);
+
+  useEffect(() => {
+    fetchLive();
+  }, [fetchLive]);
+
+  const mockLocation = locations.find((l) => l.key === locationKey) ?? locations[0];
+  const location = liveLocation && liveLocation.key === locationKey ? liveLocation : mockLocation;
   const currentHour = simulatedHour ?? (DEV_TIME_OVERRIDE ?? new Date().getHours());
   const theme = getWeatherTheme(location.condition, currentHour);
 
@@ -153,6 +185,12 @@ export default function App() {
                 setUserType(pending);
                 setOnboarded(true);
                 setScreen("home");
+                const interests = [pending as Interest];
+                updateProfile((p) => ({
+                  ...p,
+                  selectedInterests: interests,
+                  interestWeights: initWeights(interests),
+                }));
               }
             }}
           />
@@ -168,6 +206,7 @@ export default function App() {
               onChat={() => setScreen("chat")}
               onAlerts={() => setScreen("alerts")}
               onSelectLocation={setLocationKey}
+              alertOverrides={alertOverrides}
             />
 
             {screen === "menu" && (
@@ -197,6 +236,12 @@ export default function App() {
                     if (pending) {
                       setUserType(pending);
                       setScreen("home");
+                      const interests = [pending as Interest];
+                      updateProfile((p) => ({
+                        ...p,
+                        selectedInterests: interests,
+                        interestWeights: initWeights(interests),
+                      }));
                     }
                   }}
                 />
@@ -205,7 +250,7 @@ export default function App() {
 
             {screen === "chat" && (
               <div className="absolute inset-0 z-40">
-                <Chat lang={lang} accent={accent} onClose={() => setScreen("home")} />
+                <Chat lang={lang} accent={accent} location={location} onClose={() => setScreen("home")} />
               </div>
             )}
 
@@ -223,6 +268,15 @@ export default function App() {
           </>
         )}
       </div>
+      {onboarded && (
+        <DemoPanel lang={lang} location={location} onSetAlertOverrides={setAlertOverrides} />
+      )}
+      {/* Offline data badge */}
+      {onboarded && !usingLiveData && (
+        <div className="fixed top-2 right-2 z-[100] rounded-full bg-yellow-600/80 px-2 py-0.5 text-[9px] font-mono text-white">
+          {lang === "hi" ? "ऑफ़लाइन डेटा" : "offline data"}
+        </div>
+      )}
     </div>
   );
 }
