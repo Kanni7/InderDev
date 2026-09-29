@@ -272,7 +272,7 @@ export default function Home({
             </div>
 
             {/* AI one-line summary */}
-            <div className="mt-4 rounded-2xl bg-white/10 px-3.5 py-3 text-[13px] font-medium backdrop-blur-md">
+            <div className="mt-4 rounded-2xl bg-black/8 px-3.5 py-3 text-[13px] font-medium backdrop-blur-sm border border-white/6">
               <span>{location.summary}</span>
             </div>
 

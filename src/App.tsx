@@ -60,7 +60,7 @@ export default function App() {
           aria-hidden
           className="pointer-events-none absolute inset-0 bg-cover bg-center transition-all duration-700"
           style={{
-            backgroundImage: `linear-gradient(180deg, rgba(8, 12, 20, 0.50) 0%, rgba(6, 10, 16, 0.35) 45%, rgba(4, 6, 10, 0.75) 100%), url(${theme.photo})`,
+            backgroundImage: `linear-gradient(180deg, rgba(8, 12, 20, 0.25) 0%, rgba(6, 10, 16, 0.10) 45%, rgba(4, 6, 10, 0.55) 100%), url(${theme.photo})`,
           }}
         />
 
