@@ -133,7 +133,7 @@ export default function Home({
         <BlockTitle>{t(voc.metricsLabel, voc.metricsLabel)}</BlockTitle>
         <div className="scroll-hide -mx-5 flex gap-3 overflow-x-auto px-5">
           {voc.metrics.map((m) => (
-            <div key={m.label} className="min-w-[112px] shrink-0 rounded-2xl border border-[var(--color-line)] bg-[var(--color-glass)] p-3.5 mausam-glass">
+            <div key={m.label} className="min-w-[112px] shrink-0 rounded-2xl border border-white/8 p-3.5 mausam-glass">
               <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">{m.label}</p>
               <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{m.value}</p>
               <p className="text-[11px] text-[var(--color-ink-soft)]">{m.sub}</p>
@@ -150,7 +150,7 @@ export default function Home({
     weekly: (
       <div key="weekly">
         <BlockTitle>{t("7-day forecast", "7-दिन का पूर्वानुमान")}</BlockTitle>
-        <div className="overflow-hidden rounded-2xl border border-[var(--color-line)] bg-[var(--color-glass)] mausam-glass">
+        <div className="overflow-hidden rounded-2xl border border-white/8 mausam-glass">
           {weekly.map((d, i) => (
             <div key={d.day} className={`flex items-center gap-3 px-4 py-3 ${i !== weekly.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}>
               <span className="w-12 text-[13px] font-medium text-[var(--color-ink)]">{t(d.day)}</span>
@@ -272,7 +272,7 @@ export default function Home({
             </div>
 
             {/* AI one-line summary */}
-            <div className="mt-4 rounded-2xl bg-black/8 px-3.5 py-3 text-[13px] font-medium backdrop-blur-sm border border-white/6">
+            <div className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-[13.5px] font-medium backdrop-blur-md border border-white/15 text-white/95 shadow-sm">
               <span>{location.summary}</span>
             </div>
 
@@ -283,7 +283,7 @@ export default function Home({
               return (
                 <button
                   onClick={onAlerts}
-                  className="mt-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl bg-[var(--color-glass)] p-4 text-left mausam-glass transition active:scale-[0.98]"
+                  className="mt-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl p-4 text-left mausam-glass transition active:scale-[0.98]"
                   style={{ borderLeft: `3px solid ${meta.color}` }}
                 >
                   <span
@@ -312,13 +312,13 @@ export default function Home({
           {/* For You — neutral sleek frosted glass */}
           <section
             key={userType + location.key}
-            className="animate-insight rounded-3xl border border-[var(--color-line)] bg-[var(--color-glass-strong)] p-5 mausam-glass-strong"
+            className="animate-insight rounded-3xl border border-white/10 p-5 mausam-glass-strong"
           >
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
                 {t("For you", "आपके लिए")} · {location.city}
               </span>
-              <span className="flex items-center gap-1.5 rounded-full border border-white/10 bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/80">
+              <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/90 backdrop-blur-md">
                 <CondIcon c={theme.key} className="h-3.5 w-3.5" /> {theme.label}
               </span>
             </div>
@@ -326,9 +326,9 @@ export default function Home({
             <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{voc.insight.detail}</p>
             <div className="mt-4 flex items-center gap-2">
               {voc.insight.window && (
-                <span className="rounded-xl bg-[#7cb9e8] px-3.5 py-2 text-sm font-semibold text-[#0b1320]">{voc.insight.window}</span>
+                <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{voc.insight.window}</span>
               )}
-              <button onClick={onChat} className="rounded-xl border border-white/15 bg-white/5 px-4 py-2 text-sm font-medium text-[var(--color-ink)] transition active:scale-95 hover:bg-white/10">
+              <button onClick={onChat} className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition active:scale-95 hover:bg-white/20">
                 {t("Ask why", "क्यों पूछें")}
               </button>
             </div>
@@ -407,7 +407,7 @@ function AirTile({ label, value, sub, color, ring, max }: { label: string; value
   const pct = Math.min(ring / max, 1);
   const R = 15, C = 2 * Math.PI * R;
   return (
-    <div className="rounded-2xl border border-[var(--color-line)] bg-[var(--color-glass)] p-3 mausam-glass">
+    <div className="rounded-2xl border border-white/8 p-3.5 mausam-glass">
       <div className="flex items-center justify-between">
         <span className="font-mono text-[10px] uppercase tracking-[0.14em] text-[var(--color-ink-faint)]">{label}</span>
         <svg width="20" height="20" viewBox="0 0 36 36" className="-rotate-90">
@@ -415,8 +415,8 @@ function AirTile({ label, value, sub, color, ring, max }: { label: string; value
           <circle cx="18" cy="18" r={R} fill="none" stroke={color} strokeWidth="4" strokeLinecap="round" strokeDasharray={C} strokeDashoffset={C * (1 - pct)} />
         </svg>
       </div>
-      <p className="mt-1 text-[22px] font-semibold leading-none" style={{ color }}>{value}</p>
-      <p className="mt-1 text-[10.5px] leading-tight text-[var(--color-ink-soft)]">{sub}</p>
+      <p className="mt-1.5 text-[22px] font-semibold leading-none" style={{ color }}>{value}</p>
+      <p className="mt-1.5 text-[10.5px] leading-tight text-[var(--color-ink-soft)]">{sub}</p>
     </div>
   );
 }

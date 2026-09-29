@@ -334,7 +334,7 @@ export function RainMapWidget({
   const mapCenter = LOCATION_CENTERS[locationKey] || DEFAULT_CENTER;
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-[var(--color-glass)] mausam-glass">
+    <div className="overflow-hidden rounded-3xl mausam-glass">
       <div className="flex items-center justify-between px-4 pt-4">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
           ☁ {t("Precipitation", "वर्षा")}

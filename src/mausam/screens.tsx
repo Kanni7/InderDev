@@ -158,7 +158,7 @@ export function Menu({
         <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
 
         {/* Profile Card */}
-        <div className="relative mt-10 overflow-hidden rounded-3xl p-5 mausam-glass bg-[var(--color-glass)]">
+        <div className="relative mt-10 overflow-hidden rounded-3xl p-5 mausam-glass">
           <button
             onClick={onClose}
             aria-label="Close"
@@ -219,7 +219,7 @@ export function Menu({
         </nav>
 
         {/* Language picker */}
-        <div className="relative mt-3 rounded-2xl p-3.5 bg-[var(--color-glass)] mausam-glass">
+        <div className="relative mt-3 rounded-2xl p-3.5 mausam-glass">
           <p className="mb-2 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
             {t("Language", "भाषा")}
           </p>
@@ -306,12 +306,12 @@ export function Chat({ onClose, lang, accent }: { onClose: () => void; lang: Lan
       <div className="px-5 pb-7 pt-3">
         <div className="scroll-hide -mx-5 mb-3 flex gap-2 overflow-x-auto px-5">
           {chatChips.map((c) => (
-            <button key={c} onClick={() => ask(c)} className="shrink-0 rounded-full bg-[var(--color-glass)] mausam-glass px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-ink)] active:scale-95">
+            <button key={c} onClick={() => ask(c)} className="shrink-0 rounded-full mausam-glass px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-ink)] active:scale-95">
               {c}
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2 rounded-full bg-[var(--color-glass)] mausam-glass py-2 pl-4 pr-2">
+        <div className="flex items-center gap-2 rounded-full mausam-glass py-2 pl-4 pr-2">
           <input className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[var(--color-ink-faint)]" placeholder={t("Ask Mausam AI about your day…", "अपने दिन के बारे में पूछें…")} />
           <button className="grid h-9 w-9 place-items-center rounded-full text-black active:scale-95" style={{ background: accent }}>
             <I.Send className="h-4 w-4" />
@@ -325,7 +325,7 @@ export function Chat({ onClose, lang, accent }: { onClose: () => void; lang: Lan
 function StructuredAnswer({ lang, accent }: { lang: Lang; accent: string }) {
   const t = makeT(lang);
   return (
-    <div className="max-w-[90%] space-y-3 rounded-3xl rounded-bl-md bg-[var(--color-glass)] p-4.5 mausam-glass">
+    <div className="max-w-[90%] space-y-3 rounded-3xl rounded-bl-md p-4.5 mausam-glass">
       <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(229,72,77,0.16)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-tier-critical)]">
         ⚠ {t("Not recommended for noon", "दोपहर में अनुशंसित नहीं")}
       </span>
@@ -374,7 +374,7 @@ export function Alerts({ onClose, lang, accent, location }: { onClose: () => voi
           return (
             <div
               key={i}
-              className="overflow-hidden rounded-3xl bg-[var(--color-glass)] p-5 mausam-glass space-y-3"
+              className="overflow-hidden rounded-3xl p-5 mausam-glass space-y-3"
               style={{
                 borderLeft: `3px solid ${meta.color}`,
               }}
@@ -496,7 +496,7 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
   return (
     <div className="space-y-3.5">
       {/* AQI Overview — Borderless Home Glass */}
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <div className="flex items-center justify-between">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Air Quality Index", "वायु गुणवत्ता सूचकांक")}</p>
@@ -526,7 +526,7 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
       </div>
 
       {/* Pollutant Breakdown Grid */}
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pollutants Concentration", "प्रदूषक सांद्रता")}</p>
         <div className="grid grid-cols-2 gap-2.5">
           {[
@@ -554,7 +554,7 @@ function SunDetail({ location, accent, lang }: { location: Location; accent: str
   const sun = location.sun;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Solar Elevation Arc", "सौर ऊंचाई और स्थिति")}</p>
         <div className="py-2 flex justify-center">
           <div className="w-full max-w-[260px]">
@@ -572,7 +572,7 @@ function SunDetail({ location, accent, lang }: { location: Location; accent: str
         </div>
       </div>
 
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Golden & Blue Hour Photography", "गोल्डन आवर समय")}</p>
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-2xl bg-white/6 p-3">
@@ -594,7 +594,7 @@ function PrecipDetail({ location, accent, lang, onOpenRadar }: { location: Locat
   const p = location.precip;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <div className="flex justify-between items-baseline">
           <div>
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("24-Hour Rainfall Volume", "24-घंटे वर्षा मात्रा")}</p>
@@ -608,7 +608,7 @@ function PrecipDetail({ location, accent, lang, onOpenRadar }: { location: Locat
         <p className="text-[12.5px] text-[var(--color-ink-soft)] bg-white/6 p-3 rounded-2xl">{p.note}</p>
       </div>
 
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Hourly Rain Probability Graph", "प्रति घंटा वर्षा संभावना")}</p>
         <div className="flex items-end gap-2.5 h-28 pt-2">
           {p.bars.map((b) => (
@@ -635,7 +635,7 @@ function PollenDetail({ location, accent, lang }: { location: Location; accent: 
   const pol = location.pollen;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <div className="flex justify-between items-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pollen Allergen Count", "पराग एलर्जी स्तर")}</p>
           <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold bg-amber-500/20 text-amber-300">
@@ -646,7 +646,7 @@ function PollenDetail({ location, accent, lang }: { location: Location; accent: 
         <p className="text-[12px] text-[var(--color-ink-soft)]">{pol.trend}</p>
       </div>
 
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Active Allergen Species", "सक्रिय एलर्जी प्रजातियां")}</p>
         <div className="space-y-2">
           {pol.types.split(",").map((type) => (
@@ -669,7 +669,7 @@ function WindDetail({ location, accent, lang }: { location: Location; accent: st
 
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass text-center space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass text-center space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind Compass", "पवन गति व दिशा")}</p>
         <div className="relative mx-auto h-36 w-36 flex items-center justify-center">
           <svg viewBox="0 0 100 100" className="h-full w-full">
@@ -687,12 +687,12 @@ function WindDetail({ location, accent, lang }: { location: Location; accent: st
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
-        <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass text-center space-y-1">
+        <div className="rounded-3xl p-4 mausam-glass text-center space-y-1">
           <p className="text-[11px] text-[var(--color-ink-faint)]">Beaufort Scale</p>
           <p className="text-[18px] font-semibold text-[var(--color-ink)]">Level 3</p>
           <p className="text-[11px] text-[#7bd88f]">Gentle Breeze</p>
         </div>
-        <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass text-center space-y-1">
+        <div className="rounded-3xl p-4 mausam-glass text-center space-y-1">
           <p className="text-[11px] text-[var(--color-ink-faint)]">Wind Chill</p>
           <p className="text-[18px] font-semibold text-[var(--color-ink)]">{location.temp - 1}°C</p>
           <p className="text-[11px]" style={{ color: accent }}>Feels Refreshing</p>
@@ -707,7 +707,7 @@ function HumidityDetail({ location, accent, lang }: { location: Location; accent
   const h = location.humidity;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass text-center space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass text-center space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Relative Air Humidity", "सापेक्ष आर्द्रता")}</p>
         <div className="relative mx-auto h-32 w-32 flex items-center justify-center">
           <svg viewBox="0 0 100 100" className="h-full w-full -rotate-90">
@@ -730,7 +730,7 @@ function DewPointDetail({ location, accent, lang }: { location: Location; accent
   const d = location.dewPoint;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass text-center space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass text-center space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Dew Point Temperature", "ओसांक तापमान")}</p>
         <h2 className="text-[40px] font-semibold leading-none text-[var(--color-ink)]">{d}°C</h2>
         <p className="text-[13px] font-medium" style={{ color: accent }}>{d >= 20 ? "Humid & Muggy" : "Comfortable Air"}</p>
@@ -755,7 +755,7 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
   const pr = location.pressure;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass text-center space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass text-center space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Barometric Air Pressure", "वायुमंडलीय दाब")}</p>
         <h2 className="text-[40px] font-semibold leading-none text-[var(--color-ink)]">{pr.value} <span className="text-sm font-normal text-[var(--color-ink-soft)]">hPa</span></h2>
         <p className="text-[13px] font-medium text-amber-300">{pr.trend}</p>
@@ -772,7 +772,7 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
   const m = location.moon;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass flex items-center gap-4">
+      <div className="rounded-3xl p-4.5 mausam-glass flex items-center gap-4">
         <div className="h-20 w-20 shrink-0 overflow-hidden rounded-full bg-black shadow-lg">
           <img src="/moon.png" alt="Moon" className="h-[120%] w-[120%] max-w-none -translate-x-[8.3%] -translate-y-[8.3%] object-cover rounded-full" />
         </div>
@@ -784,7 +784,7 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
         </div>
       </div>
 
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Upcoming Lunar Phases", "आगामी चंद्र कलाएं")}</p>
         <div className="space-y-2 text-[12.5px]">
           {[
@@ -809,7 +809,7 @@ function TravelDetail({ location, accent, lang }: { location: Location; accent: 
   const tr = location.travel;
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Commute & Traffic", "यात्रा व यातायात")}</p>
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-2xl bg-white/6 p-3">
@@ -825,7 +825,7 @@ function TravelDetail({ location, accent, lang }: { location: Location; accent: 
         </div>
       </div>
 
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Live Airport Flight Status", "लाइव हवाई उड़ान स्थिति")}</p>
         <div className="space-y-2">
           {tr.flights.map((f) => (
@@ -850,7 +850,7 @@ function PackingDetail({ location, accent, lang }: { location: Location; accent:
   const tips = packingTips(location.condition);
   return (
     <div className="space-y-3.5">
-      <div className="rounded-3xl bg-[var(--color-glass)] p-4.5 mausam-glass space-y-3">
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Recommended Weather Gear Checklist", "अनुशंसित मौसम सामग्री")}</p>
         <div className="space-y-2">
           {tips.map((item: { tip: string; hi: string }, i: number) => (

@@ -6,9 +6,7 @@
   --font-sans: "DM Sans", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: "DM Sans", "Noto Sans Devanagari", ui-monospace, monospace;
 
-  /* Dark glass base — the actual card tone is supplied per weather via --wx-*.
-     Keeping it nearly opaque stops the lower content from turning into a
-     washed-out version of the page gradient. */
+  /* Dark glass base — translucent frosted glass matching Image 2 reference */
   --color-ink: #ffffff;
   --color-ink-soft: rgba(255, 255, 255, 0.75);
   --color-ink-faint: rgba(255, 255, 255, 0.50);
@@ -44,13 +42,13 @@ body {
 .scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scroll-hide::-webkit-scrollbar { display: none; }
 
-/* Direct glass classes — Image 2 reference frosted glass cards */
+/* Transparent cards with 3D depth shadow only — no tint */
 .mausam-glass {
-  background: transparent;
-  backdrop-filter: blur(16px) saturate(1.15);
-  -webkit-backdrop-filter: blur(16px) saturate(1.15);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  box-shadow: 0 8px 24px -8px rgba(0, 0, 0, 0.25);
+  background: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Side-menu drawer */
@@ -60,13 +58,13 @@ body {
   box-shadow: 8px 0 40px 0 rgba(0, 0, 0, 0.6);
 }
 
-/* "For you" card & primary cards — Image 2 reference glass */
+/* "For you" card — transparent with stronger 3D depth */
 .mausam-glass-strong {
-  background: transparent;
-  backdrop-filter: blur(20px) saturate(1.2);
-  -webkit-backdrop-filter: blur(20px) saturate(1.2);
-  border: 1px solid rgba(255, 255, 255, 0.09);
-  box-shadow: 0 12px 32px -10px rgba(0, 0, 0, 0.28);
+  background: transparent !important;
+  backdrop-filter: none;
+  -webkit-backdrop-filter: none;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
 
 @keyframes rain-fall { 0% { transform: translateY(-100%); } 100% { transform: translateY(120%); } }

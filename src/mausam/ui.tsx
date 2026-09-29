@@ -53,7 +53,7 @@ export function LifestyleIndicesCard({ location, lang, onSelectIndex }: { locati
   const indices = getLifestyleIndices(location);
 
   return (
-    <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass space-y-3">
+    <div className="rounded-3xl p-4 mausam-glass space-y-3">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
           🎯 {t("Lifestyle Indices", "जीवनशैली सूचकांक")}
@@ -106,7 +106,7 @@ export function HourlyInteractiveGraph({
   const activeItem = hourlyData[selectedIndex] ?? hourlyData[0];
 
   return (
-    <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass space-y-3">
+    <div className="rounded-3xl p-4 mausam-glass space-y-3">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
           📈 {t("24-Hour Forecast Timeline", "24-घंटे तापमान वक्र")}
@@ -180,7 +180,7 @@ export function SunArc({ sun, accent, lang }: { sun: Sun; accent: string; lang: 
   const dot = at(Math.min(Math.max(sun.progress, 0), 1));
 
   return (
-    <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Sun", "सूर्य")}</p>
       <div className="mt-1 flex justify-center">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxWidth: 260 }}>
@@ -204,7 +204,7 @@ export function SunArc({ sun, accent, lang }: { sun: Sun; accent: string; lang: 
 export function PrecipCard({ precip, accent, lang }: { precip: Precip; accent: string; lang: Lang }) {
   const t = makeT(lang);
   return (
-    <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="rounded-3xl p-4 mausam-glass">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Precipitation", "वर्षा")}</p>
         <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${accent}22`, color: accent }}>
@@ -308,7 +308,7 @@ export function RainMap({
   const uid = locationKey;
 
   return (
-    <div className="overflow-hidden rounded-3xl bg-[var(--color-glass)] mausam-glass">
+    <div className="overflow-hidden rounded-3xl mausam-glass">
       <div className="flex items-center justify-between px-4 pt-4">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Rain radar", "वर्षा रडार")}</p>
         <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-soft)]">
@@ -400,7 +400,7 @@ export function PollenCard({ pollen, lang }: { pollen: Pollen; lang: Lang }) {
   const color = pollenColor(pollen.level);
   const pct = Math.min(pollen.count / 10, 1);
   return (
-    <div className="flex h-full flex-col rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pollen count", "पराग गणना")}</p>
         <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${color}22`, color }}>{pollen.level}</span>
@@ -422,7 +422,7 @@ export function TravelCard({ travel, accent, lang }: { travel: Travel; accent: s
   const t = makeT(lang);
   const trColor = trafficColor(travel.traffic);
   return (
-    <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Travel & commute", "यात्रा व आवागमन")}</p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-white/6 p-3">
@@ -461,7 +461,7 @@ export function PackingCard({ condition, accent, lang }: { condition: Condition;
   const t = makeT(lang);
   const tips = packingTips(condition);
   return (
-    <div className="rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Packing tip", "पैकिंग सुझाव")}</p>
       <div className="mt-3 space-y-2">
         {tips.map((tip, i) => (
@@ -484,7 +484,7 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
   const angles: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
   const deg = angles[w.dir] ?? 0;
   return (
-    <div className="flex h-full flex-col rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind", "हवा")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
@@ -515,7 +515,7 @@ export function HumidityCard({ humidity: humidityIn, dewPoint: dewIn, accent, la
   const dewPoint = dewIn ?? 0;
   const C = 2 * Math.PI * 26;
   return (
-    <div className="flex h-full flex-col rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Humidity", "आर्द्रता")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center">
@@ -542,7 +542,7 @@ export function DewPointCard({ dewPoint: dewIn, lang }: { dewPoint?: number; lan
   const level = dewPoint >= 24 ? { l: t("Oppressive", "असहज"), c: "#e5484d" } : dewPoint >= 20 ? { l: t("Humid", "आर्द्र"), c: "#f0873a" } : dewPoint >= 16 ? { l: t("Comfortable", "आरामदायक"), c: "#7bd88f" } : { l: t("Dry", "शुष्क"), c: "#7bc4f2" };
   const pct = Math.min(Math.max((dewPoint - 8) / 20, 0), 1);
   return (
-    <div className="flex h-full flex-col rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Dew point", "ओसांक")}</p>
         <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${level.c}22`, color: level.c }}>{level.l}</span>
@@ -564,7 +564,7 @@ export function PressureCard({ pressure: pressureIn, accent, lang }: { pressure?
   const min = 980, max = 1040;
   const angle = -120 + ((pressure.value - min) / (max - min)) * 240;
   return (
-    <div className="flex h-full flex-col rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pressure", "दाब")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
@@ -615,7 +615,7 @@ export function MoonCard({ moon: moonIn, lang }: { moon?: Moon; lang: Lang }) {
   const shadowPath = getPhaseShadowPath(moon.phase, 36);
 
   return (
-    <div className="flex h-full flex-col rounded-3xl bg-[var(--color-glass)] p-4 mausam-glass">
+    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Moon phase", "चंद्र कला")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full shadow-md bg-black">
