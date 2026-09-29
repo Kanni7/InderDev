@@ -1,12 +1,13 @@
 import { useState, type CSSProperties } from "react";
 import Home from "./mausam/Home";
 import { Onboarding, Menu, Chat, Alerts } from "./mausam/screens";
+import TranslateScreen from "./mausam/TranslateScreen";
 import { locations, type UserTypeKey } from "./mausam/data";
 import { getWeatherTheme, DEV_TIME_OVERRIDE } from "./mausam/theme";
 import { usePhotoAccent } from "./mausam/useAccent";
 import type { Lang } from "./mausam/i18n";
 
-type Screen = "usertype" | "home" | "menu" | "chat" | "alerts";
+type Screen = "usertype" | "home" | "menu" | "chat" | "alerts" | "translate";
 
 export default function App() {
   const [lang, setLang] = useState<Lang>("en");
@@ -179,6 +180,7 @@ export default function App() {
                   setPending(userType);
                   setScreen("usertype");
                 }}
+                onTranslate={() => setScreen("translate")}
                 onClose={() => setScreen("home")}
               />
             )}
@@ -210,6 +212,12 @@ export default function App() {
             {screen === "alerts" && (
               <div className="absolute inset-0 z-40">
                 <Alerts lang={lang} accent={accent} location={location} onClose={() => setScreen("home")} />
+              </div>
+            )}
+
+            {screen === "translate" && (
+              <div className="absolute inset-0 z-40">
+                <TranslateScreen accent={accent} onClose={() => setScreen("home")} />
               </div>
             )}
           </>

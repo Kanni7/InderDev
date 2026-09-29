@@ -56,10 +56,10 @@ export function LifestyleIndicesCard({ location, lang, onSelectIndex }: { locati
     <div className="rounded-3xl p-4 mausam-glass space-y-3">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
-          🎯 {t("Lifestyle Indices", "जीवनशैली सूचकांक")}
+          🎯 {t("Lifestyle Indices")}
         </p>
         <span className="text-[11px] font-mono text-[var(--color-ink-soft)]">
-          {t("Live Analysis", "लाइव विश्लेषण")}
+          {t("Live Analysis")}
         </span>
       </div>
 
@@ -109,7 +109,7 @@ export function HourlyInteractiveGraph({
     <div className="rounded-3xl p-4 mausam-glass space-y-3">
       <div className="flex items-center justify-between">
         <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
-          📈 {t("24-Hour Forecast Timeline", "24-घंटे तापमान वक्र")}
+          📈 {t("24-Hour Forecast Timeline")}
         </p>
         <span className="text-[12px] font-bold text-white bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
           {t(activeItem.t)}: {formatTemp(activeItem.temp, unit)}
@@ -181,7 +181,7 @@ export function SunArc({ sun, accent, lang }: { sun: Sun; accent: string; lang: 
 
   return (
     <div className="rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Sun", "सूर्य")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Sun")}</p>
       <div className="mt-1 flex justify-center">
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxWidth: 260 }}>
           <line x1={startX} y1={baseY} x2={endX} y2={baseY} stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
@@ -192,9 +192,9 @@ export function SunArc({ sun, accent, lang }: { sun: Sun; accent: string; lang: 
         </svg>
       </div>
       <div className="mt-1 flex items-end justify-between">
-        <SunStat label={t("Sunrise", "सूर्योदय")} value={sun.sunrise} />
-        <SunStat label={t("Daylight", "दिन")} value={sun.daylight} center />
-        <SunStat label={t("Sunset", "सूर्यास्त")} value={sun.sunset} right />
+        <SunStat label={t("Sunrise")} value={sun.sunrise} />
+        <SunStat label={t("Daylight")} value={sun.daylight} center />
+        <SunStat label={t("Sunset")} value={sun.sunset} right />
       </div>
     </div>
   );
@@ -206,15 +206,15 @@ export function PrecipCard({ precip, accent, lang }: { precip: Precip; accent: s
   return (
     <div className="rounded-3xl p-4 mausam-glass">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Precipitation", "वर्षा")}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Precipitation")}</p>
         <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${accent}22`, color: accent }}>
-          {precip.chance}% {t("chance", "संभावना")}
+          {precip.chance}% {t("chance")}
         </span>
       </div>
       <div className="mt-2 flex items-end justify-between">
         <div>
           <p className="text-[22px] font-semibold text-[var(--color-ink)]">{precip.amount}</p>
-          <p className="text-[12px] text-[var(--color-ink-soft)]">{t("Next rain", "अगली वर्षा")}: {precip.next}</p>
+          <p className="text-[12px] text-[var(--color-ink-soft)]">{t("Next rain")}: {precip.next}</p>
         </div>
         <span className="rounded-lg bg-white/8 px-2.5 py-1 text-[12px] font-semibold text-[var(--color-ink)]">{precip.rate}</span>
       </div>
@@ -228,7 +228,7 @@ export function PrecipCard({ precip, accent, lang }: { precip: Precip; accent: s
           </div>
         ))}
       </div>
-      <p className="mt-2 text-[12px] text-[var(--color-ink-soft)]">{precip.note}</p>
+      <p className="mt-2 text-[12px] text-[var(--color-ink-soft)]">{t(precip.note)}</p>
     </div>
   );
 }
@@ -310,9 +310,9 @@ export function RainMap({
   return (
     <div className="overflow-hidden rounded-3xl mausam-glass">
       <div className="flex items-center justify-between px-4 pt-4">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Rain radar", "वर्षा रडार")}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Rain radar")}</p>
         <span className="flex items-center gap-1.5 text-[11px] text-[var(--color-ink-soft)]">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accent }} /> {t("Live", "लाइव")}
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full" style={{ background: accent }} /> {t("Live")}
         </span>
       </div>
       <div className="relative mt-2 h-[160px] w-full">
@@ -376,7 +376,7 @@ export function RainMap({
           <circle cx={pin.x} cy={pin.y} r="12" fill="none" stroke="#fff" strokeOpacity="0.18" strokeWidth="0.8" />
         </svg>
         <span className="absolute bottom-2 left-3 rounded-md bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white backdrop-blur-sm">
-          {city} · {chance}% {t("cover", "क्षेत्र")}
+          {city} · {chance}% {t("cover")}
         </span>
         <span className="absolute bottom-2 right-3 rounded-md bg-black/50 px-2 py-0.5 text-[11px] font-medium text-white/75 backdrop-blur-sm">
           {wind.dir} {wind.speed} km/h
@@ -384,7 +384,7 @@ export function RainMap({
       </div>
       {/* legend */}
       <div className="flex items-center gap-3 px-4 pb-3 pt-2">
-        {[["Light", "#7bc4f2"], ["Mod", "#f2c53d"], ["Heavy", "#f0873a"], ["Intense", "#e5484d"]].map(([l, c]) => (
+        {[[t("Light"), "#7bc4f2"], [t("Mod"), "#f2c53d"], [t("Heavy"), "#f0873a"], [t("Intense"), "#e5484d"]].map(([l, c]) => (
           <span key={l} className="flex items-center gap-1 text-[10px] text-[var(--color-ink-faint)]">
             <span className="h-2 w-2 rounded-full" style={{ background: c }} /> {l}
           </span>
@@ -402,17 +402,17 @@ export function PollenCard({ pollen, lang }: { pollen: Pollen; lang: Lang }) {
   return (
     <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pollen count", "पराग गणना")}</p>
-        <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${color}22`, color }}>{pollen.level}</span>
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pollen count")}</p>
+        <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${color}22`, color }}>{t(pollen.level)}</span>
       </div>
       <div className="mt-2 flex items-end gap-2">
         <p className="text-[26px] font-semibold leading-none" style={{ color }}>{pollen.count}</p>
-        <p className="mb-0.5 text-[12px] text-[var(--color-ink-soft)]">{t("grains/m³", "ग्रेन/मी³")}</p>
+        <p className="mb-0.5 text-[12px] text-[var(--color-ink-soft)]">{t("grains/m³")}</p>
       </div>
       <div className="mt-3 h-2 w-full rounded-full bg-white/10">
         <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: color }} />
       </div>
-      <p className="mt-2 text-[12px] text-[var(--color-ink-soft)]">{pollen.types} · {pollen.trend}</p>
+      <p className="mt-2 text-[12px] text-[var(--color-ink-soft)]">{pollen.types} · {t(pollen.trend)}</p>
     </div>
   );
 }
@@ -423,21 +423,21 @@ export function TravelCard({ travel, accent, lang }: { travel: Travel; accent: s
   const trColor = trafficColor(travel.traffic);
   return (
     <div className="rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Travel & commute", "यात्रा व आवागमन")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Travel & commute")}</p>
       <div className="mt-3 grid grid-cols-2 gap-3">
         <div className="rounded-2xl bg-white/6 p-3">
-          <p className="text-[11px] text-[var(--color-ink-faint)]">{t("Traffic", "ट्रैफ़िक")}</p>
-          <p className="mt-1 text-[17px] font-semibold" style={{ color: trColor }}>{travel.traffic}</p>
-          <p className="text-[11px] text-[var(--color-ink-soft)]">{travel.trafficNote}</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)]">{t("Traffic")}</p>
+          <p className="mt-1 text-[17px] font-semibold" style={{ color: trColor }}>{t(travel.traffic)}</p>
+          <p className="text-[11px] text-[var(--color-ink-soft)]">{t(travel.trafficNote)}</p>
         </div>
         <div className="rounded-2xl bg-white/6 p-3">
-          <p className="text-[11px] text-[var(--color-ink-faint)]">{t("Visibility", "दृश्यता")}</p>
+          <p className="text-[11px] text-[var(--color-ink-faint)]">{t("Visibility")}</p>
           <p className="mt-1 text-[17px] font-semibold text-[var(--color-ink)]">{travel.visibility}</p>
-          <p className="text-[11px] text-[var(--color-ink-soft)]">{t("on main routes", "मुख्य मार्गों पर")}</p>
+          <p className="text-[11px] text-[var(--color-ink-soft)]">{t("on main routes")}</p>
         </div>
       </div>
       <p className="mt-4 mb-2 flex items-center gap-1.5 text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">
-        <I.Send className="h-3.5 w-3.5" style={{ color: accent }} /> {t("Flights today", "आज की उड़ानें")}
+        <I.Send className="h-3.5 w-3.5" style={{ color: accent }} /> {t("Flights today")}
       </p>
       <div className="space-y-1.5">
         {travel.flights.map((f) => (
@@ -446,7 +446,7 @@ export function TravelCard({ travel, accent, lang }: { travel: Travel; accent: s
             <span className="flex items-center gap-2">
               <span className="text-[12px] text-[var(--color-ink-soft)]">{f.time}</span>
               <span className="rounded-md px-2 py-0.5 text-[11px] font-semibold" style={{ background: `${statusColor(f.status)}22`, color: statusColor(f.status) }}>
-                {f.status}
+                {t(f.status)}
               </span>
             </span>
           </div>
@@ -462,7 +462,7 @@ export function PackingCard({ condition, accent, lang }: { condition: Condition;
   const tips = packingTips(condition);
   return (
     <div className="rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Packing tip", "पैकिंग सुझाव")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Packing tip")}</p>
       <div className="mt-3 space-y-2">
         {tips.map((tip, i) => (
           <div key={i} className="flex items-center gap-3">
@@ -485,7 +485,7 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
   const deg = angles[w.dir] ?? 0;
   return (
     <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind", "हवा")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
           <svg viewBox="0 0 76 76" className="h-full w-full">
@@ -501,7 +501,7 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
         </div>
         <div>
           <p className="text-[26px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-[13px] font-normal text-[var(--color-ink-soft)]">km/h</span></p>
-          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{t("From", "दिशा")} {w.dir} · {t("gusts", "झोंके")} {w.gust} km/h</p>
+          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
         </div>
       </div>
     </div>
@@ -516,7 +516,7 @@ export function HumidityCard({ humidity: humidityIn, dewPoint: dewIn, accent, la
   const C = 2 * Math.PI * 26;
   return (
     <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Humidity", "आर्द्रता")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Humidity")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center">
           <svg viewBox="0 0 72 72" className="h-full w-full -rotate-90">
@@ -527,8 +527,8 @@ export function HumidityCard({ humidity: humidityIn, dewPoint: dewIn, accent, la
           <span className="absolute text-[15px] font-semibold text-[var(--color-ink)]">{humidity}%</span>
         </div>
         <div>
-          <p className="text-[13px] text-[var(--color-ink-soft)]">{humidity >= 75 ? t("Feels muggy", "उमस भरा") : humidity <= 40 ? t("Feels dry", "शुष्क") : t("Comfortable", "आरामदायक")}</p>
-          <p className="mt-1 text-[12px] text-[var(--color-ink-faint)]">{t("Dew point", "ओसांक")} {dewPoint}°C</p>
+          <p className="text-[13px] text-[var(--color-ink-soft)]">{humidity >= 75 ? t("Feels muggy") : humidity <= 40 ? t("Feels dry") : t("Comfortable")}</p>
+          <p className="mt-1 text-[12px] text-[var(--color-ink-faint)]">{t("Dew point")} {dewPoint}°C</p>
         </div>
       </div>
     </div>
@@ -539,12 +539,12 @@ export function HumidityCard({ humidity: humidityIn, dewPoint: dewIn, accent, la
 export function DewPointCard({ dewPoint: dewIn, lang }: { dewPoint?: number; lang: Lang }) {
   const t = makeT(lang);
   const dewPoint = dewIn ?? 0;
-  const level = dewPoint >= 24 ? { l: t("Oppressive", "असहज"), c: "#e5484d" } : dewPoint >= 20 ? { l: t("Humid", "आर्द्र"), c: "#f0873a" } : dewPoint >= 16 ? { l: t("Comfortable", "आरामदायक"), c: "#7bd88f" } : { l: t("Dry", "शुष्क"), c: "#7bc4f2" };
+  const level = dewPoint >= 24 ? { l: t("Oppressive"), c: "#e5484d" } : dewPoint >= 20 ? { l: t("Humid"), c: "#f0873a" } : dewPoint >= 16 ? { l: t("Comfortable"), c: "#7bd88f" } : { l: t("Dry"), c: "#7bc4f2" };
   const pct = Math.min(Math.max((dewPoint - 8) / 20, 0), 1);
   return (
     <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Dew point", "ओसांक")}</p>
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Dew point")}</p>
         <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${level.c}22`, color: level.c }}>{level.l}</span>
       </div>
       <p className="mt-2 text-[26px] font-semibold leading-none text-[var(--color-ink)]">{dewPoint}°C</p>
@@ -565,7 +565,7 @@ export function PressureCard({ pressure: pressureIn, accent, lang }: { pressure?
   const angle = -120 + ((pressure.value - min) / (max - min)) * 240;
   return (
     <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pressure", "दाब")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pressure")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
           <svg viewBox="0 0 76 76" className="h-full w-full">
@@ -616,7 +616,7 @@ export function MoonCard({ moon: moonIn, lang }: { moon?: Moon; lang: Lang }) {
 
   return (
     <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Moon phase", "चंद्र कला")}</p>
+      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Moon phase")}</p>
       <div className="mt-3 flex items-center gap-4">
         <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full shadow-md bg-black">
           {/* Real photo of the moon scaled edge-to-edge */}
@@ -641,7 +641,7 @@ export function MoonCard({ moon: moonIn, lang }: { moon?: Moon; lang: Lang }) {
         </div>
         <div>
           <p className="text-[16px] font-semibold text-[var(--color-ink)]">{t(moon.name)}</p>
-          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{moon.illum}% {t("illuminated", "प्रकाशित")}</p>
+          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{moon.illum}% {t("illuminated")}</p>
         </div>
       </div>
     </div>

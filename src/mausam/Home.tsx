@@ -113,9 +113,9 @@ export default function Home({
     ),
     air: (
       <div key="air" className="grid grid-cols-3 gap-3 cursor-pointer transition active:scale-[0.98]" onClick={() => setActiveDetail("air")}>
-        <AirTile label="AQI" value={String(location.air.aqi)} sub={location.air.aqiLabel} color={aqiColor(location.air.aqi)} ring={location.air.aqi} max={200} />
-        <AirTile label="UV" value={String(location.air.uv)} sub={location.air.uvLabel} color={uvColor(location.air.uv)} ring={location.air.uv} max={11} />
-        <AirTile label={t("Heat idx", "ताप")} value={formatTemp(location.air.heat, unit)} sub={location.air.heatLabel} color={accent} ring={location.air.heat} max={45} />
+        <AirTile label="AQI" value={String(location.air.aqi)} sub={t(location.air.aqiLabel)} color={aqiColor(location.air.aqi)} ring={location.air.aqi} max={200} />
+        <AirTile label="UV" value={String(location.air.uv)} sub={t(location.air.uvLabel)} color={uvColor(location.air.uv)} ring={location.air.uv} max={11} />
+        <AirTile label={t("Heat idx")} value={formatTemp(location.air.heat, unit)} sub={t(location.air.heatLabel)} color={accent} ring={location.air.heat} max={45} />
       </div>
     ),
     precip: (
@@ -130,13 +130,13 @@ export default function Home({
     ),
     metrics: (
       <div key="metrics">
-        <BlockTitle>{t(voc.metricsLabel, voc.metricsLabel)}</BlockTitle>
+        <BlockTitle>{t(voc.metricsLabel)}</BlockTitle>
         <div className="scroll-hide -mx-5 flex gap-3 overflow-x-auto px-5">
           {voc.metrics.map((m) => (
             <div key={m.label} className="min-w-[112px] shrink-0 rounded-2xl border border-white/8 p-3.5 mausam-glass">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">{m.label}</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{m.value}</p>
-              <p className="text-[11px] text-[var(--color-ink-soft)]">{m.sub}</p>
+              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">{t(m.label)}</p>
+              <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{t(m.value)}</p>
+              <p className="text-[11px] text-[var(--color-ink-soft)]">{t(m.sub)}</p>
             </div>
           ))}
         </div>
@@ -149,7 +149,7 @@ export default function Home({
     ),
     weekly: (
       <div key="weekly">
-        <BlockTitle>{t("7-day forecast", "7-दिन का पूर्वानुमान")}</BlockTitle>
+        <BlockTitle>{t("7-day forecast")}</BlockTitle>
         <div className="overflow-hidden rounded-2xl border border-white/8 mausam-glass">
           {weekly.map((d, i) => (
             <div key={d.day} className={`flex items-center gap-3 px-4 py-3 ${i !== weekly.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}>
@@ -191,7 +191,7 @@ export default function Home({
         <>
           <button className="absolute inset-0 z-20 cursor-default" aria-label="Close" onClick={() => setShowLocations(false)} />
           <div className="animate-insight absolute left-1/2 top-[56px] z-30 w-[280px] -translate-x-1/2 overflow-hidden rounded-3xl border border-white/15 bg-[color:rgba(12,18,28,0.94)] shadow-[0_24px_50px_-18px_rgba(0,0,0,0.85)] backdrop-blur-2xl">
-            <p className="px-4 pb-2 pt-3 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/45">{t("Locations", "स्थान")}</p>
+            <p className="px-4 pb-2 pt-3 text-center font-mono text-[10px] uppercase tracking-[0.22em] text-white/45">{t("Locations")}</p>
             {locations.map((loc, i) => {
               const active = loc.key === location.key;
               return (
@@ -265,7 +265,7 @@ export default function Home({
                   <span className="mt-2 text-3xl font-light">°{unit}</span>
                 </div>
                 <p className="mt-1 text-[15px] font-medium capitalize text-white/80">
-                  {theme.label} · {t("feels", "महसूस")} {formatTemp(location.feels, unit)} · {location.region}
+                  {t(theme.label)} · {t("feels")} {formatTemp(location.feels, unit)} · {location.region}
                 </p>
               </div>
               <CondIcon c={theme.key} className="h-24 w-24 opacity-95 drop-shadow-xl" style={{ color: accent }} />
@@ -273,7 +273,7 @@ export default function Home({
 
             {/* AI one-line summary */}
             <div className="mt-4 rounded-2xl bg-white/10 px-4 py-3 text-[13.5px] font-medium backdrop-blur-md border border-white/15 text-white/95 shadow-sm">
-              <span>{location.summary}</span>
+              <span>{t(location.summary)}</span>
             </div>
 
             {/* Alert banner — only rendered when this location has an active alert */}
@@ -294,10 +294,10 @@ export default function Home({
                   </span>
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-[13.5px] font-semibold text-[var(--color-ink)]">
-                      {al.title}
+                      {t(al.title)}
                     </span>
                     <span className="mt-0.5 block truncate text-[12px] text-[var(--color-ink-soft)]">
-                      {al.body}
+                      {t(al.body)}
                     </span>
                   </span>
                   <I.Chevron className="h-4 w-4 shrink-0 text-[var(--color-ink-faint)]" />
@@ -316,20 +316,20 @@ export default function Home({
           >
             <div className="flex items-center justify-between">
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
-                {t("For you", "आपके लिए")} · {location.city}
+                {t("For you")} · {location.city}
               </span>
               <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/90 backdrop-blur-md">
-                <CondIcon c={theme.key} className="h-3.5 w-3.5" /> {theme.label}
+                <CondIcon c={theme.key} className="h-3.5 w-3.5" /> {t(theme.label)}
               </span>
             </div>
-            <h2 className="mt-3 text-[22px] font-semibold leading-tight text-[var(--color-ink)]">{voc.insight.headline}</h2>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{voc.insight.detail}</p>
+            <h2 className="mt-3 text-[22px] font-semibold leading-tight text-[var(--color-ink)]">{t(voc.insight.headline)}</h2>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{t(voc.insight.detail)}</p>
             <div className="mt-4 flex items-center gap-2">
               {voc.insight.window && (
                 <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{voc.insight.window}</span>
               )}
               <button onClick={onChat} className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition active:scale-95 hover:bg-white/20">
-                {t("Ask why", "क्यों पूछें")}
+                {t("Ask why")}
               </button>
             </div>
           </section>
@@ -380,19 +380,19 @@ function FloatingAI({ onChat, accent, lang }: { onChat?: () => void; accent: str
       <div className="pointer-events-none flex max-w-0 flex-col items-end gap-2 overflow-hidden opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:max-w-[240px] group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:max-w-[240px] group-focus-within:opacity-100">
         {chatChips.slice(0, 3).map((c) => (
           <button key={c} onClick={onChat} className="whitespace-nowrap rounded-full border border-[var(--color-line)] bg-[color:rgba(10,16,26,0.85)] px-3.5 py-2 text-[12px] font-medium text-white backdrop-blur-md active:scale-95">
-            {c}
+            {t(c)}
           </button>
         ))}
       </div>
       <button
         onClick={onChat}
-        aria-label={t("Ask Mausam AI", "मौसम AI से पूछें")}
+        aria-label={t("Ask Mausam AI")}
         className="flex items-center gap-0 rounded-full py-3.5 pl-3.5 pr-3.5 text-black shadow-[0_16px_30px_-10px_rgba(0,0,0,0.8)] transition-all duration-300 active:scale-95 group-hover:pl-4 group-hover:pr-5"
         style={{ background: accent }}
       >
         <I.Send className="h-5 w-5 shrink-0" />
         <span className="max-w-0 overflow-hidden whitespace-nowrap text-[14px] font-semibold transition-all duration-300 group-hover:ml-2 group-hover:max-w-[160px]">
-          {t("Ask Mausam AI", "मौसम AI")}
+          {t("Ask Mausam AI")}
         </span>
       </button>
     </div>

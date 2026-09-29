@@ -368,7 +368,7 @@ export function RainMapWidget({
             >
               {temp ?? 31}
             </div>
-            <span className="mt-1 text-[10px] font-medium text-white/70">My Location</span>
+            <span className="mt-1 text-[10px] font-medium text-white/70">{t("My Location")}</span>
           </div>
         </div>
 
@@ -384,7 +384,7 @@ export function RainMapWidget({
       <div className="flex items-center gap-3 px-4 pb-3 pt-1">
         {([["Light", "#007aff"], ["Moderate", "#c084fc"], ["Heavy", "#facc15"], ["Extreme", "#ffffff"]] as const).map(([l, c]) => (
           <span key={l} className="flex items-center gap-1 text-[10px] font-medium text-[var(--color-ink-faint)]">
-            <span className="h-2 w-2 rounded-full border border-white/20" style={{ background: c }} /> {l}
+            <span className="h-2 w-2 rounded-full border border-white/20" style={{ background: c }} /> {t(l)}
           </span>
         ))}
       </div>
@@ -403,6 +403,7 @@ export function FullScreenRadar({
   lang: Lang; locationKey: string; wind: Wind; temp?: number;
   onClose: () => void;
 }) {
+  const t = makeT(lang);
   const [playing, setPlaying] = useState(false);
   const [frame, setFrame] = useState(1); // start at "Now"
   const [showLegend, setShowLegend] = useState(true); // Always visible by default in full screen!
@@ -487,7 +488,7 @@ export function FullScreenRadar({
         {/* Precipitation legend — EXACT copy of user's Apple Weather screenshot */}
         {showLegend && (
           <div className="absolute left-4 top-24 z-20 rounded-2xl bg-[rgba(26,34,52,0.92)] px-4 py-3.5 border border-white/10 shadow-2xl backdrop-blur-xl animate-in fade-in duration-200">
-            <p className="mb-2 text-[13px] font-semibold text-white tracking-tight">Precipitation</p>
+            <p className="mb-2 text-[13px] font-semibold text-white tracking-tight">{t("Precipitation")}</p>
             <div className="flex items-center gap-3 pt-0.5">
               {/* Continuous vertical gradient line */}
               <div
@@ -498,10 +499,10 @@ export function FullScreenRadar({
               />
               {/* Labels array aligned to the bar */}
               <div className="flex flex-col justify-between h-28 text-[12px] font-medium text-white/80">
-                <span>Extreme</span>
-                <span>Heavy</span>
-                <span>Moderate</span>
-                <span>Light</span>
+                <span>{t("Extreme")}</span>
+                <span>{t("Heavy")}</span>
+                <span>{t("Moderate")}</span>
+                <span>{t("Light")}</span>
               </div>
             </div>
           </div>
@@ -519,7 +520,7 @@ export function FullScreenRadar({
                 <path d="M6 19a5 5 0 0 1-.56-9.97A7.002 7.002 0 0 1 18.83 10H19a4 4 0 0 1 0 8H6z" />
               </svg>
             </div>
-            <span className="mt-1 text-[11px] font-medium text-white/55">My Location</span>
+            <span className="mt-1 text-[11px] font-medium text-white/55">{t("My Location")}</span>
           </div>
         </div>
       </div>
@@ -548,7 +549,7 @@ export function FullScreenRadar({
               )}
             </button>
             <div>
-              <p className="text-[14px] font-semibold text-white">Forecast</p>
+              <p className="text-[14px] font-semibold text-white">{t("Forecast")}</p>
               <p className="text-[11px] text-white/45">{dateStr}</p>
             </div>
           </div>
