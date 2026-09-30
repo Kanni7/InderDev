@@ -53,6 +53,71 @@ function computeAstronomicalTarget(targetDate?: Date, fallbackPhase = 0.5) {
   }
 }
 
+let cachedProceduralCanvas: HTMLCanvasElement | null = null;
+function getProceduralMoonCanvas(): HTMLCanvasElement {
+  if (cachedProceduralCanvas) return cachedProceduralCanvas;
+  const canvas = document.createElement("canvas");
+  canvas.width = 512;
+  canvas.height = 256;
+  const ctx = canvas.getContext("2d");
+  if (!ctx) return canvas;
+
+  // Base silvery-gray regolith
+  ctx.fillStyle = "#9ca3af";
+  ctx.fillRect(0, 0, 512, 256);
+
+  // Add realistic lunar maria (basaltic darker plains)
+  ctx.fillStyle = "#525964";
+  const maria = [
+    { x: 180, y: 100, rx: 70, ry: 45 },
+    { x: 230, y: 120, rx: 55, ry: 40 },
+    { x: 140, y: 130, rx: 45, ry: 35 },
+    { x: 280, y: 90, rx: 40, ry: 30 },
+    { x: 340, y: 110, rx: 50, ry: 35 },
+  ];
+  maria.forEach(({ x, y, rx, ry }) => {
+    ctx.beginPath();
+    ctx.ellipse(x, y, rx, ry, 0, 0, Math.PI * 2);
+    ctx.filter = "blur(12px)";
+    ctx.fill();
+  });
+  ctx.filter = "none";
+
+  // Micro-texture noise & highlands
+  const imgData = ctx.getImageData(0, 0, 512, 256);
+  const data = imgData.data;
+  for (let i = 0; i < data.length; i += 4) {
+    const noise = (Math.random() - 0.5) * 28;
+    data[i] = Math.max(0, Math.min(255, data[i] + noise));
+    data[i + 1] = Math.max(0, Math.min(255, data[i + 1] + noise));
+    data[i + 2] = Math.max(0, Math.min(255, data[i + 2] + noise));
+  }
+  ctx.putImageData(imgData, 0, 0);
+
+  // Prominent crater rims (Tycho, Copernicus, Kepler)
+  const craters = [
+    { x: 195, y: 175, r: 9 },
+    { x: 155, y: 110, r: 7 },
+    { x: 215, y: 85, r: 8 },
+    { x: 260, y: 150, r: 6 },
+    { x: 310, y: 105, r: 7 },
+  ];
+  craters.forEach(({ x, y, r }) => {
+    ctx.strokeStyle = "rgba(255,255,255,0.6)";
+    ctx.lineWidth = 1.5;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.fillStyle = "rgba(45,50,58,0.55)";
+    ctx.beginPath();
+    ctx.arc(x, y, r - 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  cachedProceduralCanvas = canvas;
+  return canvas;
+}
+
 /**
  * RealisticMoon Component
  * Renders an authentic physical 3D Moon model driven by astronomical ephemeris:
@@ -118,21 +183,21 @@ export function RealisticMoon({
 
     // 4. Physical 3D Lighting Setup
     // Sun Directional Light (illuminates the lunar phase)
-    const sunLight = new THREE.DirectionalLight(0xfff7ee, 3.2);
+    const sunLight = new THREE.DirectionalLight(0xfff8ee, 3.6);
     scene.add(sunLight);
 
     // Earthshine: Soft bluish-gray light reflected from Earth onto dark hemisphere
-    const earthshineLight = new THREE.DirectionalLight(0x7da4d4, 0.18);
+    const earthshineLight = new THREE.DirectionalLight(0x8eaedc, 0.35);
     earthshineLight.position.set(0, 0, 5);
     scene.add(earthshineLight);
 
     // Deep cosmic ambient light so craters on shadowed side have 3D relief
-    const ambientLight = new THREE.AmbientLight(0x182438, 0.08);
+    const ambientLight = new THREE.AmbientLight(0x243248, 0.20);
     scene.add(ambientLight);
 
     // Subtle cool-white rim light for limb definition
     if (showLimbSheen) {
-      const rimLight = new THREE.DirectionalLight(0xdbeafe, 0.22);
+      const rimLight = new THREE.DirectionalLight(0xdbeafe, 0.30);
       rimLight.position.set(0, 2.5, -3.5);
       scene.add(rimLight);
     }
@@ -140,23 +205,37 @@ export function RealisticMoon({
     // 5. 3D Moon Mesh setup
     const segments = size > 60 ? 64 : 32;
     const geometry = new THREE.SphereGeometry(1, segments, segments);
-    const textureLoader = new THREE.TextureLoader();
-    const texture = textureLoader.load(
-      "/moon_1024.jpg",
-      () => {
-        if (destroyed) return;
-        material.needsUpdate = true;
-      }
-    );
-    texture.colorSpace = THREE.SRGBColorSpace;
+
+    // Start immediately with high-detail procedural lunar texture (zero black screen pop)
+    const fallbackCanvas = getProceduralMoonCanvas();
+    const fallbackTexture = new THREE.CanvasTexture(fallbackCanvas);
+    fallbackTexture.colorSpace = THREE.SRGBColorSpace;
 
     const material = new THREE.MeshStandardMaterial({
-      map: texture,
-      bumpMap: texture,
+      color: 0xeeeeee,
+      map: fallbackTexture,
+      bumpMap: fallbackTexture,
       bumpScale: 0.045, // Real 3D crater depth
-      roughness: 0.92,  // Matte lunar regolith
+      roughness: 0.88,  // Matte lunar regolith
       metalness: 0.02,
     });
+
+    // Upgrade seamlessly to high-res photographic NASA texture when loaded
+    const textureLoader = new THREE.TextureLoader();
+    textureLoader.load(
+      "/moon_1024.jpg",
+      (highResTexture) => {
+        if (destroyed) return;
+        highResTexture.colorSpace = THREE.SRGBColorSpace;
+        material.map = highResTexture;
+        material.bumpMap = highResTexture;
+        material.needsUpdate = true;
+      },
+      undefined,
+      (err) => {
+        console.warn("High-res lunar texture load notice; continuing with procedural lunar texture", err);
+      }
+    );
 
     const baseRotY = -Math.PI / 2;
     const baseRotZ = 0.035; // Lunar axial tilt (1.54°)
