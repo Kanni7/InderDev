@@ -1251,8 +1251,17 @@ function WindDetail({ location, accent, lang, onOpenRadar }: { location: Locatio
             {["N", "E", "S", "W"].map((d, i) => (
               <text key={d} x="50" y={i === 0 ? 16 : i === 2 ? 88 : 53} dx={i === 1 ? 38 : i === 3 ? -38 : 0} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.45)">{d}</text>
             ))}
-            <g transform={`rotate(${deg} 50 50)`}>
-              <path d="M 50 18 L 56 50 L 50 45 L 44 50 Z" fill={accent} />
+            <g transform="translate(50 50)">
+              <g
+                transform={`rotate(${deg})`}
+                style={{
+                  transform: `rotate(${deg}deg)`,
+                  transformOrigin: "0px 0px",
+                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }}
+              >
+                <path d="M 0 -32 L 6 0 L 0 -5 L -6 0 Z" fill={accent} />
+              </g>
             </g>
           </svg>
         </div>
@@ -1340,11 +1349,12 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
   const pr = location.pressure;
   const val = pr.value;
 
-  // Meteorological calibration: 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
-  const minP = 970;
-  const maxP = 1050;
+  // Meteorological calibration: standard 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
+  // Dynamically resilient so dial remains responsive even on extreme synoptic pressure readings
+  const minP = Math.min(940, Math.floor(val - 10));
+  const maxP = Math.max(1050, Math.ceil(val + 10));
   const clamped = Math.max(minP, Math.min(maxP, val));
-  const fraction = (clamped - minP) / (maxP - minP);
+  const fraction = Math.max(0.01, (clamped - minP) / (maxP - minP));
 
 
   // Trend classification (ensuring "Measured" is never shown)
@@ -1428,8 +1438,8 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
   }, [val, isFalling, isRising]);
 
   const pValues = historyData.map((d) => d.value);
-  const minHist = Math.min(...pValues, 1010);
-  const maxHist = Math.max(...pValues, 1016);
+  const minHist = Math.min(...pValues, Math.floor(val - 3));
+  const maxHist = Math.max(...pValues, Math.ceil(val + 3));
   const rangeHist = Math.max(maxHist - minHist, 4);
 
   // SVG chart path
@@ -1507,7 +1517,7 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
               />
 
               {/* Active Colored Progress Arc */}
-              {fraction > 0.02 && (
+              {fraction > 0.005 && (
                 <path
                   d={`M ${startX.toFixed(2)} ${startY.toFixed(2)} A ${r} ${r} 0 ${isLargeArc} 1 ${dotX.toFixed(2)} ${dotY.toFixed(2)}`}
                   fill="none"

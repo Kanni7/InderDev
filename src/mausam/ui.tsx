@@ -872,28 +872,31 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
             <text x="12" y="42.5" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 270 ? accent : "rgba(255,255,255,0.4)"}>W</text>
 
             {/* Direction Pointer Needle */}
-            <g
-              transform={`rotate(${deg} 40 40)`}
-              style={{
-                transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                transformOrigin: "40px 40px",
-              }}
-            >
-              {/* Pointer Arrow with high contrast dual-tone */}
-              <path
-                d="M 40 14 L 43.5 35 L 40 32.5 L 36.5 35 Z"
-                fill="#ffffff"
-                filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
-              />
-              <path
-                d="M 40 14 L 42 24 L 40 22.5 L 38 24 Z"
-                fill={accent}
-              />
-              {/* Counter-weight Tail */}
-              <path
-                d="M 40 45 L 42 50 L 40 48.5 L 38 50 Z"
-                fill="rgba(255,255,255,0.22)"
-              />
+            <g transform="translate(40, 40)">
+              <g
+                transform={`rotate(${deg})`}
+                style={{
+                  transform: `rotate(${deg}deg)`,
+                  transformOrigin: "0px 0px",
+                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }}
+              >
+                {/* Pointer Arrow with high contrast dual-tone */}
+                <path
+                  d="M 0 -26 L 3.5 -5 L 0 -7.5 L -3.5 -5 Z"
+                  fill="#ffffff"
+                  filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+                />
+                <path
+                  d="M 0 -26 L 2 -16 L 0 -17.5 L -2 -16 Z"
+                  fill={accent}
+                />
+                {/* Counter-weight Tail */}
+                <path
+                  d="M 0 5 L 2 10 L 0 8.5 L -2 10 Z"
+                  fill="rgba(255,255,255,0.22)"
+                />
+              </g>
             </g>
 
             {/* Center Pivot */}
@@ -979,11 +982,12 @@ export function PressureCard({
   const pressure = pressureIn ?? { value: 1013, trend: "Steady" };
   const val = pressure.value;
 
-  // Meteorological calibration: 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
-  const minP = 970;
-  const maxP = 1050;
+  // Meteorological calibration: standard 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
+  // Dynamically resilient so dial remains responsive even on extreme synoptic pressure readings
+  const minP = Math.min(940, Math.floor(val - 10));
+  const maxP = Math.max(1050, Math.ceil(val + 10));
   const clamped = Math.max(minP, Math.min(maxP, val));
-  const fraction = (clamped - minP) / (maxP - minP);
+  const fraction = Math.max(0.01, (clamped - minP) / (maxP - minP));
 
   // 240° arc spanning from 150° (bottom-left) to 30° / 390° (bottom-right)
   const startAngle = 150;
@@ -1081,7 +1085,7 @@ export function PressureCard({
             />
 
             {/* Active Colored Progress Arc */}
-            {fraction > 0.02 && (
+            {fraction > 0.005 && (
               <path
                 d={`M ${startX.toFixed(2)} ${startY.toFixed(2)} A ${r} ${r} 0 ${isLargeArc} 1 ${dotX.toFixed(2)} ${dotY.toFixed(2)}`}
                 fill="none"

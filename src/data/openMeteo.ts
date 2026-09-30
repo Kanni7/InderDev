@@ -73,6 +73,7 @@ interface OpenMeteoForecast {
     relative_humidity_2m: number;
     dew_point_2m: number;
     surface_pressure: number;
+    pressure_msl?: number;
     is_day: number;
     uv_index: number;
   };
@@ -138,7 +139,7 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
     const [forecastRes, aqRes] = await Promise.all([
       fetch(
         `https://api.open-meteo.com/v1/forecast?latitude=${city.lat}&longitude=${city.lon}` +
-        `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,dew_point_2m,surface_pressure,is_day,uv_index` +
+        `&current=temperature_2m,apparent_temperature,weather_code,wind_speed_10m,wind_direction_10m,wind_gusts_10m,relative_humidity_2m,dew_point_2m,surface_pressure,pressure_msl,is_day,uv_index` +
         `&hourly=temperature_2m,precipitation_probability,precipitation,weather_code` +
         `&daily=sunrise,sunset,uv_index_max,temperature_2m_max,temperature_2m_min,precipitation_probability_max,weather_code` +
         `&timezone=auto&forecast_days=7`,
@@ -279,7 +280,7 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       humidity: cur.relative_humidity_2m,
       dewPoint: Math.round(cur.dew_point_2m),
       pressure: {
-        value: Math.round(cur.surface_pressure),
+        value: Math.round(cur.pressure_msl ?? cur.surface_pressure),
         trend: "Steady",
       },
       moon: { phase: 0.5, name: "Waxing", illum: 50 },
