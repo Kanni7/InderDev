@@ -218,10 +218,9 @@ const UserGlyph: Glyph = (p) => (<svg viewBox="0 0 24 24" {...mIcon} {...p}><cir
 const LayersGlyph: Glyph = (p) => (<svg viewBox="0 0 24 24" {...mIcon} {...p}><path d="M12 4 3.5 8.5 12 13l8.5-4.5L12 4Z" /><path d="M4 13l8 4.2L20 13" /></svg>);
 const HeartGlyph: Glyph = (p) => (<svg viewBox="0 0 24 24" {...mIcon} {...p}><path d="M12 20s-7-4.4-7-9.3A3.7 3.7 0 0 1 12 8a3.7 3.7 0 0 1 7 2.7C19 15.6 12 20 12 20Z" /></svg>);
 const GearGlyph: Glyph = (p) => (<svg viewBox="0 0 24 24" {...mIcon} {...p}><circle cx="12" cy="12" r="3" /><path d="M12 3v2.5M12 18.5V21M21 12h-2.5M5.5 12H3M18.4 5.6l-1.8 1.8M7.4 16.6l-1.8 1.8M18.4 18.4l-1.8-1.8M7.4 7.4 5.6 5.6" /></svg>);
-const TranslateGlyph: Glyph = (p) => (<svg viewBox="0 0 24 24" {...mIcon} {...p}><path d="M3 5h8M7 3v2M5 5c0 4.5 5 7 5 7" /><path d="M14 17l3.5-7L21 17M15.5 15h4" /><path d="M11 12l-2 3" /></svg>);
 
 export function Menu({
-  onClose, lang, city, accent, onUserType, onSetLang, onTranslate,
+  onClose, lang, city, accent, onUserType, onSetLang,
 }: {
   onClose: () => void;
   lang: Lang;
@@ -229,7 +228,6 @@ export function Menu({
   accent: string;
   onUserType?: () => void;
   onSetLang?: (l: Lang) => void;
-  onTranslate?: () => void;
 }) {
   const t = makeT(lang);
   const me = { name: "Kanishk Kanojia", role: "Outdoor Fitness", initials: "KK" };
@@ -245,7 +243,6 @@ export function Menu({
     {
       section: "Preferences",
       items: [
-        { label: "Translate", icon: TranslateGlyph, action: onTranslate },
         { label: "Health Preferences", icon: HeartGlyph },
         { label: "Notifications", icon: I.Bell as Glyph },
         { label: "Settings", icon: GearGlyph },
