@@ -124,9 +124,9 @@ export function Onboarding({
 }) {
   const t = makeT(lang);
   return (
-    <div className="relative flex h-full flex-col overflow-hidden" style={{ background: "#080c14" }}>
+    <div className="relative flex h-full flex-col overflow-hidden bg-black" style={{ background: "#000000" }}>
 
-      <div className="scroll-hide flex-1 overflow-y-auto px-5 pb-36 pt-14 relative z-10">
+      <div className="scroll-hide flex-1 overflow-y-auto px-5 pb-36 pt-14 relative z-10 bg-black">
         {onBack && (
           <button onClick={onBack} aria-label="Back" className="mb-5 grid h-9 w-9 place-items-center rounded-full bg-white/10 backdrop-blur-md active:scale-95">
             <I.Chevron className="h-4 w-4 rotate-180 text-white/70" />
@@ -188,7 +188,7 @@ export function Onboarding({
       </div>
 
       {/* Bottom CTA */}
-      <div className="absolute inset-x-0 bottom-0 px-5 pb-8 pt-10 z-20" style={{ background: "linear-gradient(to top, #080c14 65%, transparent)" }}>
+      <div className="absolute inset-x-0 bottom-0 px-5 pb-8 pt-10 z-20" style={{ background: "linear-gradient(to top, #000000 70%, rgba(0,0,0,0.85) 85%, transparent)" }}>
         <button
           disabled={!value}
           onClick={onContinue}
