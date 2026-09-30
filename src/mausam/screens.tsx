@@ -252,22 +252,20 @@ export function Menu({
 
   return (
     <div className="absolute inset-0 z-40">
-      <button onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" aria-label="Close menu" />
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+        aria-label="Close menu"
+      />
       <aside
-        className="mausam-drawer animate-insight absolute left-0 top-0 flex h-full w-[86%] max-w-[360px] flex-col overflow-hidden px-4 pb-6 pt-4 text-[var(--color-ink)]"
-        style={{ background: `color-mix(in srgb, var(--wx-card, #0a0e18) 75%, transparent)` }}
+        className="mausam-drawer animate-insight absolute left-0 top-0 flex h-full w-[86%] max-w-[360px] flex-col overflow-hidden px-4 pb-6 pt-4 text-[var(--color-ink)] shadow-2xl border-r border-white/10"
+        style={{ background: "#0b101b" }}
       >
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-black/30" />
 
         {/* Profile Card */}
         <div className="relative mt-10 overflow-hidden rounded-3xl p-5 mausam-glass">
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="absolute right-3.5 top-3.5 grid h-8 w-8 place-items-center rounded-full text-white/50 transition active:scale-95 hover:bg-white/10"
-          >
-            <I.Close className="h-4 w-4" />
-          </button>
           <div className="relative flex items-center gap-4">
             <span
               className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-[17px] font-semibold"
@@ -275,7 +273,7 @@ export function Menu({
             >
               {me.initials}
             </span>
-            <div className="min-w-0 pr-6">
+            <div className="min-w-0 pr-8">
               <p className="truncate text-[18px] font-semibold leading-tight text-[var(--color-ink)]">{me.name}</p>
               <span
                 className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium"
@@ -286,6 +284,19 @@ export function Menu({
               </span>
             </div>
           </div>
+
+          {/* Close button in top-right corner */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close menu"
+            className="absolute right-3.5 top-3.5 z-30 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/70 transition active:scale-90 hover:bg-white/20 hover:text-white cursor-pointer pointer-events-auto"
+          >
+            <I.Close className="h-4 w-4 pointer-events-none" />
+          </button>
         </div>
 
         {/* Navigation */}
