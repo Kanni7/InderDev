@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, type SVGProps, type ReactElement, type CSSProperties } from "react";
-import { userTypes, chatChips, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
+import { userTypes, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
 import { getWeatherTheme } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
 import * as I from "./icons";
@@ -530,13 +530,6 @@ export function Chat({
       </div>
 
       <div className="px-5 pb-7 pt-3">
-        <div className="scroll-hide -mx-5 mb-3 flex gap-2 overflow-x-auto px-5">
-          {chatChips.map((c) => (
-            <button key={c} onClick={() => ask(t(c))} className="shrink-0 rounded-full mausam-glass px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-ink)] active:scale-95">
-              {t(c)}
-            </button>
-          ))}
-        </div>
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex items-center gap-2 rounded-full mausam-glass py-2 pl-4 pr-2">
           <input
             className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[var(--color-ink-faint)]"

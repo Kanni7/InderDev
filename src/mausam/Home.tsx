@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import {
   vocations, tierMeta, locations,
-  aqiColor, uvColor, chatChips, formatTemp, getDynamicInsight, type TemperatureUnit,
+  aqiColor, uvColor, formatTemp, getDynamicInsight, type TemperatureUnit,
   type UserTypeKey, type Location, type Block,
   type HourlyPoint, type DailyPoint,
 } from "./data";
@@ -480,15 +480,7 @@ export default function Home({
 function FloatingAI({ onChat, accent, lang }: { onChat?: () => void; accent: string; lang: Lang }) {
   const t = makeT(lang);
   return (
-    <div className="group absolute bottom-6 right-5 z-30 flex flex-col items-end gap-2">
-      {/* suggested chips appear on hover/focus */}
-      <div className="pointer-events-none flex max-w-0 flex-col items-end gap-2 overflow-hidden opacity-0 transition-all duration-300 group-hover:pointer-events-auto group-hover:max-w-[240px] group-hover:opacity-100 group-focus-within:pointer-events-auto group-focus-within:max-w-[240px] group-focus-within:opacity-100">
-        {chatChips.slice(0, 3).map((c) => (
-          <button key={c} onClick={onChat} className="whitespace-nowrap rounded-full border border-[var(--color-line)] bg-[color:rgba(10,16,26,0.85)] px-3.5 py-2 text-[12px] font-medium text-white backdrop-blur-md active:scale-95">
-            {t(c)}
-          </button>
-        ))}
-      </div>
+    <div className="group absolute bottom-6 right-5 z-30 flex items-center">
       <button
         onClick={onChat}
         aria-label={t("Ask Mausam AI")}
