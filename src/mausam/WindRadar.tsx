@@ -122,6 +122,8 @@ export const WIND_CITIES: RadarCity[] = [
   { name: "Kozhikode", lat: 11.25, lng: 75.78, baseSpeed: 12, baseTemp: 31, tier: 2 },
   { name: "Thiruvananthapuram", lat: 8.52, lng: 76.93, baseSpeed: 16, baseTemp: 31, tier: 1 },
   { name: "Kanyakumari", lat: 8.08, lng: 77.55, baseSpeed: 17, baseTemp: 30, tier: 2 },
+  { name: "Rameswaram", lat: 9.28, lng: 79.31, baseSpeed: 18, baseTemp: 31, tier: 2 },
+  { name: "Trincomalee", lat: 8.58, lng: 81.23, baseSpeed: 17, baseTemp: 30, tier: 2 },
 
   // ── East & Northeast ──
   { name: "Kolkata", lat: 22.57, lng: 88.36, baseSpeed: 10, baseTemp: 32, tier: 1 },
