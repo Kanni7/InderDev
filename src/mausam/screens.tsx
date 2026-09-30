@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, type SVGProps, type ReactElement, type CSSProperties } from "react";
-import { userTypes, chatChips, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
+import { userTypes, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
 import { getWeatherTheme } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
 import * as I from "./icons";
@@ -252,21 +252,20 @@ export function Menu({
 
   return (
     <div className="absolute inset-0 z-40">
-      <button onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-[3px]" aria-label="Close menu" />
+      <button
+        type="button"
+        onClick={onClose}
+        className="absolute inset-0 bg-black/60 backdrop-blur-sm cursor-pointer"
+        aria-label="Close menu"
+      />
       <aside
-        className="mausam-drawer animate-insight absolute left-0 top-0 flex h-full w-[86%] max-w-[360px] flex-col overflow-hidden px-4 pb-6 pt-4 text-[var(--color-ink)] bg-black"
-        style={{ background: "#000000" }}
+        className="mausam-drawer animate-insight absolute left-0 top-0 flex h-full w-[86%] max-w-[360px] flex-col overflow-hidden px-4 pb-6 pt-4 text-[var(--color-ink)] shadow-2xl border-r border-white/10"
+        style={{ background: "#0b101b" }}
       >
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.03] via-transparent to-black/30" />
 
         {/* Profile Card */}
         <div className="relative mt-10 overflow-hidden rounded-3xl p-5 mausam-glass">
-          <button
-            onClick={onClose}
-            aria-label="Close"
-            className="absolute right-3.5 top-3.5 grid h-8 w-8 place-items-center rounded-full text-white/50 transition active:scale-95 hover:bg-white/10"
-          >
-            <I.Close className="h-4 w-4" />
-          </button>
           <div className="relative flex items-center gap-4">
             <span
               className="grid h-14 w-14 shrink-0 place-items-center rounded-2xl text-[17px] font-semibold"
@@ -274,7 +273,7 @@ export function Menu({
             >
               {me.initials}
             </span>
-            <div className="min-w-0 pr-6">
+            <div className="min-w-0 pr-8">
               <p className="truncate text-[18px] font-semibold leading-tight text-[var(--color-ink)]">{me.name}</p>
               <span
                 className="mt-1.5 inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-[11px] font-medium"
@@ -285,6 +284,19 @@ export function Menu({
               </span>
             </div>
           </div>
+
+          {/* Close button in top-right corner */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              onClose();
+            }}
+            aria-label="Close menu"
+            className="absolute right-3.5 top-3.5 z-30 grid h-8 w-8 place-items-center rounded-full bg-white/10 text-white/70 transition active:scale-90 hover:bg-white/20 hover:text-white cursor-pointer pointer-events-auto"
+          >
+            <I.Close className="h-4 w-4 pointer-events-none" />
+          </button>
         </div>
 
         {/* Navigation */}
@@ -469,7 +481,7 @@ export function Chat({
   }
 
   return (
-    <div className="flex h-full flex-col text-[var(--color-ink)]" style={pageGround(accent)}>
+    <div className="flex h-full flex-col text-[var(--color-ink)] bg-[#0b101b]" style={{ background: "#0b101b" }}>
       <div className="flex items-center justify-between border-b border-white/8 px-5 pb-4 pt-14">
         <div className="flex items-center gap-3">
           <div className="relative grid h-9 w-9 place-items-center rounded-full text-[15px] font-bold text-black" style={{ background: accent }}>
@@ -518,13 +530,6 @@ export function Chat({
       </div>
 
       <div className="px-5 pb-7 pt-3">
-        <div className="scroll-hide -mx-5 mb-3 flex gap-2 overflow-x-auto px-5">
-          {chatChips.map((c) => (
-            <button key={c} onClick={() => ask(t(c))} className="shrink-0 rounded-full mausam-glass px-3.5 py-2 text-[12.5px] font-medium text-[var(--color-ink)] active:scale-95">
-              {t(c)}
-            </button>
-          ))}
-        </div>
         <form onSubmit={(e) => { e.preventDefault(); handleSubmit(); }} className="flex items-center gap-2 rounded-full mausam-glass py-2 pl-4 pr-2">
           <input
             className="flex-1 bg-transparent text-[14px] text-white outline-none placeholder:text-[var(--color-ink-faint)]"
@@ -685,7 +690,7 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
             <h2 className="mt-1 text-[40px] font-semibold leading-none text-[var(--color-ink)]">{air.aqi} <span className="text-sm font-normal text-[var(--color-ink-soft)]">AQI</span></h2>
           </div>
           <span className="rounded-full px-3 py-1 text-[11px] font-semibold bg-emerald-500/20 text-emerald-300">
-            {air.aqiLabel}
+            {t(air.aqiLabel)}
           </span>
         </div>
 
@@ -896,7 +901,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
           </div>
           <div className="text-right">
             <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-              AZIMUTH
+              {t("AZIMUTH")}
             </p>
             <p className="mt-0.5 text-[13px] font-semibold text-[var(--color-ink)] font-mono">
               {solar.azimuth.toFixed(0)}°
@@ -917,15 +922,15 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
 
             {/* 0° Horizon Line */}
             <line x1="16" y1={horizonY} x2="304" y2={horizonY} stroke="rgba(255,255,255,0.18)" strokeWidth="1" strokeDasharray="3 3" />
-            <text x="18" y={horizonY - 4} fontSize="8" fontFamily="monospace" fill="rgba(255,255,255,0.35)">0° HORIZON</text>
+            <text x="18" y={horizonY - 4} fontSize="8" fontFamily="monospace" fill="rgba(255,255,255,0.35)">{t("0° HORIZON")}</text>
 
             {/* Civil Twilight Threshold (-6°) */}
             <line x1="16" y1={yForAlt(-6)} x2="304" y2={yForAlt(-6)} stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" strokeDasharray="2 4" />
-            <text x="18" y={yForAlt(-6) + 8} fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.22)">-6° TWILIGHT</text>
+            <text x="18" y={yForAlt(-6) + 8} fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.22)">{t("-6° TWILIGHT")}</text>
 
             {/* Solar Noon Culmination Peak Marker (+72°) */}
             <line x1="16" y1={24} x2="304" y2={24} stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" strokeDasharray="1 4" />
-            <text x="302" y="22" textAnchor="end" fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.25)">PEAK +72°</text>
+            <text x="302" y="22" textAnchor="end" fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.25)">{t("PEAK +72°")}</text>
 
             {/* Area fill for daylight */}
             {dayAreaPath && <path d={dayAreaPath} fill="url(#modalSunGlow)" />}
@@ -1132,7 +1137,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
             {t("Daylight Distribution")}
           </p>
           <span className="font-mono text-[11px] text-[var(--color-ink-soft)]">
-            {daylightPct}% Day · {100 - daylightPct}% Night
+            {daylightPct}% {t("Day")} · {100 - daylightPct}% {t("Night")}
           </span>
         </div>
 
@@ -1267,7 +1272,7 @@ function WindDetail({ location, accent, lang, onOpenRadar }: { location: Locatio
           </div>
         </div>
         <h2 className="text-[32px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-sm font-normal text-[var(--color-ink-soft)]">km/h</span></h2>
-        <p className="text-[12px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
+        <p className="text-[12px] text-[var(--color-ink-soft)]">{t("From")} {t(w.dir)} · {t("gusts")} {w.gust} km/h</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -1648,21 +1653,21 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
         <div className="grid grid-cols-3 gap-2.5">
           {/* Inches of Mercury */}
           <div className="rounded-2xl bg-white/6 p-3">
-            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">Inches of Mercury</p>
+            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">{t("Inches of Mercury")}</p>
             <p className="mt-1 text-[17px] font-semibold text-white leading-tight">{inHg}</p>
             <p className="text-[10px] text-[var(--color-ink-soft)] font-mono">inHg · QNH</p>
           </div>
 
           {/* Millimeters of Mercury / Torr */}
           <div className="rounded-2xl bg-white/6 p-3">
-            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">Millimeters of Hg</p>
+            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">{t("Millimeters of Hg")}</p>
             <p className="mt-1 text-[17px] font-semibold text-white leading-tight">{mmHg}</p>
             <p className="text-[10px] text-[var(--color-ink-soft)] font-mono">mmHg · Torr</p>
           </div>
 
           {/* Standard Atmospheres */}
           <div className="rounded-2xl bg-white/6 p-3">
-            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">Standard Atmospheres</p>
+            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">{t("Standard Atmospheres")}</p>
             <p className="mt-1 text-[17px] font-semibold text-white leading-tight">{atm}</p>
             <p className="text-[10px] text-[var(--color-ink-soft)] font-mono">atm</p>
           </div>
@@ -1679,7 +1684,17 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
         </p>
         <div className="border-t border-white/8 pt-2">
           <p className="text-[11.5px] leading-relaxed text-[var(--color-ink-soft)]">
-            Barometric pressure normalized to Mean Sea Level (QNH) for {location.city}. A {isFalling ? "downward" : isRising ? "upward" : "steady"} trend of {tendencyText} suggests {isFalling ? "incoming front development and possible cloud cover" : isRising ? "gradual atmospheric clearing and stable air mass subsidence" : "continued atmospheric stability without immediate frontal passage"}.
+            {lang === "hi"
+              ? `${location.city} के लिए समुद्र तल (QNH) के अनुसार सामान्यीकृत वायुमंडलीय दाब। ${tendencyText} की ${isFalling ? "गिरावट" : isRising ? "बढ़त" : "स्थिर"} प्रवृत्ति ${isFalling ? "बादल छाने व मौसम में बदलाव की संभावना" : isRising ? "मौसम साफ़ होने व स्थिरता" : "मौसम में निरंतर स्थिरता"} का संकेत देती है।`
+              : lang === "te"
+              ? `${location.city} కోసం సముద్ర మట్టం (QNH) వద్ద బారోమెట్రిక్ పీడనం. ${tendencyText} యొక్క ${isFalling ? "తగ్గుదల" : isRising ? "పెరుగుదల" : "స్థిర"} ధోరణి వాతావరణ స్థిరత్వాన్ని సూచిస్తుంది.`
+              : lang === "ta"
+              ? `${location.city} கடல் மட்டத்திற்கு (QNH) ஏற்ப கணக்கிடப்பட்ட காற்றழுத்தம்.`
+              : lang === "ml"
+              ? `${location.city} സമുദ്രനിരപ്പിലെ അന്തരീക്ഷമർദ്ദം.`
+              : lang === "pa"
+              ? `${location.city} ਲਈ ਸਮੁੰਦਰੀ ਤਲ (QNH) ਅਨੁਸਾਰ ਵਾਯੂਮੰਡਲ ਦਬਾਅ।`
+              : `Barometric pressure normalized to Mean Sea Level (QNH) for ${location.city}. A ${isFalling ? "downward" : isRising ? "upward" : "steady"} trend of ${tendencyText} suggests ${isFalling ? "incoming front development and possible cloud cover" : isRising ? "gradual atmospheric clearing and stable air mass subsidence" : "continued atmospheric stability without immediate frontal passage"}.`}
           </p>
         </div>
       </div>

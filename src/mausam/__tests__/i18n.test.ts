@@ -45,4 +45,28 @@ describe("i18n translation engine", () => {
     expect(tHi("MONDAY")).toBe("सोमवार");
     expect(tHi("Monday")).toBe("सोमवार");
   });
+
+  it("translates dynamic AI weather summaries", () => {
+    expect(tHi("Overcast skies, 26°C")).toBe("घने बादल छाए रहेंगे, 26°C");
+    expect(tHi("Clear skies, 28°C")).toBe("साफ़ आसमान, 28°C");
+    expect(tHi("Rain expected, 22°C")).toBe("बारिश की संभावना, 22°C");
+    expect(tTe("Clear skies, 28°C")).toBe("స్వచ్ఛమైన ఆకాశం, 28°C");
+  });
+
+  it("translates cardinal directions and solar milestones", () => {
+    expect(tHi("NW")).toBe("उत्तर-पश्चिम");
+    expect(tHi("SE")).toBe("दक्षिण-पूर्व");
+    expect(tHi("AZIMUTH")).toBe("दिगंश");
+    expect(tHi("0° HORIZON")).toBe("0° क्षितिज");
+    expect(tHi("-6° TWILIGHT")).toBe("-6° गोधूलि");
+    expect(tHi("PEAK +72°")).toBe("शिखर +72°");
+  });
+
+  it("translates barometric units and day/night labels", () => {
+    expect(tHi("Inches of Mercury")).toBe("इंच ऑफ मर्करी");
+    expect(tHi("Millimeters of Hg")).toBe("मिमी ऑफ मर्करी");
+    expect(tHi("Standard Atmospheres")).toBe("मानक वायुमंडल");
+    expect(tHi("Day")).toBe("दिन");
+    expect(tHi("Night")).toBe("रात");
+  });
 });
