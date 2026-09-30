@@ -526,6 +526,17 @@ function WindMapCanvas({
 
   const currentField = activeWindField ?? fallbackWindField;
 
+  const centerRef = useRef(center);
+  centerRef.current = center;
+  const zoomRef = useRef(zoom);
+  zoomRef.current = zoom;
+  const currentFieldRef = useRef(currentField);
+  currentFieldRef.current = currentField;
+  const selectedCityNameRef = useRef(selectedCityName);
+  selectedCityNameRef.current = selectedCityName;
+  const liveCitiesWindRef = useRef(liveCitiesWind);
+  liveCitiesWindRef.current = liveCitiesWind;
+
   // Update container size
   useEffect(() => {
     const el = containerRef.current;
@@ -553,8 +564,8 @@ function WindMapCanvas({
       ? Math.min(320, Math.floor((w * h) / 2400))
       : Math.min(1350, Math.max(700, Math.floor((w * h) / 520)));
 
-    const tl = pixelToGeo(-50, -50, center, zoom, w, h);
-    const br = pixelToGeo(w + 50, h + 50, center, zoom, w, h);
+    const tl = pixelToGeo(-60, -60, center, zoom, w, h);
+    const br = pixelToGeo(w + 60, h + 60, center, zoom, w, h);
     const minLat = Math.min(tl.lat, br.lat);
     const maxLat = Math.max(tl.lat, br.lat);
     const minLng = Math.min(tl.lng, br.lng);
@@ -564,7 +575,7 @@ function WindMapCanvas({
     for (let i = 0; i < count; i++) {
       const lat = minLat + Math.random() * (maxLat - minLat);
       const lng = minLng + Math.random() * (maxLng - minLng);
-      const maxAge = 40 + Math.floor(Math.random() * 50);
+      const maxAge = 120 + Math.floor(Math.random() * 100);
       parts.push({
         lat,
         lng,
@@ -575,7 +586,7 @@ function WindMapCanvas({
       });
     }
     particlesRef.current = parts;
-  }, [w, h, center.lat, center.lng, zoom]);
+  }, [w, h, zoom]);
 
   // Main render loop (60 FPS GPU-accelerated canvas)
   useEffect(() => {
@@ -596,6 +607,12 @@ function WindMapCanvas({
 
     const render = () => {
       if (!running) return;
+
+      const center = centerRef.current;
+      const zoom = zoomRef.current;
+      const currentField = currentFieldRef.current;
+      const selectedCityName = selectedCityNameRef.current;
+      const liveCitiesWind = liveCitiesWindRef.current;
 
       ctx.clearRect(0, 0, w, h);
 
@@ -691,16 +708,16 @@ function WindMapCanvas({
         }
 
         // ── GEOGRAPHIC PARTICLES & VECTOR SMALL ARROWS ──
-        const tl = pixelToGeo(-45, -45, center, zoom, w, h);
-        const br = pixelToGeo(w + 45, h + 45, center, zoom, w, h);
+        const tl = pixelToGeo(-60, -60, center, zoom, w, h);
+        const br = pixelToGeo(w + 60, h + 60, center, zoom, w, h);
         const viewMinLat = Math.min(tl.lat, br.lat);
         const viewMaxLat = Math.max(tl.lat, br.lat);
         const viewMinLng = Math.min(tl.lng, br.lng);
         const viewMaxLng = Math.max(tl.lng, br.lng);
 
         const parts = particlesRef.current;
-        const timeScale = prefersReducedMotion ? 0.010 : 0.038;
-        const dt = 0.016;
+        const worldPx = 256 * Math.pow(2, zoom);
+        const pxPerDeg = worldPx / 360;
 
         for (let i = 0; i < parts.length; i++) {
           const p = parts[i];
@@ -709,18 +726,19 @@ function WindMapCanvas({
           // Sample wind vector at particle's exact geographic coordinate
           const vec = getWindVector(currentField, p.lat, p.lng);
 
-          // Physical motion displacement in degrees:
-          // 1° lat ≈ 111 km. 1° lng ≈ 111 * cos(lat) km.
-          // vec.u and vec.v are in km/h.
-          const scale = timeScale * p.speedMultiplier;
-          const dLat = (vec.v * scale * dt) / 111;
+          // Real, visible screen motion velocity:
+          // 1 km/h of wind moves the particle ~0.14 pixels per frame.
+          // For a 15 km/h breeze, this is ~2.1 px/frame (126 px/second), creating a smooth, continuous glide!
+          const speedFactor = (prefersReducedMotion ? 0.05 : 0.14) * p.speedMultiplier;
+          const dx = vec.u * speedFactor;  // eastward displacement in pixels
+          const dy = -vec.v * speedFactor; // northward displacement in pixels (upward on screen)
+
+          // Convert screen pixel displacement to geographic coordinates
           const cosLat = Math.max(0.2, Math.cos((p.lat * Math.PI) / 180));
-          const dLng = (vec.u * scale * dt) / (111 * cosLat);
+          p.lng += dx / (pxPerDeg * cosLat);
+          p.lat -= dy / pxPerDeg;
 
-          p.lat += dLat;
-          p.lng += dLng;
-
-          // Out-of-bounds or lifespan expired -> respawn naturally
+          // Out-of-bounds or lifespan expired -> respawn naturally with staggered life
           if (
             p.age > p.maxAge ||
             p.lat < viewMinLat ||
@@ -731,23 +749,28 @@ function WindMapCanvas({
             p.lat = viewMinLat + Math.random() * (viewMaxLat - viewMinLat);
             p.lng = viewMinLng + Math.random() * (viewMaxLng - viewMinLng);
             p.age = 0;
-            p.maxAge = 40 + Math.floor(Math.random() * 45);
+            p.maxAge = 120 + Math.floor(Math.random() * 100);
             continue;
           }
 
           const head = geoToPixel(p.lat, p.lng, center, zoom, w, h);
 
           // Skip if off screen
-          if (head.x < -25 || head.x > w + 25 || head.y < -25 || head.y > h + 25) {
+          if (head.x < -35 || head.x > w + 35 || head.y < -35 || head.y > h + 35) {
             continue;
           }
 
+          // Flat trapezoidal envelope: solid 1.0 opacity during 76% of flight (eliminates all blinking/pulsing)
           const progress = p.age / p.maxAge;
-          const envelope = Math.sin(progress * Math.PI); // smooth fade in & fade out
-          const baseAlpha = envelope * Math.min(0.96, 0.40 + (vec.speed / 28) * 0.55);
+          let envelope = 1.0;
+          if (progress < 0.12) {
+            envelope = progress / 0.12; // smooth fade in
+          } else if (progress > 0.88) {
+            envelope = (1 - progress) / 0.12; // smooth fade out
+          }
+          const baseAlpha = envelope * Math.min(0.96, 0.48 + (vec.speed / 28) * 0.48);
 
-          // Vector angle in screen radians:
-          // In screen space: east (+u) -> +x, north (+v) -> -y
+          // Vector angle in screen radians: east (+u) -> +x, north (+v) -> -y
           const angle = Math.atan2(-vec.v, vec.u);
 
           if (vec.speed < 1.0) {
@@ -757,19 +780,19 @@ function WindMapCanvas({
             ctx.fillStyle = `rgba(224, 242, 254, ${baseAlpha * 0.6})`;
             ctx.fill();
           } else {
-            // Dynamic Small Arrow (matching Apple Weather reference)
-            const arrowLen = Math.min(6.2, Math.max(3.8, 3.4 + (vec.speed / 25) * 2.2));
-            const arrowWingSpan = 0.44; // ~25 deg wing angle
+            // Dynamic Small Arrow gliding in the wind direction
+            const arrowLen = Math.min(6.5, Math.max(3.8, 3.4 + (vec.speed / 25) * 2.2));
+            const arrowWingSpan = 0.42; // ~24 deg wing angle
             const notchIndent = arrowLen * 0.58;
 
             // 1. Tapered trailing tail (shooting arrow / comet shaft)
-            const tailLen = Math.min(15, Math.max(6, 5 + (vec.speed / 20) * 8));
+            const tailLen = Math.min(18, Math.max(7, 6 + (vec.speed / 18) * 9));
             const tailX = head.x - tailLen * Math.cos(angle);
             const tailY = head.y - tailLen * Math.sin(angle);
 
             const tailGrad = ctx.createLinearGradient(tailX, tailY, head.x, head.y);
             tailGrad.addColorStop(0, "rgba(224, 242, 254, 0)");
-            tailGrad.addColorStop(0.5, `rgba(224, 242, 254, ${baseAlpha * 0.35})`);
+            tailGrad.addColorStop(0.5, `rgba(224, 242, 254, ${baseAlpha * 0.38})`);
             tailGrad.addColorStop(1, `rgba(240, 250, 255, ${baseAlpha * 0.95})`);
 
             ctx.beginPath();
@@ -783,7 +806,7 @@ function WindMapCanvas({
             ctx.lineCap = "round";
             ctx.stroke();
 
-            // 2. Solid Luminous Arrowhead (chevron / dart)
+            // 2. Solid Luminous Arrowhead (chevron / dart pointing in direction of motion)
             ctx.beginPath();
             ctx.moveTo(head.x, head.y);
             ctx.lineTo(
@@ -1061,7 +1084,7 @@ function WindMapCanvas({
       running = false;
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [w, h, center, zoom, currentField, selectedCityName, liveCitiesWind, activeLayer]);
+  }, [w, h, activeLayer]);
 
   return (
     <div
