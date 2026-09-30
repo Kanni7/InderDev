@@ -1251,19 +1251,24 @@ function WindDetail({ location, accent, lang, onOpenRadar }: { location: Locatio
             {["N", "E", "S", "W"].map((d, i) => (
               <text key={d} x="50" y={i === 0 ? 16 : i === 2 ? 88 : 53} dx={i === 1 ? 38 : i === 3 ? -38 : 0} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.45)">{d}</text>
             ))}
-            <g transform="translate(50 50)">
-              <g
-                transform={`rotate(${deg})`}
-                style={{
-                  transform: `rotate(${deg}deg)`,
-                  transformOrigin: "0px 0px",
-                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                }}
-              >
-                <path d="M 0 -32 L 6 0 L 0 -5 L -6 0 Z" fill={accent} />
-              </g>
-            </g>
           </svg>
+
+          {/* Smoothly Rotating Needle Layer (Rotates around true 50% 50% HTML box center) */}
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `rotate(${deg}deg)`,
+              transformOrigin: "center center",
+              transition: "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+              <path d="M 50 16 L 56 48 L 50 44 L 44 48 Z" fill={accent} />
+              <path d="M 50 50 L 53 60 L 50 58 L 47 60 Z" fill="rgba(255,255,255,0.25)" />
+              <circle cx="50" cy="50" r="4.2" fill="#0d1422" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+              <circle cx="50" cy="50" r="2" fill={accent} />
+            </svg>
+          </div>
         </div>
         <h2 className="text-[32px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-sm font-normal text-[var(--color-ink-soft)]">km/h</span></h2>
         <p className="text-[12px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>

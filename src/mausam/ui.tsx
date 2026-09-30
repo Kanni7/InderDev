@@ -871,38 +871,52 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
             <text x="40" y="72" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 180 ? accent : "rgba(255,255,255,0.4)"}>S</text>
             <text x="12" y="42.5" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 270 ? accent : "rgba(255,255,255,0.4)"}>W</text>
 
-            {/* Direction Pointer Needle */}
-            <g transform="translate(40, 40)">
-              <g
-                transform={`rotate(${deg})`}
-                style={{
-                  transform: `rotate(${deg}deg)`,
-                  transformOrigin: "0px 0px",
-                  transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                }}
-              >
-                {/* Pointer Arrow with high contrast dual-tone */}
+          </svg>
+
+          {/* Smoothly Rotating Needle Layer (Rotates around true 50% 50% HTML box center) */}
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `rotate(${deg}deg)`,
+              transformOrigin: "center center",
+              transition: "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            <svg viewBox="0 0 80 80" className="h-full w-full overflow-visible">
+              <defs>
+                <filter id="needleShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.45" />
+                </filter>
+              </defs>
+
+              {/* Seamless, tapered compass needle anchored to center */}
+              <g filter="url(#needleShadow)">
+                {/* Needle North pointer body */}
                 <path
-                  d="M 0 -26 L 3.5 -5 L 0 -7.5 L -3.5 -5 Z"
+                  d="M 40 13 L 36.5 38 L 40 36 Z"
                   fill="#ffffff"
-                  filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
                 />
                 <path
-                  d="M 0 -26 L 2 -16 L 0 -17.5 L -2 -16 Z"
+                  d="M 40 13 L 43.5 38 L 40 36 Z"
+                  fill="rgba(255,255,255,0.85)"
+                />
+                {/* Accent luminous tip */}
+                <path
+                  d="M 40 13 L 38 23 L 40 21.5 L 42 23 Z"
                   fill={accent}
                 />
-                {/* Counter-weight Tail */}
+                {/* Counter-weight tail */}
                 <path
-                  d="M 0 5 L 2 10 L 0 8.5 L -2 10 Z"
-                  fill="rgba(255,255,255,0.22)"
+                  d="M 40 39 L 41.8 48 L 40 46.8 L 38.2 48 Z"
+                  fill="rgba(255,255,255,0.28)"
                 />
               </g>
-            </g>
 
-            {/* Center Pivot */}
-            <circle cx="40" cy="40" r="3.2" fill="#0d1422" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
-            <circle cx="40" cy="40" r="1.4" fill={accent} />
-          </svg>
+              {/* Center Pivot Hub */}
+              <circle cx="40" cy="40" r="3.6" fill="#0d1422" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+              <circle cx="40" cy="40" r="1.6" fill={accent} />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
