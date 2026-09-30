@@ -13,10 +13,10 @@ import { parseTimeStringToHours, calculateSolarPosition } from "./background/sol
 
 const PANEL = "#090d16";
 
-/* Weather-adaptive page ground — radial translucent depth matching Home backdrop */
-function pageGround(accent: string): CSSProperties {
+/* Weather-adaptive page ground — solid black */
+function pageGround(_accent?: string): CSSProperties {
   return {
-    background: `radial-gradient(130% 75% at 50% 0%, color-mix(in srgb, var(--wx-bg-solid, ${PANEL}) 65%, ${accent}) 0%, var(--wx-bg-solid, ${PANEL}) 60%, rgba(5,7,12,0.92) 100%)`,
+    background: "#000000",
   };
 }
 
@@ -252,12 +252,11 @@ export function Menu({
 
   return (
     <div className="absolute inset-0 z-40">
-      <button onClick={onClose} className="absolute inset-0 bg-black/40 backdrop-blur-[3px]" aria-label="Close menu" />
+      <button onClick={onClose} className="absolute inset-0 bg-black/60 backdrop-blur-[3px]" aria-label="Close menu" />
       <aside
-        className="mausam-drawer animate-insight absolute left-0 top-0 flex h-full w-[86%] max-w-[360px] flex-col overflow-hidden px-4 pb-6 pt-4 text-[var(--color-ink)]"
-        style={{ background: `color-mix(in srgb, var(--wx-card, #0a0e18) 75%, transparent)` }}
+        className="mausam-drawer animate-insight absolute left-0 top-0 flex h-full w-[86%] max-w-[360px] flex-col overflow-hidden px-4 pb-6 pt-4 text-[var(--color-ink)] bg-black"
+        style={{ background: "#000000" }}
       >
-        <div className="pointer-events-none absolute inset-0 bg-gradient-to-b from-white/[0.04] via-transparent to-black/30" />
 
         {/* Profile Card */}
         <div className="relative mt-10 overflow-hidden rounded-3xl p-5 mausam-glass">

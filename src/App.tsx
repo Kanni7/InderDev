@@ -320,7 +320,7 @@ export default function App() {
             )}
 
             {screen === "chat" && (
-              <div className="absolute inset-0 z-40">
+              <div className="absolute inset-0 z-40 bg-black" style={{ background: "#000000" }}>
                 <Chat
                   lang={lang}
                   accent={accent}
@@ -332,7 +332,7 @@ export default function App() {
             )}
 
             {screen === "alerts" && (
-              <div className="absolute inset-0 z-40">
+              <div className="absolute inset-0 z-40 bg-black" style={{ background: "#000000" }}>
                 <Alerts lang={lang} accent={accent} location={location} onClose={() => setScreen("home")} />
               </div>
             )}
