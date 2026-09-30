@@ -51,25 +51,7 @@ export default function DemoPanel({
   } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // LSTM Activity Predictor state
-  const [activityInput, setActivityInput] = useState("");
-  const [lastLSTMResult, setLastLSTMResult] = useState<LSTMInferenceResult | null>(null);
-  const lstmStateRef = useRef<LSTMState>(initLSTMState());
-
-  const handleRunLSTM = (customText?: string) => {
-    const textToRun = (customText ?? activityInput).trim();
-    if (!textToRun) return;
-
-    const parsed = parseActivityText(textToRun);
-    const result = runLSTMInference(profile, parsed, lstmStateRef.current);
-
-    // Save updated profile with new weights
-    setProfile(result.updatedProfile);
-    setLastLSTMResult(result);
-    setActivityInput("");
-  };
-
-  // Activity signal buttons — immediately recalculate weights for instant feedback
+  // Activity signal buttons - immediately recalculate weights for instant feedback
   const addSignal = (key: keyof typeof profile.activitySignals, amount: number) => {
     updateProfile((p) => {
       const updated = {
@@ -83,7 +65,7 @@ export default function DemoPanel({
     });
   };
 
-  // Location context buttons — immediately recalculate weights
+  // Location context buttons - immediately recalculate weights
   const setLocationCtx = (ctx: typeof profile.locationContext) => {
     updateProfile((p) => {
       const updated = { ...p, locationContext: ctx };

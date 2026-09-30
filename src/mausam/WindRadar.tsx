@@ -122,8 +122,8 @@ export const WIND_CITIES: RadarCity[] = [
   { name: "Kozhikode", lat: 11.25, lng: 75.78, baseSpeed: 12, baseTemp: 31, tier: 2 },
   { name: "Thiruvananthapuram", lat: 8.52, lng: 76.93, baseSpeed: 16, baseTemp: 31, tier: 1 },
   { name: "Kanyakumari", lat: 8.08, lng: 77.55, baseSpeed: 17, baseTemp: 30, tier: 2 },
-  { name: "Rameswaram", lat: 9.28, lng: 79.31, baseSpeed: 18, baseTemp: 31, tier: 2 },
-  { name: "Trincomalee", lat: 8.58, lng: 81.23, baseSpeed: 17, baseTemp: 30, tier: 2 },
+  { name: "Rameswaram", lat: 9.28, lng: 79.31, baseSpeed: 18, baseTemp: 32, tier: 2 },
+  { name: "Trincomalee", lat: 8.58, lng: 81.23, baseSpeed: 18, baseTemp: 31, tier: 2 },
 
   // ── East & Northeast ──
   { name: "Kolkata", lat: 22.57, lng: 88.36, baseSpeed: 10, baseTemp: 32, tier: 1 },
@@ -884,7 +884,7 @@ function WindMapCanvas({
           ctx.fillText(city.name, pt.x, pt.y + 4);
           ctx.restore();
         } else {
-          // Rain / Satellite layers — Clean frosted city station pins
+          // Rain / Satellite layers - Clean frosted city station pins
           const shouldShowCity = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
           if (!shouldShowCity) continue;
 
@@ -1399,7 +1399,7 @@ export function FullScreenWindRadar({
             </svg>
           </button>
 
-          {/* Wind layer — Streamlines icon */}
+          {/* Wind layer - Streamlines icon */}
           <button
             onClick={() => switchLayer("wind")}
             className={`relative grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${

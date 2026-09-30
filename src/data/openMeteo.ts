@@ -199,7 +199,7 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       heatLabel: heatLabel(hi),
     };
 
-    // Precip — find next rain hour
+    // Precip - find next rain hour
     const hourlyPrecip = forecast.hourly.precipitation;
     const hourlyProb = forecast.hourly.precipitation_probability;
     let nextRain = "No rain expected";
@@ -235,7 +235,7 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       gust: Math.round(cur.wind_gusts_10m),
     };
 
-    // Hourly forecast — current hour + next 7 hours (8 slots)
+    // Hourly forecast - current hour + next 7 hours (8 slots)
     const hourlyForecast: HourlyPoint[] = [];
     for (let i = 0; i < 8; i++) {
       const idx = currentHourIdx + i;
@@ -247,7 +247,7 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       });
     }
 
-    // Weekly forecast — 7 days
+    // Weekly forecast - 7 days
     const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
     const weeklyForecast: DailyPoint[] = forecast.daily.weather_code.slice(0, 7).map((code, i) => ({
       day: i === 0 ? "Today" : DAY_NAMES[new Date(forecast.daily.sunrise[i]).getDay()],

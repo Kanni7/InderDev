@@ -120,7 +120,7 @@ function TileMap({
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: customHeight || "100%", position: "relative", overflow: "hidden", background: "#0d1520" }}>
-      {/* Layer 1 — Satellite basemap */}
+      {/* Layer 1 - Satellite basemap */}
       <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         {tiles.map((t) => (
           <div
@@ -243,7 +243,7 @@ export function RainMapWidget({
         </div>
       </button>
 
-      {/* Legend — colours match the vertical gradient palette */}
+      {/* Legend - colours match the vertical gradient palette */}
       <div className="flex items-center gap-3 px-4 pb-3 pt-1">
         {([["Light", "#007aff"], ["Moderate", "#c084fc"], ["Heavy", "#facc15"], ["Extreme", "#ffffff"]] as const).map(([l, c]) => (
           <span key={l} className="flex items-center gap-1 text-[10px] font-medium text-[var(--color-ink-faint)]">
@@ -374,7 +374,7 @@ export function FullScreenRadar({
           </button>
         </div>
 
-        {/* Precipitation legend — EXACT copy of user's Apple Weather screenshot */}
+        {/* Precipitation legend - EXACT copy of user's Apple Weather screenshot */}
         {showLegend && (
           <div className="absolute left-4 top-24 z-20 rounded-2xl bg-[rgba(26,34,52,0.92)] px-4 py-3.5 border border-white/10 shadow-2xl backdrop-blur-xl animate-in fade-in duration-200">
             <p className="mb-2 text-[13px] font-semibold text-white tracking-tight">{t("Precipitation")}</p>
@@ -397,7 +397,7 @@ export function FullScreenRadar({
           </div>
         )}
 
-        {/* Temperature badge — centred */}
+        {/* Temperature badge - centred */}
         <div className="absolute left-1/2 top-[45%] z-10 -translate-x-1/2 -translate-y-1/2">
           <div className="flex flex-col items-center">
             <div
@@ -474,7 +474,7 @@ export function FullScreenRadar({
               }}
             />
           </div>
-          {/* Time labels — show every 3rd frame to avoid clutter */}
+          {/* Time labels - show every 3rd frame to avoid clutter */}
           <div className="mt-2 flex justify-between">
             {frames.length > 0 ? frames.filter((_, i) => i % Math.max(1, Math.floor(frames.length / 8)) === 0 || i === frames.length - 1).map((f) => {
               const idx = frames.indexOf(f);

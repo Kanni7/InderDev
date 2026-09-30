@@ -33,7 +33,7 @@ function confidenceHi(c: Decision["confidence"]): string {
 }
 
 /**
- * Build a complete answer from the Decision object — used as fast path for
+ * Build a complete answer from the Decision object - used as fast path for
  * current_value / out_of_scope and as AI fallback when validation fails.
  */
 export function buildTemplate(decision: Decision, lang: "en" | "hi"): string {
@@ -63,7 +63,7 @@ export function buildTemplate(decision: Decision, lang: "en" | "hi"): string {
   return lines.join(" ");
 }
 
-/** Fast-path template for current_value intent — no AI needed. */
+/** Fast-path template for current_value intent - no AI needed. */
 export function buildCurrentValueTemplate(location: Location, question: string, lang: "en" | "hi"): string {
   const q = question.toLowerCase();
 
@@ -101,7 +101,7 @@ export function buildCurrentValueTemplate(location: Location, question: string, 
   return `Temperature in ${location.city} is ${location.temp}°C (feels ${location.feels}°C) with ${location.condition} skies.`;
 }
 
-/** Fast-path template for out_of_scope intent — no AI needed. */
+/** Fast-path template for out_of_scope intent - no AI needed. */
 export function buildOutOfScopeTemplate(lang: "en" | "hi"): string {
   if (lang === "hi") {
     return "मैं केवल मौसम और वायुमंडलीय प्रश्नों का उत्तर दे सकता हूं। कोई मौसम संबंधी प्रश्न पूछें।";

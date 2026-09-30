@@ -35,7 +35,7 @@ const ux = "&w=1080&q=85&auto=format&fit=crop";
 
 /**
  * Apple Weather-style sky photography matrix.
- * Every photo is a pure sky shot — no cityscapes — changing by condition × time of day.
+ * Every photo is a pure sky shot - no cityscapes - changing by condition × time of day.
  * All 6 cities share the same sky; only the weather condition and clock drive the image.
  */
 export const themeMatrix: Record<Condition, Record<TimeOfDay, WeatherTheme>> = {

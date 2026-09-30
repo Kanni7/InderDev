@@ -104,7 +104,7 @@ export function saveProfile(profile: UserProfile): void {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(profile));
   } catch {
-    // Storage full or unavailable — silently ignore
+    // Storage full or unavailable - silently ignore
   }
 }
 

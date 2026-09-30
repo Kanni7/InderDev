@@ -114,7 +114,7 @@ export function Check(p: IconProps) {
   return (<svg viewBox="0 0 24 24" {...base} {...p}><path d="m5 12.5 4.5 4.5L19 7"/></svg>);
 }
 
-/* small metric glyphs — generic line marks */
+/* small metric glyphs - generic line marks */
 export function Dot(p: IconProps) {
   return (<svg viewBox="0 0 24 24" {...base} {...p}><circle cx="12" cy="12" r="7"/></svg>);
 }

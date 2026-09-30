@@ -60,6 +60,11 @@ export default function App() {
   const [usingLiveData, setUsingLiveData] = useState(false);
   const [chatInitialQ, setChatInitialQ] = useState<string | undefined>(undefined);
 
+  // Ensure browser title has no em dash
+  useEffect(() => {
+    document.title = "Mausam - Apple Weather Inspired Forecast";
+  }, []);
+
   // Sync UI state → profile
   useEffect(() => {
     updateProfile((p) => ({ ...p, language: lang, city: locationKey }));
@@ -117,7 +122,7 @@ export default function App() {
         className="mausam-device relative w-full overflow-hidden text-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] sm:w-[410px] sm:rounded-[44px] border border-white/10"
         style={deviceStyle}
       >
-        {/* Dynamic Environmental Background Engine — active on home & weather screens */}
+        {/* Dynamic Environmental Background Engine - active on home & weather screens */}
         {!isProfileSelection && (
           <BackgroundEngine
             location={location}
@@ -127,7 +132,7 @@ export default function App() {
           />
         )}
 
-        {/* Status bar — clicking the time opens the unofficial time switcher */}
+        {/* Status bar - clicking the time opens the unofficial time switcher */}
         <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-7 pt-3.5 text-[13px] font-semibold text-white pointer-events-auto">
           <button
             onClick={() => setShowTimePicker((s) => !s)}
@@ -354,7 +359,7 @@ export default function App() {
             )}
 
             {screen === "alerts" && (
-              <div className="absolute inset-0 z-40">
+              <div className="absolute inset-0 z-40 bg-black" style={{ background: "#000000" }}>
                 <Alerts lang={lang} accent={accent} location={location} onClose={() => setScreen("home")} />
               </div>
             )}

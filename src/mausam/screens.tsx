@@ -13,10 +13,10 @@ import { parseTimeStringToHours, calculateSolarPosition } from "./background/sol
 
 const PANEL = "#090d16";
 
-/* Weather-adaptive page ground — radial translucent depth matching Home backdrop */
-function pageGround(accent: string): CSSProperties {
+/* Weather-adaptive page ground - solid black */
+function pageGround(_accent?: string): CSSProperties {
   return {
-    background: `radial-gradient(130% 75% at 50% 0%, color-mix(in srgb, var(--wx-bg-solid, ${PANEL}) 65%, ${accent}) 0%, var(--wx-bg-solid, ${PANEL}) 60%, rgba(5,7,12,0.92) 100%)`,
+    background: "#000000",
   };
 }
 
@@ -111,7 +111,7 @@ const PROFILE_COLORS: Record<string, string> = {
   event:    "#f59e0b",
 };
 
-/* ───────────── 1. Onboarding — User Type selection ───────────── */
+/* ───────────── 1. Onboarding - User Type selection ───────────── */
 export function Onboarding({
   value, onChange, onContinue, lang, onBack, accent,
 }: {
@@ -682,7 +682,7 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
   const air = location.air;
   return (
     <div className="space-y-3.5">
-      {/* AQI Overview — Borderless Home Glass */}
+      {/* AQI Overview - Borderless Home Glass */}
       <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <div className="flex items-center justify-between">
           <div>
@@ -1089,7 +1089,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
             </div>
             <p className="mt-1 text-[13.5px] font-semibold text-[var(--color-ink)] font-mono">
-              {formatHoursToTime(morningGoldenStart)} – {formatHoursToTime(morningGoldenEnd)}
+              {formatHoursToTime(morningGoldenStart)} - {formatHoursToTime(morningGoldenEnd)}
             </p>
             <p className="mt-1 text-[10px] text-[var(--color-ink-faint)] leading-tight">
               {t("Warm directional dawn light")}
@@ -1105,7 +1105,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
             </div>
             <p className="mt-1 text-[13.5px] font-semibold text-[var(--color-ink)] font-mono" style={{ color: isEveningGolden ? accent : undefined }}>
-              {formatHoursToTime(eveningGoldenStart)} – {formatHoursToTime(eveningGoldenEnd)}
+              {formatHoursToTime(eveningGoldenStart)} - {formatHoursToTime(eveningGoldenEnd)}
             </p>
             <p className="mt-1 text-[10px] text-[var(--color-ink-faint)] leading-tight">
               {t("Soft gold & amber portrait window")}
@@ -1118,13 +1118,13 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
           <div className={`rounded-2xl p-2.5 border ${isMorningBlue ? "bg-sky-400/10 border-sky-400/40" : "bg-white/4 border-white/6"}`}>
             <p className="text-[10px] text-[var(--color-ink-faint)]">{t("Dawn Blue Hour")}</p>
             <p className="mt-0.5 text-[12px] font-mono text-[var(--color-ink-soft)] font-medium">
-              {formatHoursToTime(morningBlueStart)} – {formatHoursToTime(morningBlueEnd)}
+              {formatHoursToTime(morningBlueStart)} - {formatHoursToTime(morningBlueEnd)}
             </p>
           </div>
           <div className={`rounded-2xl p-2.5 border ${isEveningBlue ? "bg-sky-400/10 border-sky-400/40" : "bg-white/4 border-white/6"}`}>
             <p className="text-[10px] text-[var(--color-ink-faint)]">{t("Dusk Blue Hour")}</p>
             <p className="mt-0.5 text-[12px] font-mono text-[var(--color-ink-soft)] font-medium">
-              {formatHoursToTime(eveningBlueStart)} – {formatHoursToTime(eveningBlueEnd)}
+              {formatHoursToTime(eveningBlueStart)} - {formatHoursToTime(eveningBlueEnd)}
             </p>
           </div>
         </div>

@@ -53,7 +53,7 @@ export class SimulatedSignalSource implements SignalSource {
 
 /**
  * BrowserSignalSource: uses navigator.geolocation to pick the nearest city.
- * Activity stays simulated — comments show where native APIs would plug in.
+ * Activity stays simulated - comments show where native APIs would plug in.
  *
  * In a native build:
  * - Android: Activity Recognition Transition API
