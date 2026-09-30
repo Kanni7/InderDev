@@ -42,7 +42,7 @@ export default function App() {
     } catch {}
   }, []);
   const [userType, setUserType] = useState<UserTypeKey>("fitness");
-  const [locationKey, setLocationKey] = useState<string>("pune");
+  const [locationKey, setLocationKey] = useState<string>("chennai");
   const [screen, setScreen] = useState<Screen>("home");
   const [pending, setPending] = useState<UserTypeKey | null>("fitness");
   const [onboarded, setOnboarded] = useState(false);
