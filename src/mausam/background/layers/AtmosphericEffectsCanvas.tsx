@@ -249,8 +249,8 @@ export const AtmosphericEffectsCanvas: React.FC<AtmosphericEffectsCanvasProps> =
         }
 
         if (lightningFlashAlpha > 0.01) {
-          // Soft ambient violet-white flash that illuminates the whole sky
-          ctx.fillStyle = `rgba(235, 230, 255, ${lightningFlashAlpha * 0.45})`;
+          // Soft ambient electric cyan-white flash that illuminates the whole sky
+          ctx.fillStyle = `rgba(230, 245, 255, ${lightningFlashAlpha * 0.45})`;
           ctx.fillRect(0, 0, width, height);
 
           // Upper cloud sheet glow concentration

@@ -148,7 +148,7 @@ export function getLifestyleIndices(loc: Location): LifestyleIndex[] {
       labelHi: starScore > 70 ? "साफ़ दृश्य" : "धुंधला",
       detail: `${loc.moon.name} (${loc.moon.illum}% illumination)`,
       detailHi: `${loc.moon.name} (${loc.moon.illum}% चमक)`,
-      color: starScore > 70 ? "#a855f7" : "#6ea8d8",
+      color: starScore > 70 ? "#0ea5e9" : "#6ea8d8",
     },
   ];
 }
@@ -524,14 +524,14 @@ export function aqiColor(aqi: number) {
   if (aqi <= 100) return "#f2c53d";
   if (aqi <= 150) return "#f0873a";
   if (aqi <= 200) return "#e5484d";
-  return "#a855f7";
+  return "#991b1b";
 }
 export function uvColor(uv: number) {
   if (uv <= 2) return "#7bd88f";
   if (uv <= 5) return "#f2c53d";
   if (uv <= 7) return "#f0873a";
   if (uv <= 10) return "#e5484d";
-  return "#a855f7";
+  return "#991b1b";
 }
 export function pollenColor(level: string) {
   if (level === "Low") return "#7bd88f";

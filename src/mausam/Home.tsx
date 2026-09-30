@@ -344,7 +344,13 @@ export default function Home({
                   {t(theme.label)} · {t("feels")} {formatTemp(location.feels, unit)} · {location.region}
                 </p>
               </div>
-              <CondIcon c={theme.key} className="h-24 w-24 opacity-95 drop-shadow-xl" style={{ color: accent }} />
+              <CondIcon
+                c={theme.key}
+                className="h-24 w-24 opacity-95 drop-shadow-xl"
+                style={{
+                  color: theme.key === "night" ? "#f8fafc" : theme.key === "sunny" ? "#fbbf24" : accent,
+                }}
+              />
             </div>
 
             {/* AI one-line summary */}

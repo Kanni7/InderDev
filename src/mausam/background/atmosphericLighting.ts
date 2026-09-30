@@ -143,30 +143,30 @@ const CLEAR_PALETTES: Record<TimeOfDayPhase, SkyColorPalette> = {
     baseLuminance: 0.48,
   },
   sunset: {
-    // blue -> warm gold -> orange -> purple -> deep blue
+    // blue -> warm gold -> orange -> deep twilight
     zenith: "#172344",
-    midSky: "#5c3358",
+    midSky: "#453229",
     horizon: "#eb5e43",
-    ambient: "#3a1d2e",
-    hazeColor: "#c24d55",
+    ambient: "#2a1c14",
+    hazeColor: "#9c4a38",
     sunGlow: "rgba(255, 115, 60, 0.50)",
-    cloudBase: "#361d36",
+    cloudBase: "#2e1e18",
     cloudHighlight: "#f89f78",
-    landscapeTint: "#140e1a",
+    landscapeTint: "#14100c",
     starsOpacity: 0.05,
     baseLuminance: 0.35,
   },
   dusk: {
-    // royal blue/violet fading to obsidian
+    // deep nautical navy and charcoal twilight
     zenith: "#0c1326",
-    midSky: "#1d1f3b",
-    horizon: "#3f2845",
-    ambient: "#131424",
-    hazeColor: "#2b213b",
-    sunGlow: "rgba(220, 110, 130, 0.15)",
-    cloudBase: "#141525",
-    cloudHighlight: "#58425d",
-    landscapeTint: "#0a0c16",
+    midSky: "#131e33",
+    horizon: "#1a2c47",
+    ambient: "#0f1728",
+    hazeColor: "#172338",
+    sunGlow: "rgba(180, 210, 245, 0.12)",
+    cloudBase: "#111827",
+    cloudHighlight: "#334155",
+    landscapeTint: "#0a0d16",
     starsOpacity: 0.28,
     baseLuminance: 0.20,
   },
@@ -293,15 +293,15 @@ export function applyWeatherModifiers(
       return p;
 
     case "thunderstorm":
-      // Dramatic ominous charcoal-purple anvil sky
-      p.zenith = lerpColor(p.zenith, isNight ? "#04040a" : "#161528", 0.90);
-      p.midSky = lerpColor(p.midSky, isNight ? "#090814" : "#23203c", 0.92);
-      p.horizon = lerpColor(p.horizon, isNight ? "#100d1c" : "#322b4e", 0.90);
-      p.hazeColor = isNight ? "#0a0815" : "#292440";
-      p.sunGlow = "rgba(240, 200, 255, 0.08)";
+      // Dramatic ominous charcoal-slate anvil sky
+      p.zenith = lerpColor(p.zenith, isNight ? "#02060c" : "#0f172a", 0.90);
+      p.midSky = lerpColor(p.midSky, isNight ? "#050b14" : "#1e293b", 0.92);
+      p.horizon = lerpColor(p.horizon, isNight ? "#0a1120" : "#334155", 0.90);
+      p.hazeColor = isNight ? "#080e1a" : "#243247";
+      p.sunGlow = "rgba(200, 225, 255, 0.08)";
       p.starsOpacity = 0;
       p.baseLuminance *= 0.40;
-      p.landscapeTint = isNight ? "#020206" : "#0d0c18";
+      p.landscapeTint = isNight ? "#020306" : "#090d16";
       return p;
 
     case "fog":

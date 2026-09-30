@@ -25,7 +25,7 @@ const BAR_COLORS: Record<Interest, string> = {
   health: "#7bd88f",
   fitness: "#f5a623",
   beach: "#6ea8d8",
-  traveler: "#a855f7",
+  traveler: "#0ea5e9",
   parent: "#f0873a",
   agri: "#4ade80",
   commuter: "#e5484d",

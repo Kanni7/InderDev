@@ -72,10 +72,10 @@ export const themeMatrix: Record<Condition, Record<TimeOfDay, WeatherTheme>> = {
   cloudy: {
     dawn: {
       key: "cloudy", timeOfDay: "dawn", label: "Cloudy Dawn",
-      // Soft pink-grey cloudy sunrise sky
+      // Soft clean cloudy sunrise sky
       photo: `https://images.unsplash.com/photo-1499346030926-9a72daac6c63?${ux}`,
       appBg: "radial-gradient(120% 80% at 50% 0%, #2a2d34 0%, #1a1c22 45%, #0b0c0e 100%)",
-      solid: "#0b0c0e", accent: "#b3a6f0",
+      solid: "#0b0c0e", accent: "#7dd3fc",
     },
     day: {
       key: "cloudy", timeOfDay: "day", label: "Cloudy",
@@ -86,10 +86,10 @@ export const themeMatrix: Record<Condition, Record<TimeOfDay, WeatherTheme>> = {
     },
     sunset: {
       key: "cloudy", timeOfDay: "sunset", label: "Cloudy Sunset",
-      // Dramatic purple-orange cloudy sunset
+      // Warm golden-amber cloudy sunset
       photo: `https://images.unsplash.com/photo-1513002749550-c59d786b8e6c?${ux}`,
-      appBg: "radial-gradient(120% 80% at 50% 0%, #2a2228 0%, #191418 45%, #0a080a 100%)",
-      solid: "#0a080a", accent: "#f472b6",
+      appBg: "radial-gradient(120% 80% at 50% 0%, #261f1d 0%, #171312 45%, #080606 100%)",
+      solid: "#080606", accent: "#fb923c",
     },
     night: {
       key: "cloudy", timeOfDay: "night", label: "Overcast Night",
@@ -116,10 +116,10 @@ export const themeMatrix: Record<Condition, Record<TimeOfDay, WeatherTheme>> = {
     },
     sunset: {
       key: "rainy", timeOfDay: "sunset", label: "Dusk Rain",
-      // Moody purple-grey rainy dusk sky
+      // Moody slate-blue rainy dusk sky
       photo: `https://images.unsplash.com/photo-1437622368342-7a3d73a34c8f?${ux}`,
-      appBg: "radial-gradient(120% 80% at 50% 0%, #3b2a3d 0%, #241a29 45%, #0b0710 100%)",
-      solid: "#0b0710", accent: "#c084fc", motion: "rain",
+      appBg: "radial-gradient(120% 80% at 50% 0%, #1e293b 0%, #0f172a 45%, #030712 100%)",
+      solid: "#030712", accent: "#38bdf8", motion: "rain",
     },
     night: {
       key: "rainy", timeOfDay: "night", label: "Night Rain",
@@ -132,17 +132,17 @@ export const themeMatrix: Record<Condition, Record<TimeOfDay, WeatherTheme>> = {
   storm: {
     dawn: {
       key: "storm", timeOfDay: "dawn", label: "Dawn Storm",
-      // Threatening purple-grey storm clouds at dawn
+      // Threatening dark slate storm clouds at dawn
       photo: `https://images.unsplash.com/photo-1527482797697-8795b05a13fe?${ux}`,
-      appBg: "radial-gradient(120% 80% at 50% 0%, #38253b 0%, #221626 45%, #0a060d 100%)",
-      solid: "#0a060d", accent: "#fbbf24", motion: "storm",
+      appBg: "radial-gradient(120% 80% at 50% 0%, #1e293b 0%, #0f172a 45%, #030712 100%)",
+      solid: "#030712", accent: "#fbbf24", motion: "storm",
     },
     day: {
       key: "storm", timeOfDay: "day", label: "Thunderstorm",
       // Boiling cumulonimbus storm sky
       photo: `https://images.unsplash.com/photo-1429552077091-836152271555?${ux}`,
-      appBg: "radial-gradient(120% 80% at 50% 0%, #2a2740 0%, #1a1826 45%, #08070d 100%)",
-      solid: "#08070d", accent: "#f2c53d", motion: "storm",
+      appBg: "radial-gradient(120% 80% at 50% 0%, #182332 0%, #0e1724 45%, #050b12 100%)",
+      solid: "#050b12", accent: "#f2c53d", motion: "storm",
     },
     sunset: {
       key: "storm", timeOfDay: "sunset", label: "Sunset Storm",
@@ -155,8 +155,8 @@ export const themeMatrix: Record<Condition, Record<TimeOfDay, WeatherTheme>> = {
       key: "storm", timeOfDay: "night", label: "Night Storm",
       // Lightning strike illuminating night sky
       photo: `https://images.unsplash.com/photo-1511289081-d06d5b374674?${ux}`,
-      appBg: "radial-gradient(120% 80% at 50% 0%, #1d1b36 0%, #111024 45%, #04040d 100%)",
-      solid: "#04040d", accent: "#e879f9", motion: "storm",
+      appBg: "radial-gradient(120% 80% at 50% 0%, #0f172a 0%, #090e1a 45%, #020408 100%)",
+      solid: "#020408", accent: "#38bdf8", motion: "storm",
     },
   },
   fog: {

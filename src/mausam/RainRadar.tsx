@@ -245,7 +245,7 @@ export function RainMapWidget({
 
       {/* Legend - colours match the vertical gradient palette */}
       <div className="flex items-center gap-3 px-4 pb-3 pt-1">
-        {([["Light", "#007aff"], ["Moderate", "#c084fc"], ["Heavy", "#facc15"], ["Extreme", "#ffffff"]] as const).map(([l, c]) => (
+        {([["Light", "#007aff"], ["Moderate", "#06b6d4"], ["Heavy", "#facc15"], ["Extreme", "#ffffff"]] as const).map(([l, c]) => (
           <span key={l} className="flex items-center gap-1 text-[10px] font-medium text-[var(--color-ink-faint)]">
             <span className="h-2 w-2 rounded-full border border-white/20" style={{ background: c }} /> {t(l)}
           </span>
@@ -383,7 +383,7 @@ export function FullScreenRadar({
               <div
                 className="w-1.5 h-28 rounded-full shadow-sm"
                 style={{
-                  background: "linear-gradient(to bottom, #ffffff 0%, #ffffd0 15%, #facc15 40%, #c084fc 70%, #007aff 100%)",
+                  background: "linear-gradient(to bottom, #ffffff 0%, #ffffd0 15%, #facc15 40%, #06b6d4 70%, #007aff 100%)",
                 }}
               />
               {/* Labels array aligned to the bar */}

@@ -35,10 +35,10 @@ export const TIME_OF_DAY_SKY_PHOTOS: Record<TimeOfDayPhase, string> = {
   // 6. Golden Hour: Honey-gold and amber clouds
   "golden-hour": `${S}golden.jpg`,
 
-  // 7. Sunset: Dramatic purple, magenta, gold, orange clouds
+  // 7. Sunset: Dramatic gold, copper, amber, orange clouds
   "sunset": `${S}sunset.jpg`,
 
-  // 8. Dusk: Nautical twilight, violet-blue
+  // 8. Dusk: Nautical twilight, deep navy-blue
   "dusk": `${S}dusk.jpg`,
 
   // 9. Night: Deep dark sky with stars

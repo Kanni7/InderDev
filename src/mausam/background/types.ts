@@ -9,14 +9,14 @@ import type { Condition as AppCondition } from "../theme";
 import type { Location } from "../data";
 
 export type TimeOfDayPhase =
-  | "pre-dawn"    // ~4:30 AM - 5:30 AM: Astronomical twilight, deep indigo/violet, stars visible
+  | "pre-dawn"    // ~4:30 AM - 5:30 AM: Astronomical twilight, deep navy night, stars visible
   | "sunrise"     // ~5:30 AM - 6:30 AM: Horizon transition dark blue -> warm orange/amber
   | "morning"     // ~6:30 AM - 10:30 AM: Fresh morning blue, crisp angled sunlight
   | "midday"      // ~10:30 AM - 3:00 PM: Zenith sun, azure cerulean sky, high illumination
   | "afternoon"   // ~3:00 PM - 5:00 PM: Deep warm sky, softening light
   | "golden-hour" // ~5:00 PM - 6:00 PM: Honey amber gold tones, radiant horizon
-  | "sunset"      // ~6:00 PM - 6:45 PM: Transition blue -> warm gold -> orange -> purple -> deep blue
-  | "dusk"        // ~6:45 PM - 7:45 PM: Nautical/civil dusk, violet-indigo twilight
+  | "sunset"      // ~6:00 PM - 6:45 PM: Transition blue -> warm gold -> orange -> deep twilight
+  | "dusk"        // ~6:45 PM - 7:45 PM: Nautical/civil dusk, deep navy twilight
   | "night";      // ~7:45 PM - 4:30 AM: Deep natural sky, celestial stars, lunar glow
 
 export type EnvironmentalWeatherCondition =
