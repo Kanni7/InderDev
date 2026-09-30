@@ -390,7 +390,7 @@ const RADAR_WIND_CACHE = new Map<string, { data: Record<string, LiveRadarCityWin
 export async function fetchRadarCitiesWind(
   cities: { name: string; lat: number; lng: number }[]
 ): Promise<Record<string, LiveRadarCityWind>> {
-  const cacheKey = "all_radar_cities";
+  const cacheKey = `all_radar_cities_${cities.length}`;
   const cached = RADAR_WIND_CACHE.get(cacheKey);
   if (cached && Date.now() - cached.ts < 10 * 60 * 1000) {
     return cached.data;

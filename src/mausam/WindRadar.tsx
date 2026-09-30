@@ -43,52 +43,105 @@ export interface RadarCity {
   lat: number;
   lng: number;
   baseSpeed: number; // default fallback if live data pending
+  baseTemp: number;  // realistic regional temperature baseline
+  tier: 1 | 2 | 3;   // 1 = major hub, 2 = regional city, 3 = local town/hill station
 }
 
-// Comprehensive cities across India for the wind radar map
+// Comprehensive cities and meteorological observation points across India
 export const WIND_CITIES: RadarCity[] = [
-  // West & Central
-  { name: "Pune", lat: 18.52, lng: 73.86, baseSpeed: 10 },
-  { name: "Mumbai", lat: 19.08, lng: 72.88, baseSpeed: 14 },
-  { name: "Nashik", lat: 19.99, lng: 73.78, baseSpeed: 11 },
-  { name: "Surat", lat: 21.17, lng: 72.83, baseSpeed: 12 },
-  { name: "Veraval", lat: 20.90, lng: 70.36, baseSpeed: 16 },
-  { name: "Ahmedabad", lat: 23.02, lng: 72.57, baseSpeed: 12 },
-  { name: "Nagpur", lat: 21.14, lng: 79.08, baseSpeed: 9 },
-  { name: "Solapur", lat: 17.65, lng: 75.90, baseSpeed: 12 },
-  { name: "Panaji", lat: 15.49, lng: 73.82, baseSpeed: 14 },
-  { name: "Bhopal", lat: 23.25, lng: 77.41, baseSpeed: 10 },
-  { name: "Indore", lat: 22.72, lng: 75.86, baseSpeed: 11 },
-  { name: "Raipur", lat: 21.25, lng: 81.63, baseSpeed: 9 },
+  // ── North & Himalayas ──
+  { name: "Delhi", lat: 28.61, lng: 77.21, baseSpeed: 11, baseTemp: 33, tier: 1 },
+  { name: "Chandigarh", lat: 30.73, lng: 76.78, baseSpeed: 10, baseTemp: 30, tier: 1 },
+  { name: "Srinagar", lat: 34.08, lng: 74.79, baseSpeed: 8, baseTemp: 19, tier: 1 },
+  { name: "Leh", lat: 34.15, lng: 77.58, baseSpeed: 12, baseTemp: 9, tier: 1 },
+  { name: "Jammu", lat: 32.73, lng: 74.87, baseSpeed: 9, baseTemp: 29, tier: 2 },
+  { name: "Shimla", lat: 31.10, lng: 77.17, baseSpeed: 9, baseTemp: 17, tier: 2 },
+  { name: "Dharamshala", lat: 32.22, lng: 76.32, baseSpeed: 8, baseTemp: 21, tier: 3 },
+  { name: "Dehradun", lat: 30.32, lng: 78.03, baseSpeed: 9, baseTemp: 26, tier: 2 },
+  { name: "Nainital", lat: 29.39, lng: 79.46, baseSpeed: 8, baseTemp: 18, tier: 3 },
+  { name: "Amritsar", lat: 31.63, lng: 74.87, baseSpeed: 10, baseTemp: 31, tier: 2 },
+  { name: "Ludhiana", lat: 30.90, lng: 75.85, baseSpeed: 10, baseTemp: 31, tier: 3 },
+  { name: "Agra", lat: 27.18, lng: 78.01, baseSpeed: 10, baseTemp: 34, tier: 2 },
+  { name: "Lucknow", lat: 26.85, lng: 80.95, baseSpeed: 9, baseTemp: 33, tier: 1 },
+  { name: "Varanasi", lat: 25.32, lng: 82.97, baseSpeed: 9, baseTemp: 33, tier: 2 },
+  { name: "Prayagraj", lat: 25.43, lng: 81.85, baseSpeed: 9, baseTemp: 33, tier: 3 },
 
-  // South
-  { name: "Hubballi", lat: 15.36, lng: 75.12, baseSpeed: 15 },
-  { name: "Bengaluru", lat: 12.97, lng: 77.59, baseSpeed: 12 },
-  { name: "Mysuru", lat: 12.29, lng: 76.63, baseSpeed: 11 },
-  { name: "Hyderabad", lat: 17.38, lng: 78.48, baseSpeed: 10 },
-  { name: "Warangal", lat: 17.96, lng: 79.59, baseSpeed: 9 },
-  { name: "Vijayawada", lat: 16.50, lng: 80.64, baseSpeed: 13 },
-  { name: "Visakhapatnam", lat: 17.68, lng: 83.21, baseSpeed: 14 },
-  { name: "Chennai", lat: 13.08, lng: 80.27, baseSpeed: 15 },
-  { name: "Puducherry", lat: 11.94, lng: 79.80, baseSpeed: 13 },
-  { name: "Coimbatore", lat: 11.01, lng: 76.95, baseSpeed: 14 },
-  { name: "Kochi", lat: 9.93, lng: 76.26, baseSpeed: 13 },
-  { name: "Madurai", lat: 9.92, lng: 78.11, baseSpeed: 12 },
-  { name: "Thiruvananthapuram", lat: 8.52, lng: 76.93, baseSpeed: 16 },
-  { name: "Rameswaram", lat: 9.28, lng: 79.31, baseSpeed: 18 },
-  { name: "Trincomalee", lat: 8.58, lng: 81.23, baseSpeed: 18 },
+  // ── West & Arid / Desert ──
+  { name: "Jaipur", lat: 26.91, lng: 75.79, baseSpeed: 11, baseTemp: 34, tier: 1 },
+  { name: "Jodhpur", lat: 26.24, lng: 73.02, baseSpeed: 12, baseTemp: 36, tier: 2 },
+  { name: "Bikaner", lat: 28.02, lng: 73.31, baseSpeed: 13, baseTemp: 36, tier: 3 },
+  { name: "Jaisalmer", lat: 26.92, lng: 70.90, baseSpeed: 14, baseTemp: 38, tier: 2 },
+  { name: "Udaipur", lat: 24.58, lng: 73.68, baseSpeed: 10, baseTemp: 32, tier: 2 },
+  { name: "Kota", lat: 25.18, lng: 75.83, baseSpeed: 10, baseTemp: 35, tier: 3 },
+  { name: "Ahmedabad", lat: 23.02, lng: 72.57, baseSpeed: 12, baseTemp: 34, tier: 1 },
+  { name: "Surat", lat: 21.17, lng: 72.83, baseSpeed: 12, baseTemp: 32, tier: 2 },
+  { name: "Vadodara", lat: 22.31, lng: 73.18, baseSpeed: 11, baseTemp: 33, tier: 2 },
+  { name: "Rajkot", lat: 22.30, lng: 70.80, baseSpeed: 13, baseTemp: 33, tier: 2 },
+  { name: "Bhuj", lat: 23.24, lng: 69.67, baseSpeed: 14, baseTemp: 34, tier: 3 },
+  { name: "Veraval", lat: 20.90, lng: 70.36, baseSpeed: 16, baseTemp: 30, tier: 3 },
 
-  // North & East
-  { name: "Delhi", lat: 28.61, lng: 77.21, baseSpeed: 11 },
-  { name: "Jaipur", lat: 26.91, lng: 75.79, baseSpeed: 11 },
-  { name: "Chandigarh", lat: 30.73, lng: 76.78, baseSpeed: 10 },
-  { name: "Lucknow", lat: 26.85, lng: 80.95, baseSpeed: 9 },
-  { name: "Kolkata", lat: 22.57, lng: 88.36, baseSpeed: 10 },
-  { name: "Bhubaneswar", lat: 20.29, lng: 85.82, baseSpeed: 12 },
-  { name: "Patna", lat: 25.61, lng: 85.14, baseSpeed: 9 },
-  { name: "Ranchi", lat: 23.34, lng: 85.31, baseSpeed: 10 },
-  { name: "Guwahati", lat: 26.14, lng: 91.74, baseSpeed: 8 },
-  { name: "Dehradun", lat: 30.32, lng: 78.03, baseSpeed: 9 },
+  // ── Central & Plateau ──
+  { name: "Bhopal", lat: 23.25, lng: 77.41, baseSpeed: 10, baseTemp: 32, tier: 1 },
+  { name: "Indore", lat: 22.72, lng: 75.86, baseSpeed: 11, baseTemp: 31, tier: 2 },
+  { name: "Gwalior", lat: 26.22, lng: 78.18, baseSpeed: 10, baseTemp: 34, tier: 2 },
+  { name: "Jabalpur", lat: 23.18, lng: 79.99, baseSpeed: 9, baseTemp: 32, tier: 2 },
+  { name: "Nagpur", lat: 21.14, lng: 79.08, baseSpeed: 9, baseTemp: 33, tier: 1 },
+  { name: "Raipur", lat: 21.25, lng: 81.63, baseSpeed: 9, baseTemp: 33, tier: 2 },
+  { name: "Bilaspur", lat: 22.08, lng: 82.14, baseSpeed: 9, baseTemp: 32, tier: 3 },
+
+  // ── Maharashtra & Western Ghats ──
+  { name: "Mumbai", lat: 19.08, lng: 72.88, baseSpeed: 14, baseTemp: 32, tier: 1 },
+  { name: "Pune", lat: 18.52, lng: 73.86, baseSpeed: 10, baseTemp: 29, tier: 1 },
+  { name: "Nashik", lat: 19.99, lng: 73.78, baseSpeed: 11, baseTemp: 28, tier: 2 },
+  { name: "Chhatrapati Sambhajinagar", lat: 19.88, lng: 75.34, baseSpeed: 11, baseTemp: 31, tier: 2 },
+  { name: "Kolhapur", lat: 16.70, lng: 74.24, baseSpeed: 11, baseTemp: 28, tier: 2 },
+  { name: "Solapur", lat: 17.65, lng: 75.90, baseSpeed: 12, baseTemp: 33, tier: 2 },
+  { name: "Ratnagiri", lat: 16.99, lng: 73.30, baseSpeed: 13, baseTemp: 30, tier: 3 },
+  { name: "Mahabaleshwar", lat: 17.92, lng: 73.66, baseSpeed: 12, baseTemp: 20, tier: 3 },
+  { name: "Panaji", lat: 15.49, lng: 73.82, baseSpeed: 14, baseTemp: 31, tier: 1 },
+
+  // ── South India ──
+  { name: "Hyderabad", lat: 17.38, lng: 78.48, baseSpeed: 10, baseTemp: 32, tier: 1 },
+  { name: "Warangal", lat: 17.96, lng: 79.59, baseSpeed: 9, baseTemp: 33, tier: 2 },
+  { name: "Vijayawada", lat: 16.50, lng: 80.64, baseSpeed: 13, baseTemp: 33, tier: 2 },
+  { name: "Visakhapatnam", lat: 17.68, lng: 83.21, baseSpeed: 14, baseTemp: 31, tier: 2 },
+  { name: "Tirupati", lat: 13.63, lng: 79.42, baseSpeed: 12, baseTemp: 33, tier: 3 },
+  { name: "Bengaluru", lat: 12.97, lng: 77.59, baseSpeed: 12, baseTemp: 27, tier: 1 },
+  { name: "Mysuru", lat: 12.29, lng: 76.63, baseSpeed: 11, baseTemp: 28, tier: 2 },
+  { name: "Hubballi", lat: 15.36, lng: 75.12, baseSpeed: 15, baseTemp: 30, tier: 2 },
+  { name: "Mangaluru", lat: 12.91, lng: 74.85, baseSpeed: 13, baseTemp: 30, tier: 2 },
+  { name: "Belagavi", lat: 15.85, lng: 74.50, baseSpeed: 12, baseTemp: 28, tier: 3 },
+  { name: "Chennai", lat: 13.08, lng: 80.27, baseSpeed: 15, baseTemp: 33, tier: 1 },
+  { name: "Coimbatore", lat: 11.01, lng: 76.95, baseSpeed: 14, baseTemp: 29, tier: 2 },
+  { name: "Madurai", lat: 9.92, lng: 78.11, baseSpeed: 12, baseTemp: 34, tier: 2 },
+  { name: "Tiruchirappalli", lat: 10.79, lng: 78.70, baseSpeed: 12, baseTemp: 34, tier: 2 },
+  { name: "Salem", lat: 11.66, lng: 78.15, baseSpeed: 11, baseTemp: 32, tier: 3 },
+  { name: "Ooty", lat: 11.41, lng: 76.70, baseSpeed: 10, baseTemp: 16, tier: 3 },
+  { name: "Puducherry", lat: 11.94, lng: 79.80, baseSpeed: 13, baseTemp: 32, tier: 2 },
+  { name: "Kochi", lat: 9.93, lng: 76.26, baseSpeed: 13, baseTemp: 31, tier: 1 },
+  { name: "Kozhikode", lat: 11.25, lng: 75.78, baseSpeed: 12, baseTemp: 31, tier: 2 },
+  { name: "Thiruvananthapuram", lat: 8.52, lng: 76.93, baseSpeed: 16, baseTemp: 31, tier: 1 },
+  { name: "Kanyakumari", lat: 8.08, lng: 77.55, baseSpeed: 17, baseTemp: 30, tier: 2 },
+
+  // ── East & Northeast ──
+  { name: "Kolkata", lat: 22.57, lng: 88.36, baseSpeed: 10, baseTemp: 32, tier: 1 },
+  { name: "Siliguri", lat: 26.73, lng: 88.40, baseSpeed: 9, baseTemp: 28, tier: 2 },
+  { name: "Darjeeling", lat: 27.04, lng: 88.26, baseSpeed: 8, baseTemp: 15, tier: 3 },
+  { name: "Patna", lat: 25.61, lng: 85.14, baseSpeed: 9, baseTemp: 32, tier: 1 },
+  { name: "Gaya", lat: 24.79, lng: 85.00, baseSpeed: 9, baseTemp: 33, tier: 3 },
+  { name: "Ranchi", lat: 23.34, lng: 85.31, baseSpeed: 10, baseTemp: 29, tier: 2 },
+  { name: "Jamshedpur", lat: 22.80, lng: 86.20, baseSpeed: 9, baseTemp: 32, tier: 2 },
+  { name: "Bhubaneswar", lat: 20.29, lng: 85.82, baseSpeed: 12, baseTemp: 32, tier: 1 },
+  { name: "Puri", lat: 19.81, lng: 85.83, baseSpeed: 14, baseTemp: 31, tier: 3 },
+  { name: "Rourkela", lat: 22.25, lng: 84.85, baseSpeed: 9, baseTemp: 32, tier: 3 },
+  { name: "Guwahati", lat: 26.14, lng: 91.74, baseSpeed: 8, baseTemp: 28, tier: 1 },
+  { name: "Shillong", lat: 25.57, lng: 91.88, baseSpeed: 7, baseTemp: 20, tier: 2 },
+  { name: "Gangtok", lat: 27.34, lng: 88.61, baseSpeed: 7, baseTemp: 17, tier: 3 },
+  { name: "Agartala", lat: 23.83, lng: 91.28, baseSpeed: 8, baseTemp: 29, tier: 2 },
+  { name: "Imphal", lat: 24.82, lng: 93.94, baseSpeed: 7, baseTemp: 25, tier: 3 },
+
+  // ── Islands ──
+  { name: "Port Blair", lat: 11.62, lng: 92.73, baseSpeed: 16, baseTemp: 30, tier: 2 },
 ];
 
 /* ─────────────────── GEOGRAPHIC VECTOR BOUNDARIES ─────────────────── */
@@ -234,6 +287,64 @@ function geoToPixel(
     x: lngToTileX(lng, zoom) * 256 - cx + w / 2,
     y: latToTileY(lat, zoom) * 256 - cy + h / 2,
   };
+}
+
+export function pixelToGeo(
+  px: number,
+  py: number,
+  center: { lat: number; lng: number },
+  zoom: number,
+  w: number,
+  h: number
+) {
+  const cx = lngToTileX(center.lng, zoom) * 256;
+  const cy = latToTileY(center.lat, zoom) * 256;
+  const tileX = (px - w / 2 + cx) / 256;
+  const tileY = (py - h / 2 + cy) / 256;
+  const lng = (tileX / Math.pow(2, zoom)) * 360 - 180;
+  const n = Math.PI - (2 * Math.PI * tileY) / Math.pow(2, zoom);
+  const lat = (180 / Math.PI) * Math.atan(0.5 * (Math.exp(n) - Math.exp(-n)));
+  return { lat, lng };
+}
+
+/* ─────────────────── METEOROLOGICAL THERMAL COLORMAP ─────────────────── */
+
+export function getThermalRGB(temp: number): [number, number, number] {
+  const stops: { t: number; r: number; g: number; b: number }[] = [
+    { t: -5, r: 88, g: 28, b: 135 },   // Deep purple
+    { t: 6, r: 37, g: 99, b: 235 },    // Royal blue
+    { t: 14, r: 6, g: 182, b: 212 },   // Sky cyan
+    { t: 19, r: 20, g: 184, b: 166 },  // Teal
+    { t: 24, r: 34, g: 197, b: 94 },   // Emerald green
+    { t: 28, r: 132, g: 204, b: 22 },  // Lime
+    { t: 32, r: 234, g: 179, b: 8 },   // Golden amber
+    { t: 36, r: 249, g: 115, b: 22 },  // Warm orange
+    { t: 40, r: 239, g: 68, b: 68 },   // Vivid red
+    { t: 45, r: 153, g: 27, b: 27 },   // Crimson
+  ];
+
+  if (temp <= stops[0].t) return [stops[0].r, stops[0].g, stops[0].b];
+  if (temp >= stops[stops.length - 1].t) {
+    const last = stops[stops.length - 1];
+    return [last.r, last.g, last.b];
+  }
+
+  for (let i = 0; i < stops.length - 1; i++) {
+    if (temp >= stops[i].t && temp <= stops[i + 1].t) {
+      const f = (temp - stops[i].t) / (stops[i + 1].t - stops[i].t);
+      return [
+        Math.round(stops[i].r + (stops[i + 1].r - stops[i].r) * f),
+        Math.round(stops[i].g + (stops[i + 1].g - stops[i].g) * f),
+        Math.round(stops[i].b + (stops[i + 1].b - stops[i].b) * f),
+      ];
+    }
+  }
+  return [234, 179, 8];
+}
+
+export function getThermalCSSColor(temp: number): string {
+  const [r, g, b] = getThermalRGB(temp);
+  return `rgb(${r}, ${g}, ${b})`;
 }
 
 /* ─────────────────── TILE HOOK ─────────────────── */
@@ -382,6 +493,7 @@ function WindMapCanvas({
   const [size, setSize] = useState({ w: 400, h: 700 });
   const animRef = useRef<number | null>(null);
   const particlesRef = useRef<WindParticle[]>([]);
+  const thermalCanvasRef = useRef<HTMLCanvasElement | null>(null);
 
   // Update container size
   useEffect(() => {
@@ -528,45 +640,89 @@ function WindMapCanvas({
           }
         }
       } else if (activeLayer === "temp") {
-        // Soft atmospheric thermal tint
-        const gradBg = ctx.createLinearGradient(0, 0, w, h);
-        gradBg.addColorStop(0, "rgba(180, 83, 9, 0.08)");
-        gradBg.addColorStop(0.5, "rgba(217, 119, 6, 0.06)");
-        gradBg.addColorStop(1, "rgba(180, 83, 9, 0.10)");
-        ctx.fillStyle = gradBg;
-        ctx.fillRect(0, 0, w, h);
+        // ── CONTINUOUS METEOROLOGICAL THERMAL FIELD (RASTER HEATMAP / ISOTHERMS) ──
+        const gw = Math.max(30, Math.min(60, Math.round(w / 8)));
+        const gh = Math.max(40, Math.min(90, Math.round(h / 8)));
 
-        // Thermal halos around Indian cities based on real temperature
-        for (const city of WIND_CITIES) {
-          const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
-          const live = liveCitiesWind[city.name.toLowerCase()];
-          const temp = isSelected ? (live?.temp ?? 29) : (live?.temp ?? 28);
-          const pt = geoToPixel(city.lat, city.lng, center, zoom, w, h);
-          if (pt.x < -80 || pt.x > w + 80 || pt.y < -80 || pt.y > h + 80) continue;
+        if (!thermalCanvasRef.current) {
+          thermalCanvasRef.current = document.createElement("canvas");
+        }
+        const tCanvas = thermalCanvasRef.current;
+        if (tCanvas.width !== gw || tCanvas.height !== gh) {
+          tCanvas.width = gw;
+          tCanvas.height = gh;
+        }
+        const tCtx = tCanvas.getContext("2d");
 
-          const rad = 50 * Math.pow(1.15, zoom - 6);
-          const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rad);
-          if (temp >= 35) {
-            g.addColorStop(0, "rgba(239, 68, 68, 0.40)");
-            g.addColorStop(0.6, "rgba(249, 115, 22, 0.16)");
-            g.addColorStop(1, "rgba(239, 68, 68, 0)");
-          } else if (temp >= 30) {
-            g.addColorStop(0, "rgba(245, 158, 11, 0.35)");
-            g.addColorStop(0.6, "rgba(234, 179, 8, 0.14)");
-            g.addColorStop(1, "rgba(245, 158, 11, 0)");
-          } else if (temp >= 24) {
-            g.addColorStop(0, "rgba(34, 197, 94, 0.28)");
-            g.addColorStop(0.6, "rgba(16, 185, 129, 0.12)");
-            g.addColorStop(1, "rgba(34, 197, 94, 0)");
-          } else {
-            g.addColorStop(0, "rgba(56, 189, 248, 0.32)");
-            g.addColorStop(0.6, "rgba(14, 165, 233, 0.12)");
-            g.addColorStop(1, "rgba(56, 189, 248, 0)");
+        if (tCtx) {
+          const imgData = tCtx.createImageData(gw, gh);
+          const data = imgData.data;
+
+          // Prepare station points in canvas pixel coordinates
+          const stationPoints: { x: number; y: number; temp: number }[] = [];
+          for (let i = 0; i < WIND_CITIES.length; i++) {
+            const c = WIND_CITIES[i];
+            const isSel = c.name.toLowerCase() === selectedCityName.toLowerCase();
+            const live = liveCitiesWind[c.name.toLowerCase()];
+            const temp = isSel ? (live?.temp ?? c.baseTemp ?? 29) : (live?.temp ?? c.baseTemp ?? 28);
+            const pt = geoToPixel(c.lat, c.lng, center, zoom, w, h);
+            // Include stations within and around viewport for seamless edge blending
+            if (pt.x > -250 && pt.x < w + 250 && pt.y > -250 && pt.y < h + 250) {
+              stationPoints.push({ x: pt.x, y: pt.y, temp });
+            }
           }
-          ctx.fillStyle = g;
-          ctx.beginPath();
-          ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2);
-          ctx.fill();
+
+          if (stationPoints.length === 0) {
+            stationPoints.push({ x: w / 2, y: h / 2, temp: 28 });
+          }
+
+          const stLen = stationPoints.length;
+          const cellW = w / gw;
+          const cellH = h / gh;
+
+          for (let gy = 0; gy < gh; gy++) {
+            const py = (gy + 0.5) * cellH;
+            for (let gx = 0; gx < gw; gx++) {
+              const px = (gx + 0.5) * cellW;
+              let num = 0;
+              let den = 0;
+
+              for (let i = 0; i < stLen; i++) {
+                const st = stationPoints[i];
+                const dx = px - st.x;
+                const dy = py - st.y;
+                const distSq = dx * dx + dy * dy;
+                const weight = 1 / (distSq + 1200);
+                num += st.temp * weight;
+                den += weight;
+              }
+
+              const cellTemp = den > 0 ? num / den : 28;
+              const [r, g, b] = getThermalRGB(cellTemp);
+              const idx = (gy * gw + gx) * 4;
+              data[idx] = r;
+              data[idx + 1] = g;
+              data[idx + 2] = b;
+              data[idx + 3] = 230; // Solid alpha for thermal blending
+            }
+          }
+
+          tCtx.putImageData(imgData, 0, 0);
+
+          // Render the continuous thermal field scaled up with smooth bilinear filtering
+          ctx.save();
+          ctx.globalAlpha = 0.55;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(tCanvas, 0, 0, w, h);
+          ctx.restore();
+
+          // Subtle atmospheric warmth shimmer
+          const gradOverlay = ctx.createLinearGradient(0, 0, 0, h);
+          gradOverlay.addColorStop(0, "rgba(245, 158, 11, 0.04)");
+          gradOverlay.addColorStop(1, "rgba(239, 68, 68, 0.06)");
+          ctx.fillStyle = gradOverlay;
+          ctx.fillRect(0, 0, w, h);
         }
       } else if (activeLayer === "rain") {
         // Atmospheric cool rain tint
@@ -589,20 +745,20 @@ function WindMapCanvas({
         const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
         const live = liveCitiesWind[city.name.toLowerCase()];
         const displaySpeed = isSelected ? wind.speed : (live?.speed ?? city.baseSpeed);
-        const displayTemp = isSelected ? (live?.temp ?? 29) : (live?.temp ?? 28);
+        const displayTemp = isSelected ? (live?.temp ?? city.baseTemp) : (live?.temp ?? city.baseTemp);
 
-        // Highlight active selected location with red location pin
+        // Highlight active selected location with prominent glowing beacon pin
         if (isSelected) {
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y - 12, 14, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y - 12, 16, 0, Math.PI * 2);
           ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
           ctx.fill();
 
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y - 12, 7, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y - 12, 7.5, 0, Math.PI * 2);
           ctx.fillStyle = "#ef4444";
           ctx.fill();
-          ctx.lineWidth = 2;
+          ctx.lineWidth = 2.2;
           ctx.strokeStyle = "#ffffff";
           ctx.stroke();
 
@@ -612,31 +768,86 @@ function WindMapCanvas({
           ctx.fill();
         }
 
-        // Draw primary metric label according to active layer
-        const metricY = isSelected ? pt.y + 4 : pt.y - 6;
-        const nameY = isSelected ? pt.y + 16 : pt.y + 6;
-
-        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
-        ctx.shadowBlur = 5;
-        ctx.shadowOffsetX = 0;
-        ctx.shadowOffsetY = 1;
-
         if (activeLayer === "temp") {
-          ctx.font = isSelected ? "bold 13px sans-serif" : "bold 11.5px sans-serif";
-          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 240, 200, 0.95)";
-          ctx.fillText(`${displayTemp}°`, pt.x, metricY);
+          // Dynamic density by zoom level (LOD):
+          // Zoom 5: Tier 1 only (Major regional hubs)
+          // Zoom 6: Tier 1 & 2 (Regional state capitals & hubs)
+          // Zoom >= 7: All tiers (Local stations, hill stations, towns)
+          const shouldShowCity = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
+          if (!shouldShowCity) continue;
+
+          const tempVal = Math.round(displayTemp);
+          const tempColor = getThermalCSSColor(tempVal);
+          const pillText = `${tempVal}°`;
+
+          // Apple Weather-style temperature pill badge
+          ctx.font = isSelected ? "bold 12px system-ui, -apple-system, sans-serif" : "bold 11px system-ui, -apple-system, sans-serif";
+          const tw = ctx.measureText(pillText).width;
+          const pw = tw + 12;
+          const ph = 18;
+          const px = pt.x - pw / 2;
+          const py = pt.y - (isSelected ? 26 : 20);
+
+          ctx.save();
+          ctx.shadowColor = "rgba(0, 0, 0, 0.75)";
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 1.5;
+
+          // Frosted pill capsule
+          ctx.fillStyle = isSelected ? "rgba(15, 23, 42, 0.95)" : "rgba(10, 16, 26, 0.88)";
+          ctx.beginPath();
+          ctx.roundRect(px, py, pw, ph, 9);
+          ctx.fill();
+
+          // Colored border matching thermal category
+          ctx.lineWidth = isSelected ? 2 : 1.4;
+          ctx.strokeStyle = isSelected ? "#ffffff" : tempColor;
+          ctx.stroke();
+
+          // Downward pointer notch
+          ctx.beginPath();
+          ctx.moveTo(pt.x - 3, py + ph);
+          ctx.lineTo(pt.x + 3, py + ph);
+          ctx.lineTo(pt.x, py + ph + 3);
+          ctx.closePath();
+          ctx.fillStyle = isSelected ? "#ffffff" : tempColor;
+          ctx.fill();
+
+          // Temperature number
+          ctx.shadowColor = "transparent";
+          ctx.fillStyle = isSelected ? "#ffffff" : tempColor;
+          ctx.fillText(pillText, pt.x, py + ph / 2);
+
+          // City Name
+          ctx.shadowColor = "rgba(0,0,0,0.95)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 1;
+          ctx.font = isSelected ? "bold 11.5px sans-serif" : "600 10px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.92)";
+          ctx.fillText(city.name, pt.x, pt.y + 4);
+          ctx.restore();
         } else if (activeLayer === "wind") {
+          const shouldShowWind = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
+          if (!shouldShowWind) continue;
+
+          const metricY = isSelected ? pt.y + 4 : pt.y - 6;
+          const nameY = isSelected ? pt.y + 16 : pt.y + 6;
+
+          ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetX = 0;
+          ctx.shadowOffsetY = 1;
+
           ctx.font = isSelected ? "bold 11px sans-serif" : "600 10.5px sans-serif";
           ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.95)";
           ctx.fillText(`${displaySpeed} kph`, pt.x, metricY);
+
+          ctx.font = isSelected ? "bold 12px sans-serif" : "500 10.5px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.90)";
+          ctx.fillText(city.name, pt.x, nameY);
+
+          ctx.shadowColor = "transparent";
         }
-
-        // Draw City Name: e.g. "Pune"
-        ctx.font = isSelected ? "bold 12px sans-serif" : "500 10.5px sans-serif";
-        ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.90)";
-        ctx.fillText(city.name, pt.x, nameY);
-
-        ctx.shadowColor = "transparent";
       }
 
       animRef.current = requestAnimationFrame(render);
@@ -798,6 +1009,8 @@ export function FullScreenWindRadar({
   const [timeIndex, setTimeIndex] = useState(1); // 1 = "now"
   const [isPlaying, setIsPlaying] = useState(false); // Paused by default
   const [showInfo, setShowInfo] = useState(false);
+  const [tempProbe, setTempProbe] = useState<{ lat: number; lng: number; temp: number; x: number; y: number } | null>(null);
+  const pointerStartPosRef = useRef({ x: 0, y: 0 });
 
   // Sync activeLayer when initialLayer prop changes
   useEffect(() => {
@@ -909,6 +1122,7 @@ export function FullScreenWindRadar({
   const dragStartRef = useRef({ x: 0, y: 0, lat: center.lat, lng: center.lng });
 
   const handlePointerDown = (e: React.PointerEvent) => {
+    pointerStartPosRef.current = { x: e.clientX, y: e.clientY };
     isDraggingRef.current = true;
     dragStartRef.current = {
       x: e.clientX,
@@ -930,16 +1144,56 @@ export function FullScreenWindRadar({
     });
   };
 
-  const handlePointerUp = () => {
+  const handlePointerUp = (e: React.PointerEvent) => {
     isDraggingRef.current = false;
+    const dist = Math.hypot(e.clientX - pointerStartPosRef.current.x, e.clientY - pointerStartPosRef.current.y);
+    if (dist < 6 && activeLayer === "temp") {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const px = e.clientX - rect.left;
+      const py = e.clientY - rect.top;
+      const coords = pixelToGeo(px, py, center, zoom, rect.width, rect.height);
+
+      // Interpolate temperature at tapped coordinate using IDW from nearby stations
+      let num = 0;
+      let den = 0;
+      for (let i = 0; i < WIND_CITIES.length; i++) {
+        const city = WIND_CITIES[i];
+        const live = liveCitiesWind[city.name.toLowerCase()];
+        const t = live?.temp ?? city.baseTemp;
+        const dLat = coords.lat - city.lat;
+        const dLng = coords.lng - city.lng;
+        const d2 = dLat * dLat + dLng * dLng;
+        const w = 1 / (d2 + 0.15);
+        num += t * w;
+        den += w;
+      }
+      const probeTemp = den > 0 ? num / den : 28;
+      setTempProbe({
+        lat: coords.lat,
+        lng: coords.lng,
+        temp: probeTemp,
+        x: px,
+        y: py,
+      });
+    }
   };
 
-  const zoomIn = () => setZoom((z) => Math.min(8, z + 1));
-  const zoomOut = () => setZoom((z) => Math.max(5, z - 1));
-  const resetToLocation = () => setCenter(selectedCityCenter);
+  const zoomIn = () => {
+    setZoom((z) => Math.min(8, z + 1));
+    setTempProbe(null);
+  };
+  const zoomOut = () => {
+    setZoom((z) => Math.max(5, z - 1));
+    setTempProbe(null);
+  };
+  const resetToLocation = () => {
+    setCenter(selectedCityCenter);
+    setTempProbe(null);
+  };
 
   const switchLayer = (l: "rain" | "wind" | "temp" | "satellite") => {
     setActiveLayer(l);
+    setTempProbe(null);
     onSwitchLayer?.(l);
   };
 
@@ -1208,17 +1462,20 @@ export function FullScreenWindRadar({
                 </div>
                 <div className="mt-3 pt-2.5 border-t border-white/10">
                   <span className="text-[10px] text-white/50 block mb-1.5 uppercase tracking-wider">Thermal Band</span>
-                  <div className="h-2 w-full rounded-full overflow-hidden flex">
-                    <span className="h-full flex-1 bg-sky-500" title="< 23°C" />
-                    <span className="h-full flex-1 bg-emerald-500" title="24-29°C" />
-                    <span className="h-full flex-1 bg-amber-400" title="30-34°C" />
-                    <span className="h-full flex-1 bg-red-500" title="35°C+" />
-                  </div>
-                  <div className="flex justify-between text-[9px] text-white/60 mt-1">
-                    <span>20°</span>
-                    <span>25°</span>
+                  <div
+                    className="h-2 w-full rounded-full shadow-inner border border-white/10"
+                    style={{
+                      background:
+                        "linear-gradient(to right, rgb(59,130,246) 0%, rgb(6,182,212) 18%, rgb(20,184,166) 32%, rgb(34,197,94) 48%, rgb(234,179,8) 64%, rgb(249,115,22) 80%, rgb(239,68,68) 100%)",
+                    }}
+                  />
+                  <div className="flex justify-between text-[9px] font-mono text-white/70 mt-1 font-semibold">
+                    <span>&lt; 10°</span>
+                    <span>18°</span>
+                    <span>24°</span>
                     <span>30°</span>
-                    <span>35°+</span>
+                    <span>35°</span>
+                    <span>40°+</span>
                   </div>
                 </div>
               </div>
@@ -1259,6 +1516,61 @@ export function FullScreenWindRadar({
                 </p>
               </div>
             )}
+          </div>
+        )}
+
+        {/* ── REAL TEMPERATURE SCALE LEGEND (Apple Weather / Windy Style) ── */}
+        {activeLayer === "temp" && (
+          <div className="absolute left-4 right-4 bottom-4 z-30 pointer-events-none animate-in fade-in slide-in-from-bottom-2 duration-200">
+            <div className="mx-auto max-w-[340px] rounded-2xl bg-black/80 backdrop-blur-xl border border-white/15 px-4 py-2.5 shadow-2xl">
+              <div className="flex items-center justify-between text-[11px] font-mono text-white/90 mb-1.5">
+                <span className="flex items-center gap-1.5 font-semibold text-amber-300 uppercase tracking-wider text-[10px]">
+                  <span className="h-2 w-2 rounded-full bg-amber-400 animate-pulse" />
+                  Live Thermal Field
+                </span>
+                <span className="font-bold text-white/70">°C</span>
+              </div>
+              <div
+                className="h-2.5 w-full rounded-full shadow-inner border border-white/10"
+                style={{
+                  background:
+                    "linear-gradient(to right, rgb(59,130,246) 0%, rgb(6,182,212) 18%, rgb(20,184,166) 32%, rgb(34,197,94) 48%, rgb(234,179,8) 64%, rgb(249,115,22) 80%, rgb(239,68,68) 100%)",
+                }}
+              />
+              <div className="flex justify-between font-mono text-[10px] text-white/75 mt-1 font-semibold">
+                <span>&lt; 10°</span>
+                <span>18°</span>
+                <span>24°</span>
+                <span>30°</span>
+                <span>35°</span>
+                <span>40°+</span>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── INTERACTIVE TEMPERATURE PROBE BADGE ── */}
+        {tempProbe && activeLayer === "temp" && (
+          <div
+            className="absolute z-40 -translate-x-1/2 -translate-y-full pointer-events-auto animate-in zoom-in-95 fade-in duration-150"
+            style={{ left: tempProbe.x, top: Math.max(70, tempProbe.y - 14) }}
+          >
+            <div className="flex items-center gap-2 rounded-2xl bg-black/90 border border-amber-400/60 px-3.5 py-1.5 shadow-[0_8px_24px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+              <span className="flex h-2 w-2 rounded-full bg-amber-400 animate-ping" />
+              <span className="font-bold text-amber-300 text-sm">{tempProbe.temp.toFixed(1)}°C</span>
+              <span className="text-[10px] font-mono text-white/60">
+                {tempProbe.lat.toFixed(2)}°N, {tempProbe.lng.toFixed(2)}°E
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setTempProbe(null);
+                }}
+                className="ml-1 grid h-4 w-4 place-items-center rounded-full bg-white/10 text-white/60 hover:text-white text-[10px] font-bold"
+              >
+                ✕
+              </button>
+            </div>
           </div>
         )}
       </div>
