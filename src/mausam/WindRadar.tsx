@@ -575,7 +575,7 @@ function WindMapCanvas({
     for (let i = 0; i < count; i++) {
       const lat = minLat + Math.random() * (maxLat - minLat);
       const lng = minLng + Math.random() * (maxLng - minLng);
-      const maxAge = 120 + Math.floor(Math.random() * 100);
+      const maxAge = 140 + Math.floor(Math.random() * 100);
       parts.push({
         lat,
         lng,
@@ -726,10 +726,10 @@ function WindMapCanvas({
           // Sample wind vector at particle's exact geographic coordinate
           const vec = getWindVector(currentField, p.lat, p.lng);
 
-          // Real, visible screen motion velocity:
-          // 1 km/h of wind moves the particle ~0.14 pixels per frame.
-          // For a 15 km/h breeze, this is ~2.1 px/frame (126 px/second), creating a smooth, continuous glide!
-          const speedFactor = (prefersReducedMotion ? 0.05 : 0.14) * p.speedMultiplier;
+          // Realistic, calm drifting velocity matching Apple Weather reference:
+          // 1 km/h of wind moves the particle ~0.042 pixels per frame (~2.5 px/sec per km/h).
+          // At 15 km/h, this is ~0.63 px/frame (38 px/sec), creating a calm, natural flow.
+          const speedFactor = (prefersReducedMotion ? 0.02 : 0.042) * p.speedMultiplier;
           const dx = vec.u * speedFactor;  // eastward displacement in pixels
           const dy = -vec.v * speedFactor; // northward displacement in pixels (upward on screen)
 
@@ -749,7 +749,7 @@ function WindMapCanvas({
             p.lat = viewMinLat + Math.random() * (viewMaxLat - viewMinLat);
             p.lng = viewMinLng + Math.random() * (viewMaxLng - viewMinLng);
             p.age = 0;
-            p.maxAge = 120 + Math.floor(Math.random() * 100);
+            p.maxAge = 140 + Math.floor(Math.random() * 100);
             continue;
           }
 
@@ -781,12 +781,12 @@ function WindMapCanvas({
             ctx.fill();
           } else {
             // Dynamic Small Arrow gliding in the wind direction
-            const arrowLen = Math.min(6.5, Math.max(3.8, 3.4 + (vec.speed / 25) * 2.2));
+            const arrowLen = Math.min(5.4, Math.max(3.4, 3.0 + (vec.speed / 25) * 1.8));
             const arrowWingSpan = 0.42; // ~24 deg wing angle
             const notchIndent = arrowLen * 0.58;
 
             // 1. Tapered trailing tail (shooting arrow / comet shaft)
-            const tailLen = Math.min(18, Math.max(7, 6 + (vec.speed / 18) * 9));
+            const tailLen = Math.min(13, Math.max(5, 4.5 + (vec.speed / 20) * 5));
             const tailX = head.x - tailLen * Math.cos(angle);
             const tailY = head.y - tailLen * Math.sin(angle);
 
