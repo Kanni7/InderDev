@@ -229,6 +229,7 @@ export const locations: Location[] = [
   {
     key: "chennai", city: "Chennai", region: "Tamil Nadu", condition: "sunny", temp: 33, feels: 38,
     summary: "Hot and bright, high UV near midday",
+    alert: { tier: "advisory", title: "Yellow Advisory · Extreme Heat & UV", body: "Feels like 38°C with UV index 10. Avoid direct sun 12–4 PM. Hydrate frequently." },
     air: { aqi: 71, aqiLabel: "Moderate", uv: 10, uvLabel: "Extreme by noon", heat: 38, heatLabel: "Hydrate often" },
     sun: { sunrise: "6:00 AM", sunset: "6:10 PM", daylight: "12h 10m", progress: 0.26 },
     precip: { next: "Fri 1 PM", amount: "3 mm", rate: "0.1 mm/h", chance: 10, note: "No rain expected today", bars: [{ t: "10", v: 3 }, { t: "12", v: 5 }, { t: "2", v: 8 }, { t: "4", v: 10 }, { t: "6", v: 6 }] },
