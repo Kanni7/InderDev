@@ -68,12 +68,14 @@ export default function App() {
   // to match the sky. Falls back to the curated per-condition accent.
   const accent = usePhotoAccent(theme.photo, theme.accent);
 
-  // Whole-app theme follows the current location's weather & time of day
+  const isProfileSelection = !onboarded || screen === "usertype";
+
+  // Whole-app theme follows the current location's weather & time of day (or pure black for profile selection)
   const deviceStyle: CSSProperties = {
     height: "100dvh",
     maxHeight: "min(900px, 100dvh)",
-    background: theme.solid,
-    ["--wx-bg-solid" as string]: theme.solid,
+    background: isProfileSelection ? "#000000" : theme.solid,
+    ["--wx-bg-solid" as string]: isProfileSelection ? "#000000" : theme.solid,
     ["--wx-accent" as string]: accent,
     transition: "background 0.6s ease",
   };
@@ -94,13 +96,15 @@ export default function App() {
         className="mausam-device relative w-full overflow-hidden text-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] sm:w-[410px] sm:rounded-[44px] border border-white/10"
         style={deviceStyle}
       >
-        {/* Dynamic Environmental Background Engine — 7 photorealistic layered system */}
-        <BackgroundEngine
-          location={location}
-          currentHour={currentHour}
-          conditionOverride={simulatedCondition ?? undefined}
-          timePhaseOverride={simulatedPhase ?? undefined}
-        />
+        {/* Dynamic Environmental Background Engine — active on home & weather screens */}
+        {!isProfileSelection && (
+          <BackgroundEngine
+            location={location}
+            currentHour={currentHour}
+            conditionOverride={simulatedCondition ?? undefined}
+            timePhaseOverride={simulatedPhase ?? undefined}
+          />
+        )}
 
         {/* Status bar — clicking the time opens the unofficial time switcher */}
         <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-7 pt-3.5 text-[13px] font-semibold text-white pointer-events-auto">
@@ -294,7 +298,7 @@ export default function App() {
             )}
 
             {screen === "usertype" && (
-              <div className="absolute inset-0 z-40">
+              <div className="absolute inset-0 z-40 bg-black" style={{ background: "#000000" }}>
                 <Onboarding
                   lang={lang}
                   accent={accent}
