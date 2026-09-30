@@ -627,7 +627,10 @@ export function extractGBDTFeatures(
 
   const isStorm = location.condition === "storm" ? 1 : 0;
   const hasAlert =
-    alertOverrides.length > 0 || location.alert !== undefined ? 1 : 0;
+    (location.alert !== undefined && (location.alert.tier === "critical" || location.alert.tier === "warning")) ||
+    alertOverrides.some((o) => o.tier === "critical" || o.tier === "warning")
+      ? 1
+      : 0;
 
   const isGoldenHour =
     (currentHour >= 6 && currentHour <= 7) ||

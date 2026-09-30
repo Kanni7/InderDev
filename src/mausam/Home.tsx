@@ -370,9 +370,13 @@ export default function Home({
               return (
                 <button
                   onClick={onAlerts}
-                  className="mt-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl p-4 text-left mausam-glass transition active:scale-[0.98]"
-                  style={{ borderLeft: `3px solid ${meta.color}` }}
+                  className="relative mt-3 flex w-full items-center gap-3 overflow-hidden rounded-2xl p-4 pl-4.5 text-left mausam-glass transition active:scale-[0.98]"
                 >
+                  {/* Left accent strip perfectly flush with the card's rounded corner */}
+                  <div
+                    className="absolute left-0 top-0 bottom-0 w-1.5"
+                    style={{ background: meta.color }}
+                  />
                   <span
                     className="grid h-8 w-8 shrink-0 place-items-center rounded-full text-black"
                     style={{ background: meta.color }}

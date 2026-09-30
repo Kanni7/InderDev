@@ -38,6 +38,21 @@ const dict: Record<string, Tr> = {
   "Skip for now": { hi: "अभी छोड़ें", te: "ఇప్పటికి దాటవేయి", ml: "ഇപ്പോൾ ഒഴിവാക്കുക", ta: "இப்போது தவிர்", pa: "ਹੁਣੇ ਛੱਡੋ" },
   "match": { hi: "सटीकता", te: "సరిపోలిక", ml: "പൊരുത്തം", ta: "பொருத்தம்", pa: "ਮੇਲ" },
   "MATCH": { hi: "सटीकता", te: "సరిపోలిక", ml: "പൊരുത്തം", ta: "பொருத்தம்", pa: "ਮੇਲ" },
+  "Yellow Advisory · Extreme Heat & UV": {
+    hi: "येलो एडवाइजरी · अत्यधिक गर्मी और UV",
+    te: "ఎల్లో అడ్వైజరీ · తీవ్రమైన వేడి & UV",
+    ml: "മഞ്ഞ മുന്നറിയിപ്പ് · കടുത്ത ചൂടും UV-യും",
+    ta: "மஞ்சள் எச்சரிக்கை · அதிக வெப்பம் மற்றும் UV",
+    pa: "ਯੈਲੋ ਐਡਵਾਈਜ਼ਰੀ · ਬਹੁਤ ਜ਼ਿਆਦਾ ਗਰਮੀ ਅਤੇ UV",
+  },
+  "Feels like 38°C with UV index 10. Avoid direct sun 12–4 PM. Hydrate frequently.": {
+    hi: "38°C जैसा अहसास, UV इंडेक्स 10। दोपहर 12–4 बजे तक सीधी धूप से बचें और पर्याप्त पानी पिएं।",
+    te: "38°C వేడి అనుభూతి, UV సూచిక 10. మధ్యాహ్నం 12-4 గంటల మధ్య నేరుగా ఎండకు దూరంగా ఉండండి.",
+    ml: "38°C അനുഭവപ്പെടുന്നു, UV സൂചിക 10. ഉച്ചയ്ക്ക് 12–4 വരെ നേരിട്ടുള്ള വെയിൽ ഒഴിവാക്കുക.",
+    ta: "38°C வெப்ப உணர்வு, UV குறியீடு 10. நண்பகல் 12–4 வரை நேரடி வெயிலைத் தவிர்க்கவும்.",
+    pa: "38°C ਮਹਿਸੂਸ ਹੁੰਦਾ ਹੈ, UV ਇੰਡੈਕਸ 10। ਦੁਪਹਿਰ 12–4 ਵਜੇ ਤੱਕ ਸਿੱਧੀ ਧੁੱਪ ਤੋਂ ਬਚੋ।",
+  },
+  "Urgent": { hi: "अति आवश्यक", te: "అత్యవసరం", ml: "അടിയന്തിരം", ta: "அவசரம்", pa: "ਜ਼ਰੂਰੀ" },
   "Continue": { hi: "आगे बढ़ें", te: "కొనసాగించు", ml: "തുടരുക", ta: "தொடரவும்", pa: "ਅੱਗੇ ਵਧੋ" },
   "You can change this anytime in the menu": {
     hi: "इसे मेनू में कभी भी बदल सकते हैं",
@@ -1486,6 +1501,40 @@ function translateDynamicPattern(en: string, lang: Lang): string {
     if (lang === "pa") {
       const notePa = isModerate ? "ਦਰਮਿਆਨੀ AQI - ਲੰਬੀ ਦੌੜ ਵਿੱਚ ਮਾਸਕ ਪਹਿਨੋ।" : "ਸਾਫ਼ ਹਵਾ।";
       return `${temp}°C, ${wind} ਕਿਲੋਮੀਟਰ/ਘੰਟਾ ਹਵਾ, AQI ${aqi}। ${notePa}`;
+    }
+  }
+
+  // 4a-1. Yellow Advisory dynamic title
+  const yellowAdvMatch = en.match(/^Yellow\s+Advisory\s*[·•-]\s*(.*)$/i);
+  if (yellowAdvMatch) {
+    const topic = yellowAdvMatch[1].trim();
+    const topicTrans: Record<string, Partial<Record<Lang, string>>> = {
+      "Extreme Heat & UV": { hi: "अत्यधिक गर्मी और UV", te: "తీవ్రమైన వేడి & UV", ta: "அதிக வெப்பம் மற்றும் UV", ml: "കടുത്ത ചൂടും UV-യും", pa: "ਬਹੁਤ ਜ਼ਿਆਦਾ ਗਰਮੀ ਅਤੇ UV" },
+      "Dense fog": { hi: "घना कोहरा", te: "దట్టమైన పొగమంచు", ta: "அடர்ந்த மூடுபனி", ml: "കനത്ത മൂടൽമഞ്ഞ്", pa: "ਸੰਘਣੀ ਧੁੰਦ" },
+      "Heat building": { hi: "बढ़ती गर्मी", te: "వేడి తీవ్రత", ta: "வெப்ப அதிகரிப்பு", ml: "ചൂട് കൂടുന്നു", pa: "ਵਧ ਰਹੀ ਗਰਮੀ" },
+      "Air quality dipping": { hi: "हवा की गुणवत्ता में गिरावट", te: "గాలి నాణ్యత క్షీణత", ta: "காற்று தரம் குறைவு", ml: "വായു ഗുണനിലവാരം താഴുന്നു", pa: "ਹਵਾ ਦੀ ਗੁਣਵੱਤਾ ਵਿੱਚ ਗਿਰਾਵਟ" },
+      "Very high UV": { hi: "बहुत अधिक UV", te: "చాలా ఎక్కువ UV", ta: "மிக அதிக UV", ml: "വളരെ ഉയർന്ന UV", pa: "ਬਹੁਤ ਜ਼ਿਆਦਾ UV" },
+    };
+    const translatedTopic = topicTrans[topic]?.[lang] ?? dict[topic]?.[lang] ?? topic;
+    switch (lang) {
+      case "hi": return `येलो एडवाइजरी · ${translatedTopic}`;
+      case "te": return `ఎల్లో అడ్వైజరీ · ${translatedTopic}`;
+      case "ta": return `மஞ்சள் எச்சரிக்கை · ${translatedTopic}`;
+      case "ml": return `മഞ്ഞ മുന്നറിയിപ്പ് · ${translatedTopic}`;
+      case "pa": return `ਯੈਲੋ ਐਡਵਾਈਜ਼ਰੀ · ${translatedTopic}`;
+    }
+  }
+
+  // 4a-2. Feels like X with UV index Y
+  const heatUvAlertMatch = en.match(/^Feels\s+like\s+([\d.]+)°C\s+with\s+UV\s+index\s+([\d.]+)\.\s*(.*)$/i);
+  if (heatUvAlertMatch) {
+    const [, temp, uv] = heatUvAlertMatch;
+    switch (lang) {
+      case "hi": return `${temp}°C जैसा अहसास, UV इंडेक्स ${uv}। दोपहर 12–4 बजे तक धूप से बचें और पानी पिएं।`;
+      case "te": return `${temp}°C వేడి అనుభూతి, UV సూచిక ${uv}. నేరుగా ఎండకు దూరంగా ఉండండి.`;
+      case "ta": return `${temp}°C வெப்ப உணர்வு, UV குறியீடு ${uv}. நண்பகல் வெயிலைத் தவிர்க்கவும்.`;
+      case "ml": return `${temp}°C അനുഭവപ്പെടുന്നു, UV സൂചിക ${uv}. നേരിട്ടുള്ള വെയിൽ ഒഴിവാക്കുക.`;
+      case "pa": return `${temp}°C ਮਹਿਸੂਸ ਹੁੰਦਾ ਹੈ, UV ਇੰਡੈਕਸ ${uv}। ਦੁਪਹਿਰ ਧੁੱਪ ਤੋਂ ਬਚੋ।`;
     }
   }
 
