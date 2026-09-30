@@ -7,9 +7,9 @@ import { COASTLINE_WEST, COASTLINE_EAST, STATE_BORDERS } from "./WindRadar";
 
 /* ─────────────────── CONFIGURATION ─────────────────── */
 
-// Free, reliable OpenStreetMap German mirror with full CORS and no API keys required
-const TILE_URL = "https://tile.openstreetmap.de/{z}/{x}/{y}.png";
-const TILE_URL_FALLBACK = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png";
+// Authentic GIS CartoDB Dark Matter basemap with high-resolution boundaries
+const TILE_URL = "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
+const TILE_URL_FALLBACK = "https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
 
 const DEFAULT_CENTER = { lat: 13.5, lng: 79.5 };
 const FULLSCREEN_ZOOM = 6;
@@ -150,38 +150,7 @@ function drawPrecipitation(
 ) {
   const mpp = (156543.03392 * Math.cos((center.lat * Math.PI) / 180)) / Math.pow(2, zoom);
 
-  // ── Draw Coastlines & State Boundaries ──
-  const drawLine = (coords: [number, number][], stroke: string, width: number, dashed = false) => {
-    if (coords.length < 2) return;
-    ctx.beginPath();
-    let started = false;
-    for (let i = 0; i < coords.length; i++) {
-      const pt = geoToPixel(coords[i][0], coords[i][1], center, zoom, w, h);
-      if (!started) {
-        ctx.moveTo(pt.x, pt.y);
-        started = true;
-      } else {
-        ctx.lineTo(pt.x, pt.y);
-      }
-    }
-    ctx.save();
-    ctx.strokeStyle = stroke;
-    ctx.lineWidth = width;
-    ctx.lineCap = "round";
-    ctx.lineJoin = "round";
-    if (dashed) ctx.setLineDash([4, 4]);
-    ctx.stroke();
-    ctx.restore();
-  };
-
-  // Coastlines
-  drawLine(COASTLINE_WEST, "rgba(56, 189, 248, 0.60)", 1.6);
-  drawLine(COASTLINE_EAST, "rgba(56, 189, 248, 0.60)", 1.6);
-
-  // State borders
-  for (const border of STATE_BORDERS) {
-    drawLine(border, "rgba(255, 255, 255, 0.35)", 1.0, true);
-  }
+  // Real geographic boundaries and coastlines are natively rendered by the CartoDB Dark Matter GIS basemap.
 
   // Sort cells by intensity ascending so light ambient clouds render first,
   // and vibrant heavy/extreme cores render cleanly on top without color distortion.
@@ -311,12 +280,11 @@ function TileMap({
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: customHeight || "100%", position: "relative", overflow: "hidden", background: "#0d1520" }}>
-      {/* Layer 1 — Map tiles with dark-mode CSS filter */}
+      {/* Layer 1 — Map tiles (authentic CartoDB Dark Matter GIS basemap) */}
       <div
         style={{
           position: "absolute",
           inset: 0,
-          filter: "invert(1) hue-rotate(190deg) brightness(0.95) contrast(1.1) saturate(0.3)",
           overflow: "hidden",
         }}
       >
