@@ -196,6 +196,7 @@ const dict: Record<string, Tr> = {
   "Humid": { hi: "आर्द्र", te: "తేమగా", ml: "ഈർപ്പം", ta: "ஈரப்பதம்", pa: "ਸਿੱਲ੍ਹਾ" },
   "Dry": { hi: "शुष्क", te: "పొడి", ml: "വരണ്ട", ta: "வறண்ட", pa: "ਖ਼ੁਸ਼ਕ" },
   "Pressure": { hi: "दाब", te: "పీడనం", ml: "മർദ്ദം", ta: "அழுத்தம்", pa: "ਦਬਾਅ" },
+  "Moon": { hi: "चंद्रमा", te: "చంద్రుడు", ml: "ചന്ദ്രൻ", ta: "நிலா", pa: "ਚੰਦਰਮਾ" },
   "Moon phase": { hi: "चंद्र कला", te: "చంద్ర దశ", ml: "ചന്ദ്രദശ", ta: "நிலா நிலை", pa: "ਚੰਦ ਦੀ ਦਸ਼ਾ" },
   "illuminated": { hi: "प्रकाशित", te: "ప్రకాశితం", ml: "പ്രകാശിതം", ta: "ஒளிரும்", pa: "ਰੌਸ਼ਨ" },
 
@@ -1141,6 +1142,12 @@ const dict: Record<string, Tr> = {
   "Poor": { hi: "खराब" },
   "Very Poor": { hi: "बहुत खराब" },
   "Severe": { hi: "गंभीर" },
+
+  /* ── Moon & Astronomy ── */
+  "Tomorrow": { hi: "कल", te: "రేపు", ml: "നാളെ", ta: "நாளை", pa: "ਭਲਕੇ" },
+  "Third Quarter": { hi: "कृष्ण अष्टमी (अंतिम चतुर्थांश)", te: "చివరి పాదం", ml: "അവസാന പാദം", ta: "கடைசி கால்பகுதி", pa: "ਆਖ਼ਰੀ ਚੌਥਾਈ" },
+  "Day Preview": { hi: "दिन का पूर्वावलोकन", te: "రోజు ప్రివ్యూ", ml: "ദിന പ്രിവ്യൂ", ta: "நாள் முன்னோட்டம்", pa: "ਦਿਨ ਝਲਕ" },
+  "Lunar Timeline": { hi: "चंद्र समयरेखा", te: "చంద్ర టైమ్‌లైన్", ml: "ചന്ദ്ര ടൈംലൈൻ", ta: "நிலவு காலக்கோடு", pa: "ਚੰਦਰਮਾ ਸਮਾਂਰੇਖਾ" },
 };
 
 /** Returns a translator for the active language, keyed by the English source string. */

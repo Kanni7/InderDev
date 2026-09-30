@@ -10,17 +10,18 @@ export interface UserType {
   hindi: string;
   glyph: string;
   tag: string;
+  image: string;
 }
 
 export const userTypes: UserType[] = [
-  { key: "health", label: "Health-conscious", hindi: "स्वास्थ्य", glyph: "AQI", tag: "Air, pollen and UV aware" },
-  { key: "fitness", label: "Outdoor Fitness", hindi: "फ़िटनेस", glyph: "RUN", tag: "Best training windows" },
-  { key: "beach", label: "Beach and Surf", hindi: "समुद्र", glyph: "TIDE", tag: "Tides, waves and water" },
-  { key: "traveler", label: "Traveler", hindi: "यात्री", glyph: "TRIP", tag: "Multi-city and packing" },
-  { key: "parent", label: "Family", hindi: "परिवार", glyph: "SCH", tag: "School-commute safety" },
-  { key: "agri", label: "Agriculture", hindi: "कृषि", glyph: "SOIL", tag: "Soil, rain and frost" },
-  { key: "commuter", label: "Travel and Commute", hindi: "यात्रा", glyph: "ROAD", tag: "Visibility and delays" },
-  { key: "event", label: "Events", hindi: "आयोजन", glyph: "PLAN", tag: "Comfort and rain odds" },
+  { key: "health", label: "Health-conscious", hindi: "स्वास्थ्य", glyph: "AQI", tag: "Air, pollen and UV aware", image: "/profiles/health.jpg" },
+  { key: "fitness", label: "Outdoor Fitness", hindi: "फ़िटनेस", glyph: "RUN", tag: "Best training windows", image: "/profiles/fitness.jpg" },
+  { key: "beach", label: "Beach and Surf", hindi: "समुद्र", glyph: "TIDE", tag: "Tides, waves and water", image: "/profiles/beach.jpg" },
+  { key: "traveler", label: "Traveler", hindi: "यात्री", glyph: "TRIP", tag: "Multi-city and packing", image: "/profiles/traveler.jpg" },
+  { key: "parent", label: "Family", hindi: "परिवार", glyph: "SCH", tag: "School-commute safety", image: "/profiles/parent.jpg" },
+  { key: "agri", label: "Agriculture", hindi: "कृषि", glyph: "SOIL", tag: "Soil, rain and frost", image: "/profiles/agri.jpg" },
+  { key: "commuter", label: "Travel and Commute", hindi: "यात्रा", glyph: "ROAD", tag: "Visibility and delays", image: "/profiles/commuter.jpg" },
+  { key: "event", label: "Events", hindi: "आयोजन", glyph: "PLAN", tag: "Comfort and rain odds", image: "/profiles/event.jpg" },
 ];
 
 /* ─────────── Location profiles (swap the area) ─────────── */
@@ -347,6 +348,175 @@ export const vocations: Record<UserTypeKey, Vocation> = {
     order: full(["metrics", "precip", "wind", "weekly"]),
   },
 };
+
+export interface ActivitySignalsSnapshot {
+  runningMin: number;
+  walkingMin: number;
+  cyclingMin: number;
+  vehicleCommuteMin: number;
+  vehicleLongTripMin: number;
+  schoolRunWalks: number;
+}
+
+/** Returns a live, condition-aware "For You" insight for a given profile + location. */
+export function getDynamicInsight(
+  userType: UserTypeKey,
+  loc: Location,
+  currentHour = new Date().getHours(),
+  alertOverrides: { moduleId: string; tier: "warning" | "critical" }[] = [],
+  activitySignals?: Partial<ActivitySignalsSnapshot>,
+  moduleInteractions?: Record<string, { taps: number; scrollPasts: number }>,
+  locationContext?: string,
+): Insight {
+  // ── Activity-signal shortcuts (override everything else if strong enough) ──
+  const sig = activitySignals ?? {};
+  const taps = (id: string) => moduleInteractions?.[id]?.taps ?? 0;
+
+  // Running ≥ 1 hr
+  if ((sig.runningMin ?? 0) >= 60) {
+    const isWetNow = loc.condition === "rainy" || loc.condition === "storm";
+    if (isWetNow) return { headline: "Rain today — pick an indoor alternative to your run", detail: `You've logged ${Math.round((sig.runningMin ?? 0) / 60 * 10) / 10} hrs of running. Roads are wet — treadmill or HIIT keeps the streak going.` };
+    return { headline: `${Math.round((sig.runningMin ?? 0) / 60 * 10) / 10} hrs of running logged — great work`, detail: `${loc.temp}°C, ${loc.wind.speed} km/h ${loc.wind.dir} breeze, AQI ${loc.air.aqi}. ${loc.air.aqi <= 50 ? "Clean air for your next session." : "Moderate AQI — consider a mask on long runs."}`, window: "Active" };
+  }
+  // Cycling ≥ 1 hr
+  if ((sig.cyclingMin ?? 0) >= 60) {
+    const gusty = loc.wind.speed >= 25;
+    return { headline: gusty ? `Headwind alert — ${loc.wind.speed} km/h ${loc.wind.dir} today` : `Good cycling conditions — ${loc.temp}°C, ${loc.wind.speed} km/h wind`, detail: gusty ? "Plan your route with the wind in the first half for an easier return leg." : `You've been cycling regularly. AQI ${loc.air.aqi} — ${loc.air.aqi <= 50 ? "clean air on the road." : "wear a mask above AQI 100."}` };
+  }
+  // Walking ≥ 30 min
+  if ((sig.walkingMin ?? 0) >= 30) {
+    return { headline: `Good walking conditions — ${loc.temp}°C outside`, detail: `UV is ${loc.air.uv} right now. ${loc.air.uv >= 6 ? "Apply SPF before heading out." : "Low UV — safe for a long walk."} AQI ${loc.air.aqi}.` };
+  }
+  // Long drive ≥ 3 hrs
+  if ((sig.vehicleLongTripMin ?? 0) >= 180) {
+    const isWetNow = loc.condition === "rainy" || loc.condition === "storm";
+    return { headline: isWetNow ? "Rain on the highway — drive cautiously" : `Clear conditions for your long drive`, detail: isWetNow ? `Visibility may be reduced. Allow extra buffer and check for waterlogging on low-lying roads.` : `${loc.temp}°C, wind ${loc.wind.speed} km/h. Good travel weather — fuel up and go.` };
+  }
+  // Commute ≥ 1 hr
+  if ((sig.vehicleCommuteMin ?? 0) >= 60) {
+    const isWetNow = loc.condition === "rainy" || loc.condition === "storm";
+    return { headline: isWetNow ? "Wet roads on your commute route" : `Dry roads — smooth commute expected`, detail: isWetNow ? `${loc.precip.chance}% rain chance. Leave early and keep wipers and fog lamps ready.` : `Visibility good, ${loc.temp}°C. No weather delays anticipated on your route.` };
+  }
+  // School run ≥ 1 walk
+  if ((sig.schoolRunWalks ?? 0) >= 1) {
+    const isWetNow = loc.condition === "rainy" || loc.condition === "storm";
+    return { headline: isWetNow ? "Pack rain gear for the school run" : `Safe conditions for the school run today`, detail: isWetNow ? "Light showers expected. Raincoat, umbrella, and waterproof footwear for the kids." : `${loc.temp}°C, UV ${loc.air.uv}. ${loc.air.uv >= 6 ? "Apply sunscreen before drop-off." : "Comfortable conditions — no special prep needed."}` };
+  }
+
+  // ── Module-tap shortcuts ──
+  const airTaps = taps("air") + taps("pollen");
+  const rainTaps = taps("precip") + taps("rainmap");
+  const windTaps = taps("wind");
+
+  if (airTaps >= 3) {
+    return { headline: `AQI ${loc.air.aqi} — ${loc.air.aqiLabel} air quality right now`, detail: `UV ${loc.air.uv} (${loc.air.uvLabel}), humidity ${loc.humidity}%. ${loc.air.aqi > 100 ? "Keep windows closed and limit outdoor exposure." : "Air is breathable — open windows for ventilation."}` };
+  }
+  if (rainTaps >= 3) {
+    return { headline: `${loc.precip.chance}% rain chance — ${loc.precip.note}`, detail: `Next rain expected: ${loc.precip.next}. Total ${loc.precip.amount} in the next 24 hrs at ${loc.precip.rate} average rate.` };
+  }
+  if (windTaps >= 3) {
+    return { headline: `Wind ${loc.wind.speed} km/h ${loc.wind.dir}, gusts ${loc.wind.gust} km/h`, detail: `${loc.wind.speed >= 25 ? "Strong wind — secure loose outdoor items." : "Light breeze — comfortable for outdoor activity."}` };
+  }
+
+  // ── Location-context overrides ──
+  if (locationContext === "farm") {
+    const isWet = loc.condition === "rainy" || loc.condition === "storm";
+    if (isWet) return { headline: "Rain on the farm today — hold off on spraying", detail: `${loc.precip.amount} expected. Soil absorbing natural moisture. Resume field work once it drains.` };
+    if (loc.wind.speed >= 20) return { headline: `High winds at ${loc.wind.speed} km/h — skip fertiliser application`, detail: "Spray drift risk above 20 km/h. Wait for calmer conditions, ideally early morning." };
+    if (loc.air.heat >= 36) return { headline: "Heat stress risk for crops — increase watering", detail: `Feels like ${loc.feels}°C. Drip irrigate early morning or after 6 PM to reduce evaporation.` };
+    return { headline: `Field conditions good today — ${loc.temp}°C, ${loc.precip.chance}% rain`, detail: `Wind ${loc.wind.speed} km/h, humidity ${loc.humidity}%. Suitable for planting, harvesting, or irrigation.` };
+  }
+  if (locationContext === "beach") {
+    if (loc.condition === "storm") return { headline: "Storm warning — unsafe beach conditions", detail: `Gusts up to ${loc.wind.gust} km/h with rough seas. Stay off the beach until the front passes.` };
+    if (loc.wind.speed >= 25) return { headline: `Offshore wind at ${loc.wind.speed} km/h — great for kite surfing`, detail: "Swimmers should stay near shore. Strong gusts make this a kite-surfing day." };
+    return { headline: `Beach conditions: ${loc.temp}°C, UV ${loc.air.uv}`, detail: `${loc.air.uv >= 7 ? "High UV — apply SPF 50 and reapply every 90 min." : "Moderate UV — comfortable for swimming and sunbathing."}` };
+  }
+  if (locationContext === "other_city") {
+    const isWet = loc.condition === "rainy" || loc.condition === "storm";
+    return { headline: isWet ? `Rainy in ${loc.city} — pack an umbrella` : `${loc.city}: ${loc.temp}°C, ${loc.condition}`, detail: isWet ? `${loc.precip.chance}% rain chance. Keep a compact raincoat accessible for your time here.` : `Feels like ${loc.feels}°C. ${loc.air.aqi <= 50 ? "Clean air" : `AQI ${loc.air.aqi}`} — good conditions to explore the city.` };
+  }
+
+  // ── Demo-panel alert overrides ──
+  const hasCritical = alertOverrides.some((a) => a.tier === "critical");
+  const hasWarning = alertOverrides.some((a) => a.tier === "warning");
+
+  const { temp, feels, wind, precip, air } = loc;
+  const condition = hasCritical ? "storm" : hasWarning ? "rainy" : loc.condition;
+  const isWet = condition === "rainy" || condition === "storm";
+  const isClear = condition === "sunny" || condition === "night";
+  const isHot = feels >= 34;
+  const isCool = temp < 22;
+  const highWind = wind.speed >= 25;
+  const rainyChance = precip.chance >= 50;
+  const morning = currentHour >= 5 && currentHour < 10;
+  const afternoon = currentHour >= 10 && currentHour < 17;
+  const evening = currentHour >= 17 && currentHour < 21;
+
+  switch (userType) {
+    case "fitness": {
+      if (isWet) return { headline: "Rain outside — switch to an indoor workout today", detail: `${condition === "storm" ? "Thunderstorm" : "Rainfall"} makes outdoor training risky. A gym session or home HIIT keeps your streak alive.` };
+      if (isHot && afternoon) return { headline: `Avoid midday runs — feels like ${feels}°C outside`, detail: `UV is ${air.uv >= 7 ? "very high" : "elevated"} and the heat index is ${air.heat}°C. Go out before 8 AM or after 6 PM.`, window: "before 8 AM / after 6 PM" };
+      if (isCool && morning) return { headline: "Perfect morning for a long run right now", detail: `${temp}°C with ${wind.dir} breeze at ${wind.speed} km/h. AQI is ${air.aqi <= 50 ? "good" : "moderate"} — ideal conditions for a tempo effort.`, window: "Now" };
+      if (highWind) return { headline: `Strong ${wind.speed} km/h winds — adjust your route`, detail: "Run with the wind in the first half so you have a tailwind on the way back. Avoid exposed ridge paths." };
+      if (isClear && morning) return { headline: "Great morning — get out before 9 AM", detail: `Clear skies and ${temp}°C. AQI ${air.aqi} keeps breathing easy. Window closes as feels-like rises after 10 AM.`, window: "Now – 9 AM" };
+      return { headline: `${feels}°C feels-like — comfortable training window open`, detail: `${wind.speed} km/h ${wind.dir} breeze and AQI ${air.aqi}. Good conditions for an easy or recovery run.` };
+    }
+    case "health": {
+      if (air.aqi >= 150) return { headline: "Poor air quality — stay indoors today", detail: `AQI is ${air.aqi} (${air.aqiLabel}). Avoid outdoor exercise and keep windows closed, especially ${afternoon ? "this afternoon" : "midday"}.` };
+      if (air.uv >= 8) return { headline: `UV index ${air.uv} — high sun risk today`, detail: `Peak UV between 11 AM and 3 PM. Apply SPF 50+, wear a hat, and avoid direct sun for more than 20 minutes.`, window: "11 AM – 3 PM" };
+      if (isWet) return { headline: "Rain keeps pollen low — a good day for outdoor walks", detail: `Rainfall washes pollen from the air. AQI is ${air.aqi}. Take advantage before skies clear and counts rise again.` };
+      if (air.aqi <= 50 && isClear) return { headline: "Air quality excellent — safe to open windows", detail: `AQI ${air.aqi} and ${condition === "sunny" ? "clear skies" : "calm conditions"}. Great time for ventilation and outdoor activity.` };
+      return { headline: `Pollen ${loc.pollen.level} today, AQI ${air.aqi}`, detail: `${air.aqi > 100 ? "Keep windows shut and prefer indoors." : "Moderate conditions — N95 advised if sensitive."} UV peaks around noon.` };
+    }
+    case "agri": {
+      if (isWet) return { headline: "Rain today — hold off on irrigation and spraying", detail: `${precip.amount} expected. Soil will absorb natural moisture. Resume field work only when it drains, likely ${condition === "storm" ? "by tomorrow evening" : "by afternoon"}.` };
+      if (rainyChance) return { headline: `${precip.chance}% rain chance — delay irrigation`, detail: `Forecast rainfall should cover crop needs. Check soil moisture before resuming by ${precip.next !== "No rain expected" ? precip.next : "tomorrow"}.` };
+      if (highWind) return { headline: `High winds at ${wind.speed} km/h — postpone spraying`, detail: "Pesticide and fertiliser drift is a risk above 20 km/h. Wait for wind to drop below 15 km/h before applying." };
+      if (isHot) return { headline: "Heat stress risk for crops — increase watering frequency", detail: `${feels}°C feels-like. Drip irrigate in early morning or after 6 PM to minimise evaporation and leaf burn.` };
+      return { headline: isClear ? "Clear skies — good day for field operations" : "Calm conditions for field work today", detail: `Wind ${wind.speed} km/h, humidity ${loc.humidity}%. ${isHot ? "Work in morning hours." : "Conditions favourable for spraying and harvesting."}` };
+    }
+    case "beach": {
+      if (condition === "storm") return { headline: "Storm warning — stay out of the water today", detail: `Gusty winds up to ${wind.gust} km/h with rough seas. Beach conditions are unsafe. Wait for the front to pass.` };
+      if (isWet) return { headline: "Overcast and rainy — beach not ideal today", detail: `Visibility is reduced and seas may be choppy. If you go, stick to sheltered coves and avoid open water.` };
+      if (highWind) return { headline: `${wind.speed} km/h ${wind.dir} wind — kite surfers' dream`, detail: "Strong offshore wind creates ideal kite and wind-surf conditions. Swimmers should stay close to shore." };
+      if (isClear && !isHot) return { headline: "Perfect beach day — UV moderate before noon", detail: `${temp}°C with light wind and clear skies. Apply SPF before 10 AM as UV climbs to ${air.uv} by midday.`, window: morning ? "Now" : "Afternoon" };
+      if (isHot) return { headline: `Hot at ${temp}°C — stay in the shade between 11 AM–3 PM`, detail: "Sea breeze picks up after 3 PM making conditions more comfortable. Stay hydrated and reapply sunscreen every 90 min." };
+      return { headline: "Decent conditions at the coast today", detail: `${temp}°C, ${wind.speed} km/h ${wind.dir} breeze. Check local tide times before heading out.` };
+    }
+    case "traveler": {
+      if (condition === "storm") return { headline: "Storm alert — check for flight disruptions", detail: `Gusty winds up to ${wind.gust} km/h. Contact your airline and allow extra buffer time for ground transfers.` };
+      if (isWet) return { headline: "Rain en route — pack a compact umbrella", detail: `${precip.chance}% chance of rain. Travel in layers and keep a raincoat accessible, not in checked baggage.` };
+      if (isHot) return { headline: `Destination is hot at ${temp}°C — pack light breathable fabrics`, detail: "Linen and moisture-wicking clothes are essential. Carry an electrolyte drink for long transit days." };
+      if (isCool) return { headline: `Cool ${temp}°C at destination — add a mid-layer`, detail: "A light fleece or packable jacket will cover the temperature swing. Evenings can drop further." };
+      return { headline: "Clear skies make for smooth travel today", detail: `${feels}°C, low wind, ${air.aqi <= 50 ? "clean air" : `AQI ${air.aqi}`}. Comfortable conditions for connections and transfers.` };
+    }
+    case "parent": {
+      const commute = morning ? "morning school run" : "afternoon pickup";
+      if (condition === "storm") return { headline: "Thunderstorm — keep kids indoors after school", detail: `Lightning risk during the ${evening ? "evening" : "afternoon"}. Postpone outdoor play until the storm passes.` };
+      if (isWet && morning) return { headline: "Rain during the school run — leave 10 min early", detail: `Showers are heaviest before 9 AM. Pack an umbrella and raincoat. Roads will be slower than usual.`, window: "7:30–9:00 AM" };
+      if (isWet) return { headline: "Wet roads for the afternoon pickup", detail: `${precip.chance}% rain chance. Allow extra travel time and ensure kids have waterproof footwear.` };
+      if (isHot && afternoon) return { headline: `Hot ${feels}°C pickup — bring water for the kids`, detail: "Feels-like peaks between 1 and 4 PM. Keep children in the shade and ensure they're well-hydrated after school." };
+      if (air.aqi >= 100) return { headline: `Air quality poor — skip outdoor play today`, detail: `AQI ${air.aqi}. Keep windows closed and stick to indoor activities. Sensitive children should avoid exertion.` };
+      return { headline: isClear ? `Clear and ${temp}°C — great day for outdoor play` : `Comfortable ${temp}°C for the ${commute}`, detail: `${wind.speed < 15 ? "Light breeze" : `${wind.speed} km/h wind`}, UV ${air.uv}. ${air.uv >= 6 ? "Apply sunscreen before school." : "No special precautions needed today."}` };
+    }
+    case "commuter": {
+      if (condition === "fog") return { headline: "Dense fog — visibility under 400 m this morning", detail: "Leave 15 min early or take the metro. Use fog lamps and keep 3× following distance on highways.", window: "Before 9 AM" };
+      if (condition === "storm") return { headline: "Storm warning — major delays expected", detail: `Winds up to ${wind.gust} km/h and heavy rain. Work from home if possible or leave well before rush hour.` };
+      if (isWet && morning) return { headline: "Wet commute ahead — roads will be slower", detail: `Rain eases after ${precip.next !== "No rain expected" ? precip.next : "mid-morning"}. Allow 15–20 extra minutes or take public transit.` };
+      if (highWind) return { headline: `Gusty ${wind.speed} km/h winds affecting traffic`, detail: "Two-wheelers and high-sided vehicles should take extra care on flyovers and open roads." };
+      if (isClear && morning) return { headline: "Clear roads — smooth commute expected", detail: `Good visibility, ${temp}°C. AQI ${air.aqi <= 50 ? "clean" : air.aqi}. No weather-related delays anticipated.` };
+      return { headline: `${feels}°C and ${isWet ? "wet" : "dry"} — standard commute conditions`, detail: `${wind.speed} km/h ${wind.dir} wind. ${precip.chance > 20 ? "Carry an umbrella just in case." : "No rain expected on your route."}` };
+    }
+    case "event": {
+      if (condition === "storm") return { headline: "Storm risk — move outdoor events indoors", detail: `Winds up to ${wind.gust} km/h and lightning risk. Reschedule or shift to a covered venue immediately.` };
+      if (isWet) return { headline: `${precip.chance}% rain tonight — have a covered backup`, detail: "Set up a marquee or identify an indoor fallback. Light showers may pass but plan for wet ground." };
+      if (isHot && afternoon) return { headline: `Hot ${temp}°C — schedule events after 5 PM`, detail: "Comfort improves significantly as the sun drops. Evening slot from 6 PM offers the best guest experience.", window: "After 6 PM" };
+      if (isClear && evening) return { headline: "Perfect evening for an outdoor event tonight", detail: `${temp}°C, ${wind.speed < 15 ? "calm breeze" : `${wind.speed} km/h wind`} and clear skies. Comfort score is high through midnight.`, window: "Tonight" };
+      if (isClear) return { headline: "Good weather window for events today", detail: `${feels}°C feels-like with ${precip.chance < 20 ? "low rain risk" : `${precip.chance}% rain chance`}. Early evening is the prime comfort slot.`, window: "5–8 PM" };
+      return { headline: `${precip.chance}% rain — keep an eye on the forecast`, detail: `Conditions are borderline. Monitor updates hourly and have a wet-weather plan ready for outdoor setups.` };
+    }
+  }
+}
 
 export function aqiColor(aqi: number) {
   if (aqi <= 50) return "#7bd88f";

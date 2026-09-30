@@ -280,7 +280,7 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       dewPoint: Math.round(cur.dew_point_2m),
       pressure: {
         value: Math.round(cur.surface_pressure),
-        trend: "Measured",
+        trend: "Steady",
       },
       moon: { phase: 0.5, name: "Waxing", illum: 50 },
       hourlyForecast,

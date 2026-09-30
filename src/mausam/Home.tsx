@@ -1,7 +1,7 @@
 import { useState, useMemo } from "react";
 import {
   vocations, tierMeta, locations,
-  aqiColor, uvColor, chatChips, formatTemp, type TemperatureUnit,
+  aqiColor, uvColor, chatChips, formatTemp, getDynamicInsight, type TemperatureUnit,
   type UserTypeKey, type Location, type Block,
   type HourlyPoint, type DailyPoint,
 } from "./data";
@@ -85,6 +85,10 @@ export default function Home({
   );
 
   const t = makeT(lang);
+  const insight = useMemo(
+    () => getDynamicInsight(userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext),
+    [userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext],
+  );
   const [unit, setUnit] = useState<TemperatureUnit>("C");
   const [citySearchQuery, setCitySearchQuery] = useState("");
   const [showLocations, setShowLocations] = useState(false);
@@ -176,7 +180,7 @@ export default function Home({
     ),
     moon: (
       <div key="moon" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("moon"); setActiveDetail("moon"); }}>
-        <MoonCard moon={location.moon} lang={lang} />
+        <MoonCard moon={location.moon} cityKey={location.key} lang={lang} />
       </div>
     ),
     air: (
@@ -193,18 +197,18 @@ export default function Home({
     ),
     sun: (
       <div key="sun" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("sun"); setActiveDetail("sun"); }}>
-        <SunArc sun={location.sun} accent={accent} lang={lang} />
+        <SunArc sun={location.sun} accent={accent} lang={lang} currentHour={currentHour} />
       </div>
     ),
     metrics: (
       <div key="metrics">
         <BlockTitle>{t(voc.metricsLabel)}</BlockTitle>
-        <div className="scroll-hide -mx-5 flex gap-3 overflow-x-auto px-5">
+        <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${voc.metrics.length}, minmax(0, 1fr))` }}>
           {voc.metrics.map((m) => (
-            <div key={m.label} className="min-w-[112px] shrink-0 rounded-2xl border border-white/8 p-3.5 mausam-glass">
-              <p className="text-[11px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">{t(m.label)}</p>
-              <p className="mt-2 text-2xl font-semibold text-[var(--color-ink)]">{t(m.value)}</p>
-              <p className="text-[11px] text-[var(--color-ink-soft)]">{t(m.sub)}</p>
+            <div key={m.label} className="overflow-hidden rounded-2xl border border-white/8 p-3 mausam-glass">
+              <p className="truncate text-[10px] font-medium uppercase tracking-wide text-[var(--color-ink-faint)]">{t(m.label)}</p>
+              <p className="mt-1.5 text-xl font-semibold text-[var(--color-ink)]">{t(m.value)}</p>
+              <p className="truncate text-[10px] text-[var(--color-ink-soft)]">{t(m.sub)}</p>
             </div>
           ))}
         </div>
@@ -281,7 +285,10 @@ export default function Home({
         </>
       )}
 
-      <div className="scroll-hide h-full overflow-y-auto pb-20">
+      <div
+        className="scroll-hide h-full overflow-y-auto pb-20"
+        style={{ visibility: activeDetail ? "hidden" : "visible" }}
+      >
         {/* ── Hero with real photo ── */}
         <div className="relative">
           <PhotoHero theme={theme} />
@@ -400,14 +407,14 @@ export default function Home({
                 <CondIcon c={theme.key} className="h-3.5 w-3.5" /> {t(theme.label)}
               </span>
             </div>
-            <h2 className="mt-3 text-[22px] font-semibold leading-tight text-[var(--color-ink)]">{t(voc.insight.headline)}</h2>
-            <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{t(voc.insight.detail)}</p>
+            <h2 className="mt-3 text-[22px] font-semibold leading-tight text-[var(--color-ink)]">{t(insight.headline)}</h2>
+            <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{t(insight.detail)}</p>
             <div className="mt-4 flex items-center gap-2">
-              {voc.insight.window && (
-                <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{voc.insight.window}</span>
+              {insight.window && (
+                <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{insight.window}</span>
               )}
               <button
-                onClick={() => onAskWhy ? onAskWhy(voc.insight.headline) : onChat?.()}
+                onClick={() => onAskWhy ? onAskWhy(insight.headline) : onChat?.()}
                 className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition active:scale-95 hover:bg-white/20"
               >
                 {t("Ask why")}
@@ -463,7 +470,9 @@ export default function Home({
       )}
 
       {/* ── Floating Mausam AI — icon at right, expands on hover ── */}
-      <FloatingAI onChat={onChat} accent={accent} lang={lang} />
+      {!activeDetail && (
+        <FloatingAI onChat={onChat} accent={accent} lang={lang} />
+      )}
     </div>
   );
 }

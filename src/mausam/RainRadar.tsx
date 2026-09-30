@@ -1,15 +1,16 @@
-import { useState, useRef, useEffect, useCallback, useMemo } from "react";
+import { useState, useRef, useEffect, useMemo } from "react";
 import { makeT, type Lang } from "./i18n";
 import type { Condition } from "./theme";
 import type { Wind } from "./data";
 import * as I from "./icons";
-import { COASTLINE_WEST, COASTLINE_EAST, STATE_BORDERS } from "./WindRadar";
+import { fetchRainViewerFrames, type RainViewerData } from "../data/openMeteo";
 
 /* ─────────────────── CONFIGURATION ─────────────────── */
 
-// Authentic GIS CartoDB Dark Matter basemap with high-resolution boundaries
-const TILE_URL = "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
-const TILE_URL_FALLBACK = "https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
+// Real satellite imagery (ESRI World Imagery) + place-name labels
+const TILE_URL = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const TILE_URL_FALLBACK = "https://services.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+const TILE_URL_REF = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 
 const DEFAULT_CENTER = { lat: 13.5, lng: 79.5 };
 const FULLSCREEN_ZOOM = 6;
@@ -33,175 +34,15 @@ function latToTileY(lat: number, z: number) {
   const r = (lat * Math.PI) / 180;
   return ((1 - Math.log(Math.tan(r) + 1 / Math.cos(r)) / Math.PI) / 2) * Math.pow(2, z);
 }
-function geoToPixel(
-  lat: number, lng: number,
-  center: { lat: number; lng: number },
-  zoom: number, w: number, h: number
-) {
-  const cx = lngToTileX(center.lng, zoom) * 256;
-  const cy = latToTileY(center.lat, zoom) * 256;
-  return {
-    x: lngToTileX(lng, zoom) * 256 - cx + w / 2,
-    y: latToTileY(lat, zoom) * 256 - cy + h / 2,
-  };
-}
-
-/* ─────────────────── PRECIPITATION DATA (MOCK) ─────────────────── */
-
-interface PrecipCell {
-  lat: number;
-  lng: number;
-  radius: number;
-  intensity: number; // 0..1
-}
-
-/**
- * Generate a rich, realistic nationwide weather radar field covering major weather fronts
- * across the entire country (North India, Gangetic plains, Western Ghats, Odisha coast,
- * South India, Assam, etc.) plus local intensity near the selected city.
- */
-function generatePrecipCells(
-  locationKey: string,
-  condition: Condition,
-  chance: number,
-  _wind: Wind
-): PrecipCell[] {
-  const center = LOCATION_CENTERS[locationKey] || DEFAULT_CENTER;
-  const cLat = center.lat;
-  const cLng = center.lng;
-
-  const wet = condition === "rainy" || condition === "storm";
-  const mult = wet ? 1.15 : 0.95;
-
-  return [
-    // ════════════════════════════════════════════════════════════════
-    // 1. REFINED LOCAL WEATHER FRONT AROUND SELECTED CITY
-    // ════════════════════════════════════════════════════════════════
-    { lat: cLat - 0.08, lng: cLng + 0.12, radius: 160, intensity: 0.38 * mult }, // Outer light rain veil
-    { lat: cLat - 0.15, lng: cLng - 0.08, radius: 125, intensity: 0.60 * mult }, // Moderate purple rain zone
-    { lat: cLat - 0.03, lng: cLng - 0.04, radius: 85, intensity: 0.78 * mult },  // Heavy yellow rain core
-    { lat: cLat + 0.02, lng: cLng + 0.01, radius: 55, intensity: 0.92 * mult },  // Extreme core
-
-    // ════════════════════════════════════════════════════════════════
-    // 2. REGIONAL WEATHER SPOTS ACROSS INDIA (balanced 60-115km radiuses)
-    // ════════════════════════════════════════════════════════════════
-    { lat: 18.5, lng: 73.9, radius: 95, intensity: 0.72 * mult }, // Pune
-    { lat: 19.1, lng: 72.9, radius: 110, intensity: 0.88 * mult }, // Mumbai / Thane
-    { lat: 15.5, lng: 73.8, radius: 100, intensity: 0.78 * mult }, // Goa
-    { lat: 12.97, lng: 77.6, radius: 95, intensity: 0.65 * mult }, // Bengaluru
-    { lat: 13.1, lng: 80.0, radius: 105, intensity: 0.70 * mult }, // Chennai
-    { lat: 10.8, lng: 78.7, radius: 110, intensity: 0.82 * mult }, // Trichy / Madurai
-    { lat: 9.9, lng: 76.3, radius: 100, intensity: 0.75 * mult },  // Kochi
-    { lat: 28.7, lng: 77.1, radius: 115, intensity: 0.88 * mult }, // Delhi NCR
-    { lat: 27.2, lng: 78.0, radius: 90, intensity: 0.68 * mult },  // Agra
-    { lat: 22.6, lng: 88.4, radius: 105, intensity: 0.72 * mult }, // Kolkata
-    { lat: 21.5, lng: 87.0, radius: 115, intensity: 0.85 * mult }, // Odisha coast
-    { lat: 23.2, lng: 77.4, radius: 90, intensity: 0.58 * mult },  // Bhopal
-    { lat: 21.2, lng: 72.8, radius: 85, intensity: 0.55 * mult },  // Surat
-    { lat: 17.4, lng: 78.4, radius: 95, intensity: 0.48 * mult },  // Hyderabad
-  ];
-}
-
-/* ─────────────────── FORECAST FRAMES ─────────────────── */
-
-interface ForecastFrame { time: string; cells: PrecipCell[]; }
-
-function generateForecastFrames(
-  locationKey: string, condition: Condition, chance: number, wind: Wind
-): ForecastFrame[] {
-  const base = generatePrecipCells(locationKey, condition, chance, wind);
-  const hours = ["4 PM", "Now", "6 PM", "7 PM", "8 PM", "9 PM", "10 PM", "12 AM", "2 AM", "4 AM"];
-  const dirAngles: Record<string, number> = {
-    N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315,
-  };
-  const a = ((dirAngles[wind.dir] ?? 0) * Math.PI) / 180;
-  const mLat = -Math.cos(a) * 0.12;
-  const mLng = Math.sin(a) * 0.12;
-
-  return hours.map((time, i) => {
-    const drift = i * 0.35;
-    const fade = Math.max(0.15, 1 - i * 0.06);
-    return {
-      time,
-      cells: base.map((c) => ({
-        ...c,
-        lat: c.lat + mLat * drift + Math.sin(i * 0.7 + c.lat) * 0.08,
-        lng: c.lng + mLng * drift + Math.cos(i * 0.5 + c.lng) * 0.06,
-        intensity: c.intensity * fade * (0.88 + Math.sin(i * 0.4) * 0.12),
-        radius: c.radius * (0.92 + Math.sin(i * 0.3) * 0.18),
-      })),
-    };
-  });
-}
-
-/* ─────────────────── PRECIPITATION RENDERING ───────────────────
-   Exact Apple Weather iOS colour palette (matching user screenshot):
-   • Light    → Bright Cyan Blue (#007aff / #38bdf8)
-   • Moderate → Vivid Purple / Violet (#c084fc / #a855f7)
-   • Heavy    → Bright Yellow (#facc15 / #eab308)
-   • Extreme  → White / Pale Yellow (#ffffff / #ffffd0)
-   ────────────────────────────────────────────────────────────── */
-
-function drawPrecipitation(
-  ctx: CanvasRenderingContext2D,
-  cells: PrecipCell[],
-  center: { lat: number; lng: number },
-  zoom: number, w: number, h: number
-) {
-  const mpp = (156543.03392 * Math.cos((center.lat * Math.PI) / 180)) / Math.pow(2, zoom);
-
-  // Real geographic boundaries and coastlines are natively rendered by the CartoDB Dark Matter GIS basemap.
-
-  // Sort cells by intensity ascending so light ambient clouds render first,
-  // and vibrant heavy/extreme cores render cleanly on top without color distortion.
-  const sorted = [...cells].sort((a, b) => a.intensity - b.intensity);
-
-  for (const cell of sorted) {
-    const { x, y } = geoToPixel(cell.lat, cell.lng, center, zoom, w, h);
-    const rPx = (cell.radius * 1000) / mpp;
-    const i = Math.min(cell.intensity, 1);
-    const grad = ctx.createRadialGradient(x, y, 0, x, y, rPx);
-
-    if (i > 0.8) {
-      // ── EXTREME — Refined Gold Core into Purple & Cyan ──
-      grad.addColorStop(0,    "rgba(255, 255, 230, 0.82)");
-      grad.addColorStop(0.20, "rgba(250, 204, 21, 0.75)");
-      grad.addColorStop(0.50, "rgba(192, 132, 252, 0.52)");
-      grad.addColorStop(0.80, "rgba(56, 189, 248, 0.25)");
-      grad.addColorStop(1,    "rgba(0, 122, 255, 0)");
-    } else if (i > 0.6) {
-      // ── HEAVY — Soft Yellow into Purple & Blue ──
-      grad.addColorStop(0,    "rgba(250, 204, 21, 0.75)");
-      grad.addColorStop(0.35, "rgba(234, 179, 8, 0.60)");
-      grad.addColorStop(0.68, "rgba(192, 132, 252, 0.40)");
-      grad.addColorStop(0.88, "rgba(56, 189, 248, 0.20)");
-      grad.addColorStop(1,    "rgba(0, 122, 255, 0)");
-    } else if (i > 0.38) {
-      // ── MODERATE — Translucent Purple into Sky Blue ──
-      grad.addColorStop(0,    "rgba(192, 132, 252, 0.62)");
-      grad.addColorStop(0.40, "rgba(168, 85, 247, 0.45)");
-      grad.addColorStop(0.75, "rgba(56, 189, 248, 0.22)");
-      grad.addColorStop(1,    "rgba(0, 122, 255, 0)");
-    } else {
-      // ── LIGHT — Soft Subtle Cyan Blue Veil ──
-      grad.addColorStop(0,    "rgba(56, 189, 248, 0.42)");
-      grad.addColorStop(0.45, "rgba(2, 132, 199, 0.25)");
-      grad.addColorStop(0.80, "rgba(0, 122, 255, 0.10)");
-      grad.addColorStop(1,    "rgba(0, 122, 255, 0)");
-    }
-
-    ctx.fillStyle = grad;
-    ctx.beginPath();
-    ctx.arc(x, y, rPx, 0, Math.PI * 2);
-    ctx.fill();
-  }
-}
+/* ─────────────────── (using live RainViewer Doppler radar tiles) ─────────────────── */
 
 /* ─────────────────── TILE POSITIONS ─────────────────── */
 
 function useTilePositions(
   center: { lat: number; lng: number },
-  zoom: number, w: number, h: number
+  zoom: number, w: number, h: number,
+  rainViewerData?: RainViewerData | null,
+  rainFrameIndex: number = 0,
 ) {
   return useMemo(() => {
     const z = Math.max(4, Math.min(9, Math.round(zoom)));
@@ -210,13 +51,25 @@ function useTilePositions(
     const nx = Math.ceil(w / 256) + 2;
     const ny = Math.ceil(h / 256) + 2;
     const max = Math.pow(2, z) - 1;
-    const out: { url: string; dx: number; dy: number; key: string; z: number; wx: number; ty: number }[] = [];
+
+    const rainFrame =
+      rainViewerData?.frames && rainViewerData.frames.length > 0
+        ? rainViewerData.frames[Math.min(rainFrameIndex, rainViewerData.frames.length - 1)]
+        : undefined;
+
+    const out: { url: string; refUrl: string; fallbackUrl: string; rainUrl?: string; dx: number; dy: number; key: string; z: number; wx: number; ty: number }[] = [];
     for (let tx = Math.floor(cx - nx / 2); tx <= Math.ceil(cx + nx / 2); tx++) {
       for (let ty = Math.floor(cy - ny / 2); ty <= Math.ceil(cy + ny / 2); ty++) {
         if (ty < 0 || ty > max) continue;
         const wx = ((tx % (max + 1)) + max + 1) % (max + 1);
+        const rainUrl = rainViewerData && rainFrame
+          ? `${rainViewerData.host}${rainFrame.path}/256/${z}/${wx}/${ty}/2/1_1.png`
+          : undefined;
         out.push({
-          url: TILE_URL.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty)),
+          url: TILE_URL.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx)),
+          refUrl: TILE_URL_REF.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx)),
+          fallbackUrl: TILE_URL_FALLBACK.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx)),
+          rainUrl,
           dx: (tx - cx) * 256 + w / 2,
           dy: (ty - cy) * 256 + h / 2,
           key: `${z}/${wx}/${ty}`,
@@ -227,19 +80,20 @@ function useTilePositions(
       }
     }
     return out;
-  }, [center.lat, center.lng, zoom, w, h]);
+  }, [center.lat, center.lng, zoom, w, h, rainViewerData, rainFrameIndex]);
 }
 
 function TileMap({
-  width: customWidth, height: customHeight, center, zoom, cells,
+  width: customWidth, height: customHeight, center, zoom,
+  rainViewerData, rainFrameIndex = 0,
 }: {
   width?: number; height?: number;
   center: { lat: number; lng: number }; zoom: number;
-  cells: PrecipCell[];
+  rainViewerData?: RainViewerData | null;
+  rainFrameIndex?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const [size, setSize] = useState({ w: customWidth || 400, h: customHeight || 600 });
-  const overlayRef = useRef<HTMLCanvasElement>(null);
 
   useEffect(() => {
     if (customWidth && customHeight) {
@@ -262,71 +116,54 @@ function TileMap({
   const width = size.w;
   const height = size.h;
 
-  const tiles = useTilePositions(center, zoom, width, height);
-  const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
-
-  // Draw precipitation overlay
-  useEffect(() => {
-    const c = overlayRef.current;
-    if (!c) return;
-    const ctx = c.getContext("2d");
-    if (!ctx) return;
-    c.width = width * dpr;
-    c.height = height * dpr;
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, width, height);
-    drawPrecipitation(ctx, cells, center, zoom, width, height);
-  }, [width, height, center, zoom, cells, dpr]);
+  const tiles = useTilePositions(center, zoom, width, height, rainViewerData, rainFrameIndex);
 
   return (
     <div ref={containerRef} style={{ width: "100%", height: customHeight || "100%", position: "relative", overflow: "hidden", background: "#0d1520" }}>
-      {/* Layer 1 — Map tiles (authentic CartoDB Dark Matter GIS basemap) */}
-      <div
-        style={{
-          position: "absolute",
-          inset: 0,
-          overflow: "hidden",
-        }}
-      >
+      {/* Layer 1 — Satellite basemap */}
+      <div style={{ position: "absolute", inset: 0, overflow: "hidden" }}>
         {tiles.map((t) => (
-          <img
+          <div
             key={t.key}
-            src={t.url}
-            alt=""
-            crossOrigin="anonymous"
-            onError={(e) => {
-              const img = e.target as HTMLImageElement;
-              if (!img.dataset.retried) {
-                img.dataset.retried = "1";
-                img.src = TILE_URL_FALLBACK.replace("{z}", String(t.z)).replace("{x}", String(t.wx)).replace("{y}", String(t.ty));
-              } else {
-                img.style.visibility = "hidden";
-              }
-            }}
-            style={{
-              position: "absolute",
-              left: t.dx,
-              top: t.dy,
-              width: 256,
-              height: 256,
-              display: "block",
-            }}
-            draggable={false}
-          />
+            style={{ position: "absolute", left: t.dx, top: t.dy, width: 256, height: 256 }}
+          >
+            <img
+              src={t.url}
+              alt=""
+              crossOrigin="anonymous"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (!img.dataset.retried) {
+                  img.dataset.retried = "1";
+                  img.src = t.fallbackUrl;
+                } else {
+                  img.style.visibility = "hidden";
+                }
+              }}
+              style={{ position: "absolute", inset: 0, width: 256, height: 256, display: "block", filter: "brightness(0.55) saturate(0.4)" }}
+              draggable={false}
+            />
+            {/* Live RainViewer Doppler radar tile */}
+            {t.rainUrl && (
+              <img
+                src={t.rainUrl}
+                alt=""
+                crossOrigin="anonymous"
+                onError={(e) => { (e.target as HTMLElement).style.display = "none"; }}
+                style={{ position: "absolute", inset: 0, width: 256, height: 256, display: "block", opacity: 0.85, mixBlendMode: "screen" }}
+                draggable={false}
+              />
+            )}
+            <img
+              src={t.refUrl}
+              alt=""
+              crossOrigin="anonymous"
+              style={{ position: "absolute", inset: 0, width: 256, height: 256, display: "block", opacity: 0.75 }}
+              draggable={false}
+            />
+          </div>
         ))}
       </div>
-
-      {/* Layer 2 — Precipitation blobs (vivid, unfiltered) */}
-      <canvas
-        ref={overlayRef}
-        style={{
-          position: "absolute",
-          inset: 0,
-          width: "100%",
-          height: "100%",
-          pointerEvents: "none",
-        }}
-      />
     </div>
   );
 }
@@ -343,11 +180,17 @@ export function RainMapWidget({
   onExpand?: () => void;
 }) {
   const t = makeT(lang);
-  const cells = useMemo(
-    () => generatePrecipCells(locationKey, condition, chance, wind),
-    [locationKey, condition, chance, wind]
-  );
   const mapCenter = LOCATION_CENTERS[locationKey] || DEFAULT_CENTER;
+
+  // Fetch live RainViewer Doppler radar data
+  const [rainData, setRainData] = useState<RainViewerData | null>(null);
+  useEffect(() => {
+    let mounted = true;
+    fetchRainViewerFrames().then((d) => { if (mounted && d) setRainData(d); });
+    return () => { mounted = false; };
+  }, []);
+  // Show latest frame
+  const latestFrameIdx = rainData ? Math.max(0, rainData.frames.length - 1) : 0;
 
   return (
     <div className="overflow-hidden rounded-3xl mausam-glass">
@@ -372,7 +215,8 @@ export function RainMapWidget({
           height={200}
           center={mapCenter}
           zoom={7}
-          cells={cells}
+          rainViewerData={rainData}
+          rainFrameIndex={latestFrameIdx}
         />
 
         {/* Temperature badge */}
@@ -422,23 +266,33 @@ export function FullScreenRadar({
 }) {
   const t = makeT(lang);
   const [playing, setPlaying] = useState(false);
-  const [frame, setFrame] = useState(1); // start at "Now"
-  const [showLegend, setShowLegend] = useState(true); // Always visible by default in full screen!
+  const [showLegend, setShowLegend] = useState(true);
   const [range, setRange] = useState<"1h" | "12h">("12h");
   const timerRef = useRef<number | null>(null);
-
-  const frames = useMemo(
-    () => generateForecastFrames(locationKey, condition, chance, wind),
-    [locationKey, condition, chance, wind]
-  );
-  const curCells = frames[frame]?.cells ?? [];
   const mapCenter = LOCATION_CENTERS[locationKey] || DEFAULT_CENTER;
+
+  // Fetch live RainViewer Doppler radar data
+  const [rainData, setRainData] = useState<RainViewerData | null>(null);
+  const [rainFrameIdx, setRainFrameIdx] = useState(0);
+  useEffect(() => {
+    let mounted = true;
+    fetchRainViewerFrames().then((d) => {
+      if (mounted && d) {
+        setRainData(d);
+        setRainFrameIdx(Math.max(0, d.frames.length - 1));
+      }
+    });
+    return () => { mounted = false; };
+  }, []);
+
+  const frames = rainData?.frames ?? [];
+  const frame = rainFrameIdx;
 
   // Play/pause animation
   useEffect(() => {
-    if (playing) {
+    if (playing && frames.length > 0) {
       timerRef.current = window.setInterval(() => {
-        setFrame((f) => {
+        setRainFrameIdx((f) => {
           if (f >= frames.length - 1) { setPlaying(false); return 0; }
           return f + 1;
         });
@@ -461,7 +315,8 @@ export function FullScreenRadar({
         <TileMap
           center={mapCenter}
           zoom={FULLSCREEN_ZOOM}
-          cells={curCells}
+          rainViewerData={rainData}
+          rainFrameIndex={rainFrameIdx}
         />
 
         {/* ── Controls overlay ── */}
@@ -608,21 +463,26 @@ export function FullScreenRadar({
               }}
             />
           </div>
-          {/* Time labels */}
+          {/* Time labels — show every 3rd frame to avoid clutter */}
           <div className="mt-2 flex justify-between">
-            {frames.map((f, i) => (
-              <button
-                key={f.time}
-                onClick={() => setFrame(i)}
-                className="text-[10px] transition"
-                style={{
-                  color: frame === i ? "white" : "rgba(255,255,255,0.3)",
-                  fontWeight: frame === i || f.time === "Now" ? 700 : 400,
-                }}
-              >
-                {f.time}
-              </button>
-            ))}
+            {frames.length > 0 ? frames.filter((_, i) => i % Math.max(1, Math.floor(frames.length / 8)) === 0 || i === frames.length - 1).map((f) => {
+              const idx = frames.indexOf(f);
+              return (
+                <button
+                  key={f.time}
+                  onClick={() => setRainFrameIdx(idx)}
+                  className="text-[10px] transition"
+                  style={{
+                    color: frame === idx ? "white" : "rgba(255,255,255,0.3)",
+                    fontWeight: frame === idx ? 700 : 400,
+                  }}
+                >
+                  {f.timeStr}
+                </button>
+              );
+            }) : (
+              <span className="text-[10px] text-white/30">Loading radar data...</span>
+            )}
           </div>
         </div>
       </div>

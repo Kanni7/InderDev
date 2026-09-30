@@ -42,13 +42,13 @@ body {
 .scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scroll-hide::-webkit-scrollbar { display: none; }
 
-/* Transparent cards with blur only — no color tint */
+/* Frosted glass cards — subtle dark tint with blur */
 .mausam-glass {
-  background: transparent !important;
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  border: 1px solid rgba(255, 255, 255, 0.10);
-  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
+  background: rgba(15, 18, 28, 0.45) !important;
+  backdrop-filter: blur(20px) saturate(1.2);
+  -webkit-backdrop-filter: blur(20px) saturate(1.2);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.4), inset 0 1px 0 0 rgba(255, 255, 255, 0.06);
 }
 
 /* Side-menu drawer */
@@ -58,13 +58,13 @@ body {
   box-shadow: 8px 0 40px 0 rgba(0, 0, 0, 0.6);
 }
 
-/* "For you" insight card — transparent with subtle blur */
+/* "For you" insight card — slightly stronger frosted glass */
 .mausam-glass-strong {
-  background: transparent !important;
-  backdrop-filter: blur(10px);
-  -webkit-backdrop-filter: blur(10px);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.10);
+  background: rgba(15, 18, 28, 0.50) !important;
+  backdrop-filter: blur(24px) saturate(1.3);
+  -webkit-backdrop-filter: blur(24px) saturate(1.3);
+  border: 1px solid rgba(255, 255, 255, 0.10);
+  box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 0 rgba(255, 255, 255, 0.08);
 }
 
 @keyframes rain-fall { 0% { transform: translateY(-100%); } 100% { transform: translateY(120%); } }

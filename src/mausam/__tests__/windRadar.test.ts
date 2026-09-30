@@ -66,8 +66,8 @@ describe("Wind Radar Configuration & Data", () => {
   });
 
   it("uses reliable HTTPS tile mirrors with no API key requirement", () => {
-    expect(TILE_URL_PRIMARY).toMatch(/^https:\/\/.+\{z\}\/\{x\}\/\{y\}\.png$/);
-    expect(TILE_URL_FALLBACK).toMatch(/^https:\/\/.+\{z\}\/\{x\}\/\{y\}\.png$/);
+    expect(TILE_URL_PRIMARY).toMatch(/^https:\/\/.+\/tile\/\{z\}\/\{y\}\/\{x\}$/);
+    expect(TILE_URL_FALLBACK).toMatch(/^https:\/\/.+\/tile\/\{z\}\/\{y\}\/\{x\}$/);
   });
 
   it("provides translations for Wind Radar in multiple languages", () => {

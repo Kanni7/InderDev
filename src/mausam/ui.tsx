@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import type { WeatherTheme, Condition } from "./theme";
 import {
   type Sun, type Precip, type Pollen, type Travel,
@@ -8,6 +8,9 @@ import {
 import { weatherAudio } from "./audio";
 import { makeT, type Lang } from "./i18n";
 import * as I from "./icons";
+import { RealisticMoon } from "./RealisticMoon";
+import { getCompleteMoonData, CITY_COORDINATES } from "./astronomy";
+import { parseTimeStringToHours } from "./background/solarEngine";
 
 /** The weather photo is one continuous, app-wide backdrop (painted once in
  * App.tsx). The hero only adds a soft top-down legibility wash for its copy and
@@ -158,43 +161,323 @@ function RainLayer({ dense }: { dense?: boolean }) {
   );
 }
 
-/** Sun path arc — sunrise / daylight / sunset with a live sun dot (per attached ref) */
-export function SunArc({ sun, accent, lang }: { sun: Sun; accent: string; lang: Lang }) {
+/** Sun path arc — Refined Apple Weather-inspired diurnal horizon curve + sunrise & sunset metrics */
+export function SunArc({
+  sun,
+  accent,
+  lang,
+  currentHour,
+}: {
+  sun?: Sun;
+  accent: string;
+  lang: Lang;
+  currentHour?: number;
+}) {
   const t = makeT(lang);
-  // Arc geometry across a 220-wide, 90-tall box
-  const W = 220, H = 96, pad = 14;
-  const cx = W / 2;
-  const startX = pad, endX = W - pad;
-  const baseY = H - 22, peakY = 16;
-  // point on a quadratic-ish arc for progress p (0..1)
-  const at = (p: number) => {
-    const x = startX + (endX - startX) * p;
-    // parabola peaking at center
-    const y = baseY - (baseY - peakY) * (1 - Math.pow(2 * p - 1, 2));
-    return { x, y };
-  };
-  const pts = Array.from({ length: 41 }, (_, i) => at(i / 40));
-  const path = pts.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(" ");
-  const elapsed = pts.filter((_, i) => i / 40 <= sun.progress);
-  const elPath = elapsed.map((pt, i) => `${i === 0 ? "M" : "L"}${pt.x.toFixed(1)},${pt.y.toFixed(1)}`).join(" ");
-  const dot = at(Math.min(Math.max(sun.progress, 0), 1));
+  const s = sun ?? { sunrise: "6:00 AM", sunset: "6:15 PM", daylight: "12h 15m", progress: 0.5 };
+
+  const sunriseH = parseTimeStringToHours(s.sunrise) ?? 6.0;
+  const sunsetH = parseTimeStringToHours(s.sunset) ?? 18.25;
+
+  // Resolve current decimal hour: from explicit prop, derived from sun.progress if daytime, or live clock
+  const nowH = useMemo(() => {
+    if (typeof currentHour === "number" && !isNaN(currentHour)) {
+      return ((currentHour % 24) + 24) % 24;
+    }
+    if (typeof s.progress === "number" && s.progress >= 0 && s.progress <= 1) {
+      return sunriseH + s.progress * (sunsetH - sunriseH);
+    }
+    const d = new Date();
+    return d.getHours() + d.getMinutes() / 60;
+  }, [currentHour, s.progress, sunriseH, sunsetH]);
+
+  const isDaytime = nowH >= sunriseH && nowH <= sunsetH;
+  const isSunsetNext = isDaytime;
+
+  // Hero labels & times matching Apple Weather logic
+  const heroTime = isSunsetNext ? s.sunset : s.sunrise;
+  const heroLabel = isSunsetNext ? t("Sunset") : t("Sunrise");
+  const subText = isSunsetNext
+    ? `${t("Sunrise")}: ${s.sunrise}`
+    : `${t("Sunset")}: ${s.sunset}`;
+
+  // Time remaining countdown
+  const countdownText = useMemo(() => {
+    let diff = 0;
+    if (isDaytime) {
+      diff = sunsetH - nowH;
+    } else if (nowH < sunriseH) {
+      diff = sunriseH - nowH;
+    } else {
+      diff = (24 - nowH) + sunriseH;
+    }
+    const totalMinutes = Math.max(0, Math.round(diff * 60));
+    const h = Math.floor(totalMinutes / 60);
+    const m = totalMinutes % 60;
+    if (h > 0) {
+      return `in ${h}h ${m}m`;
+    }
+    return `in ${m}m`;
+  }, [isDaytime, sunsetH, sunriseH, nowH]);
+
+  // Curve geometry parameters across a 320x80 viewBox
+  const x0 = 38; // Sunrise horizon intersection
+  const x1 = 282; // Sunset horizon intersection
+  const dx = x1 - x0; // 244px
+  const horizonY = 56; // 0° Horizon baseline
+  const arcH = 42; // Peak apex height above horizon
+
+  // 41 precision coordinates along the daytime arc
+  const daylightPts = useMemo(() => {
+    return Array.from({ length: 41 }, (_, i) => {
+      const p = i / 40;
+      return {
+        x: x0 + dx * p,
+        y: horizonY - arcH * Math.sin(p * Math.PI),
+      };
+    });
+  }, [x0, dx, horizonY, arcH]);
+
+  const daylightPath = useMemo(() => {
+    return daylightPts
+      .map((pt, i) => `${i === 0 ? "M" : "L"} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`)
+      .join(" ");
+  }, [daylightPts]);
+
+  // Area under the daytime curve down to the horizon line
+  const daylightArea = useMemo(() => {
+    return `${daylightPath} L ${x1} ${horizonY} L ${x0} ${horizonY} Z`;
+  }, [daylightPath, x1, x0, horizonY]);
+
+  // Live sun position & elapsed luminous arc
+  const { sunX, sunY, elapsedPath } = useMemo(() => {
+    if (isDaytime) {
+      const dayProgress = Math.min(Math.max((nowH - sunriseH) / (sunsetH - sunriseH), 0.005), 0.995);
+      const sx = x0 + dx * dayProgress;
+      const sy = horizonY - arcH * Math.sin(dayProgress * Math.PI);
+      const filtered = daylightPts.filter((_, i) => i / 40 <= dayProgress);
+      let elPath = filtered
+        .map((pt, i) => `${i === 0 ? "M" : "L"} ${pt.x.toFixed(1)} ${pt.y.toFixed(1)}`)
+        .join(" ");
+      elPath += ` L ${sx.toFixed(1)} ${sy.toFixed(1)}`;
+      return { sunX: sx, sunY: sy, elapsedPath: elPath };
+    }
+
+    if (nowH < sunriseH) {
+      // Pre-dawn night curve: sun approaches horizon from below
+      const pPre = Math.min(Math.max(nowH / sunriseH, 0), 1);
+      const sx = 14 + (x0 - 14) * pPre;
+      const sy = 68 - (68 - horizonY) * pPre;
+      return { sunX: sx, sunY: sy, elapsedPath: "" };
+    }
+
+    // Post-dusk night curve: sun descends below horizon
+    const nightDuration = (24 - sunsetH) + sunriseH;
+    const pPost = Math.min(Math.max((nowH - sunsetH) / nightDuration, 0), 1);
+    const sx = x1 + (306 - x1) * Math.min(pPost * 1.8, 1);
+    const sy = horizonY + (68 - horizonY) * Math.min(pPost * 1.8, 1);
+    return { sunX: sx, sunY: sy, elapsedPath: "" };
+  }, [isDaytime, nowH, sunriseH, sunsetH, x0, x1, dx, horizonY, arcH, daylightPts]);
 
   return (
-    <div className="rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Sun")}</p>
-      <div className="mt-1 flex justify-center">
-        <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ maxWidth: 260 }}>
-          <line x1={startX} y1={baseY} x2={endX} y2={baseY} stroke="rgba(255,255,255,0.14)" strokeWidth="1" />
-          <path d={path} fill="none" stroke="rgba(255,255,255,0.22)" strokeWidth="1.6" strokeDasharray="3 4" strokeLinecap="round" />
-          <path d={elPath} fill="none" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
-          <circle cx={dot.x} cy={dot.y} r="6.5" fill={accent} />
-          <circle cx={dot.x} cy={dot.y} r="11" fill={accent} opacity="0.22" />
+    <div className="group relative flex flex-col justify-between rounded-3xl p-4 mausam-glass transition-all duration-200 hover:border-white/20">
+      {/* ── Top Header ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5 text-[var(--color-ink-faint)]"
+          >
+            <path d="M12 3v4M4.22 10.22l2.83 2.83M19.78 10.22l-2.83 2.83M2 19h20M20 19a8 8 0 10-16 0" />
+          </svg>
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+            {heroLabel}
+          </span>
+        </div>
+        <I.Chevron className="h-3 w-3 text-white/30 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+      </div>
+
+      {/* ── Hero Metric Row ── */}
+      <div className="mt-2 flex items-baseline justify-between">
+        <div>
+          <div className="flex items-baseline gap-2">
+            <span className="text-[28px] font-semibold leading-none tracking-tight text-[var(--color-ink)]">
+              {heroTime}
+            </span>
+            <span className="text-[12px] font-medium text-[var(--color-ink-soft)]">
+              {heroLabel}
+            </span>
+          </div>
+          <p className="mt-1 text-[11.5px] text-[var(--color-ink-faint)] leading-tight whitespace-nowrap">
+            {subText}
+          </p>
+        </div>
+        {countdownText && (
+          <div className="rounded-full px-2.5 py-1 text-[11px] font-medium font-mono border border-white/10 bg-white/6 text-[var(--color-ink-soft)] whitespace-nowrap">
+            {countdownText}
+          </div>
+        )}
+      </div>
+
+      {/* ── Center: Precision Solar Diurnal Horizon Curve ── */}
+      <div className="relative mt-1 flex justify-center">
+        <svg viewBox="0 0 320 80" className="w-full" style={{ maxHeight: 92 }}>
+          <defs>
+            {/* Luminous atmospheric fill under daylight arc */}
+            <linearGradient id="sunDaylightArea" x1="0" y1="0" x2="0" y2="1">
+              <stop offset="0%" stopColor={accent} stopOpacity="0.22" />
+              <stop offset="65%" stopColor={accent} stopOpacity="0.06" />
+              <stop offset="100%" stopColor={accent} stopOpacity="0" />
+            </linearGradient>
+
+            {/* Daytime curve stroke gradient */}
+            <linearGradient id="sunArcStroke" x1="0%" y1="0%" x2="100%" y2="0%">
+              <stop offset="0%" stopColor="rgba(255,255,255,0.25)" />
+              <stop offset="25%" stopColor="rgba(255,255,255,0.65)" />
+              <stop offset="50%" stopColor="#ffffff" />
+              <stop offset="75%" stopColor="rgba(255,255,255,0.65)" />
+              <stop offset="100%" stopColor="rgba(255,255,255,0.25)" />
+            </linearGradient>
+          </defs>
+
+          {/* Area fill under daytime curve */}
+          <path d={daylightArea} fill="url(#sunDaylightArea)" />
+
+          {/* Horizon Line */}
+          <line
+            x1="12"
+            y1={horizonY}
+            x2="308"
+            y2={horizonY}
+            stroke="rgba(255,255,255,0.16)"
+            strokeWidth="1"
+            strokeDasharray="3 3"
+          />
+
+          {/* Nocturnal Below-Horizon Wings */}
+          <path
+            d={`M 14 68 Q 26 64 ${x0} ${horizonY}`}
+            fill="none"
+            stroke="rgba(255,255,255,0.14)"
+            strokeWidth="1.2"
+            strokeDasharray="2 3"
+          />
+          <path
+            d={`M ${x1} ${horizonY} Q 294 64 306 68`}
+            fill="none"
+            stroke="rgba(255,255,255,0.14)"
+            strokeWidth="1.2"
+            strokeDasharray="2 3"
+          />
+
+          {/* Background Daytime Arc */}
+          <path
+            d={daylightPath}
+            fill="none"
+            stroke="url(#sunArcStroke)"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+
+          {/* Luminous Elapsed Arc */}
+          {isDaytime && elapsedPath && (
+            <path
+              d={elapsedPath}
+              fill="none"
+              stroke={accent}
+              strokeWidth="2.5"
+              strokeLinecap="round"
+            />
+          )}
+
+          {/* Horizon Intersection Nodes */}
+          <circle cx={x0} cy={horizonY} r="2.5" fill="rgba(255,255,255,0.5)" stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+          <circle cx={x1} cy={horizonY} r="2.5" fill="rgba(255,255,255,0.5)" stroke="rgba(0,0,0,0.4)" strokeWidth="0.8" />
+
+          {/* Live Sun Celestial Bead */}
+          {isDaytime ? (
+            <g>
+              {/* Vertical Drop-line to Horizon */}
+              <line
+                x1={sunX}
+                y1={sunY}
+                x2={sunX}
+                y2={horizonY}
+                stroke="rgba(255,255,255,0.22)"
+                strokeWidth="1"
+                strokeDasharray="2 2"
+              />
+              {/* Multi-layered Sun Orb */}
+              <circle cx={sunX} cy={sunY} r="13" fill={accent} opacity="0.18" />
+              <circle cx={sunX} cy={sunY} r="8.5" fill={accent} opacity="0.35" />
+              <circle
+                cx={sunX}
+                cy={sunY}
+                r="4.6"
+                fill="#ffffff"
+                stroke={accent}
+                strokeWidth="2"
+                filter="drop-shadow(0 1px 4px rgba(0,0,0,0.5))"
+              />
+            </g>
+          ) : (
+            <g>
+              {/* Night Anchor to Horizon */}
+              <line
+                x1={sunX}
+                y1={horizonY}
+                x2={sunX}
+                y2={sunY}
+                stroke="rgba(255,255,255,0.12)"
+                strokeWidth="1"
+                strokeDasharray="2 2"
+              />
+              {/* Subdued Nocturnal Orb */}
+              <circle
+                cx={sunX}
+                cy={sunY}
+                r="4.2"
+                fill="rgba(255,255,255,0.25)"
+                stroke="rgba(255,255,255,0.5)"
+                strokeWidth="1.2"
+              />
+              <circle cx={sunX} cy={sunY} r="1.6" fill={accent} opacity="0.85" />
+            </g>
+          )}
         </svg>
       </div>
-      <div className="mt-1 flex items-end justify-between">
-        <SunStat label={t("Sunrise")} value={sun.sunrise} />
-        <SunStat label={t("Daylight")} value={sun.daylight} center />
-        <SunStat label={t("Sunset")} value={sun.sunset} right />
+
+      {/* ── Bottom Celestial Stats Bar ── */}
+      <div className="mt-2 pt-2.5 border-t border-white/6 flex items-center justify-between">
+        <div>
+          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)] leading-none">
+            {t("Sunrise")}
+          </p>
+          <p className="mt-1 text-[13px] font-semibold text-[var(--color-ink)] leading-tight whitespace-nowrap">
+            {s.sunrise}
+          </p>
+        </div>
+        <div className="text-center">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)] leading-none">
+            {t("Daylight")}
+          </p>
+          <p className="mt-1 text-[13px] font-semibold text-[var(--color-ink)] leading-tight whitespace-nowrap">
+            {s.daylight}
+          </p>
+        </div>
+        <div className="text-right">
+          <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)] leading-none">
+            {t("Sunset")}
+          </p>
+          <p className="mt-1 text-[13px] font-semibold text-[var(--color-ink)] leading-tight whitespace-nowrap">
+            {s.sunset}
+          </p>
+        </div>
       </div>
     </div>
   );
@@ -477,40 +760,146 @@ export function PackingCard({ condition, accent, lang }: { condition: Condition;
   );
 }
 
-/** Wind — direction compass + speed, gust, and Wind Radar trigger */
+/** Wind — Refined Apple Weather-inspired meteorological compass rose + speed & gusts */
 export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const w = wind ?? { speed: 0, dir: "N", gust: 0 };
-  const angles: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
+  const angles: Record<string, number> = {
+    N: 0, NNE: 22.5, NE: 45, ENE: 67.5,
+    E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
+    S: 180, SSW: 202.5, SW: 225, WSW: 247.5,
+    W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
+  };
   const deg = angles[w.dir] ?? 0;
+
+  // 16-point precision tick marks for the compass dial
+  const ticks = Array.from({ length: 16 }).map((_, i) => {
+    const angle = i * 22.5;
+    const isCardinal = i % 4 === 0; // N, E, S, W
+    const isOrdinal = i % 2 === 0 && !isCardinal; // NE, SE, SW, NW
+    const rOuter = 35;
+    const rInner = isCardinal ? 29 : isOrdinal ? 31 : 32.5;
+    const rad = (angle - 90) * (Math.PI / 180);
+    const x1 = 40 + rInner * Math.cos(rad);
+    const y1 = 40 + rInner * Math.sin(rad);
+    const x2 = 40 + rOuter * Math.cos(rad);
+    const y2 = 40 + rOuter * Math.sin(rad);
+    const isActive = Math.abs(angle - deg) < 12;
+
+    return {
+      id: i,
+      x1, y1, x2, y2,
+      stroke: isActive ? accent : isCardinal ? "rgba(255,255,255,0.45)" : "rgba(255,255,255,0.16)",
+      width: isActive ? 1.8 : isCardinal ? 1.2 : 0.75,
+    };
+  });
+
   return (
-    <div className="group relative flex h-full flex-col justify-between rounded-3xl p-4 mausam-glass overflow-hidden transition hover:border-white/20">
+    <div className="group relative flex h-full flex-col justify-between rounded-3xl p-4 mausam-glass transition-all duration-200 hover:border-white/20">
+      {/* ── Top Header ── */}
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind")}</p>
-        <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 px-2 py-0.5 text-[9.5px] font-semibold text-emerald-300 tracking-tight transition group-hover:bg-emerald-500/25">
-          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-          {t("Wind Radar")} ↗
-        </span>
-      </div>
-      <div className="mt-2.5 flex items-center gap-3.5">
-        <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center">
-          <svg viewBox="0 0 76 76" className="h-full w-full">
-            <circle cx="38" cy="38" r="34" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.4" />
-            {["N", "E", "S", "W"].map((d, i) => (
-              <text key={d} x="38" y={i === 0 ? 12 : i === 2 ? 68 : 41} dx={i === 1 ? 30 : i === 3 ? -30 : 0}
-                textAnchor="middle" fontSize="8" fill="rgba(255,255,255,0.42)">{d}</text>
-            ))}
-            <g transform={`rotate(${deg} 38 38)`}>
-              <path d="M38 14 L44 42 L38 37 L32 42 Z" fill={accent} />
-            </g>
+        <div className="flex items-center gap-1.5">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5 text-[var(--color-ink-faint)]"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <polygon points="16.24 7.76 14.12 14.12 7.76 16.24 9.88 9.88 16.24 7.76" fill="currentColor" fillOpacity="0.25" />
           </svg>
-        </div>
-        <div>
-          <p className="text-[26px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-[13px] font-normal text-[var(--color-ink-soft)]">km/h</span></p>
-          <p className="mt-1 text-[11.5px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
-          <span className="mt-1 inline-flex items-center gap-1 text-[10px] text-emerald-400/90 font-medium">
-            <span>🚩</span> {t("Tap to open live radar")}
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+            {t("Wind")}
           </span>
+        </div>
+        <I.Chevron className="h-3 w-3 text-white/30 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+      </div>
+
+      {/* ── Center Content: Metrics + Precision Compass Rose ── */}
+      <div className="my-auto flex items-center justify-between gap-2.5">
+        {/* Left: Speed, Bearing & Gusts — Stacked cleanly with zero truncation */}
+        <div className="min-w-0 flex-1">
+          <div className="flex items-baseline gap-1">
+            <span className="text-[30px] font-semibold leading-none text-[var(--color-ink)] tracking-tight">
+              {w.speed}
+            </span>
+            <span className="text-[12px] font-normal text-[var(--color-ink-soft)]">
+              km/h
+            </span>
+          </div>
+
+          <p className="mt-1 text-[12px] font-medium text-[var(--color-ink)] leading-tight whitespace-nowrap">
+            {w.dir} · {deg}°
+          </p>
+
+          <div className="mt-2.5">
+            <p className="text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)] font-mono leading-none">
+              {t("gusts")}
+            </p>
+            <p className="mt-1 text-[13px] font-semibold text-[var(--color-ink)] leading-tight whitespace-nowrap">
+              {w.gust} km/h
+            </p>
+          </div>
+        </div>
+
+        {/* Right: Precision Compass Rose */}
+        <div className="relative grid h-[80px] w-[80px] shrink-0 place-items-center">
+          <svg viewBox="0 0 80 80" className="h-full w-full">
+            {/* Outer Dial Circle */}
+            <circle cx="40" cy="40" r="35" fill="none" stroke="rgba(255,255,255,0.08)" strokeWidth="1" />
+
+            {/* Precision Tick Marks */}
+            {ticks.map((t) => (
+              <line
+                key={t.id}
+                x1={t.x1}
+                y1={t.y1}
+                x2={t.x2}
+                y2={t.y2}
+                stroke={t.stroke}
+                strokeWidth={t.width}
+                strokeLinecap="round"
+              />
+            ))}
+
+            {/* Cardinal Letters */}
+            <text x="40" y="13.5" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 0 ? accent : "rgba(255,255,255,0.65)"}>N</text>
+            <text x="68" y="42.5" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 90 ? accent : "rgba(255,255,255,0.4)"}>E</text>
+            <text x="40" y="72" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 180 ? accent : "rgba(255,255,255,0.4)"}>S</text>
+            <text x="12" y="42.5" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 270 ? accent : "rgba(255,255,255,0.4)"}>W</text>
+
+            {/* Direction Pointer Needle */}
+            <g
+              transform={`rotate(${deg} 40 40)`}
+              style={{
+                transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                transformOrigin: "40px 40px",
+              }}
+            >
+              {/* Pointer Arrow with high contrast dual-tone */}
+              <path
+                d="M 40 14 L 43.5 35 L 40 32.5 L 36.5 35 Z"
+                fill="#ffffff"
+                filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
+              />
+              <path
+                d="M 40 14 L 42 24 L 40 22.5 L 38 24 Z"
+                fill={accent}
+              />
+              {/* Counter-weight Tail */}
+              <path
+                d="M 40 45 L 42 50 L 40 48.5 L 38 50 Z"
+                fill="rgba(255,255,255,0.22)"
+              />
+            </g>
+
+            {/* Center Pivot */}
+            <circle cx="40" cy="40" r="3.2" fill="#0d1422" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
+            <circle cx="40" cy="40" r="1.4" fill={accent} />
+          </svg>
         </div>
       </div>
     </div>
@@ -557,100 +946,291 @@ export function DewPointCard({ dewPoint: dewIn, lang }: { dewPoint?: number; lan
         <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold" style={{ background: `${level.c}22`, color: level.c }}>{level.l}</span>
       </div>
       <p className="mt-2 text-[26px] font-semibold leading-none text-[var(--color-ink)]">{dewPoint}°C</p>
-      <div className="mt-3 h-2 w-full rounded-full" style={{ background: "linear-gradient(90deg,#7bc4f2,#7bd88f,#f0873a,#e5484d)" }}>
-        <div className="relative h-full">
-          <span className="absolute top-1/2 h-3.5 w-3.5 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-[#0b111c] bg-white" style={{ left: `${pct * 100}%` }} />
+      <div className="mt-auto pt-3">
+        {/* Track */}
+        <div className="relative h-1.5 w-full overflow-visible rounded-full" style={{ background: "rgba(255,255,255,0.10)" }}>
+          <div className="h-full rounded-full" style={{ width: `${pct * 100}%`, background: `linear-gradient(90deg,#7bc4f2,${level.c})` }} />
+          {/* Thumb */}
+          <span
+            className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full shadow-md"
+            style={{ left: `${pct * 100}%`, background: level.c, boxShadow: `0 0 6px 2px ${level.c}66` }}
+          />
+        </div>
+        {/* Labels */}
+        <div className="mt-2 flex justify-between text-[9px] text-[var(--color-ink-faint)]">
+          <span>Dry</span><span>Comfortable</span><span>Humid</span>
         </div>
       </div>
     </div>
   );
 }
 
-/** Pressure — barometer with trend (localized) */
-export function PressureCard({ pressure: pressureIn, accent, lang }: { pressure?: Pressure; accent: string; lang: Lang }) {
+/** Pressure — Refined Apple Weather Arc Gauge Card */
+export function PressureCard({
+  pressure: pressureIn,
+  accent,
+  lang,
+}: {
+  pressure?: Pressure;
+  accent: string;
+  lang: Lang;
+}) {
   const t = makeT(lang);
   const pressure = pressureIn ?? { value: 1013, trend: "Steady" };
-  const min = 980, max = 1040;
-  const angle = -120 + ((pressure.value - min) / (max - min)) * 240;
+  const val = pressure.value;
+
+  // Meteorological calibration: 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
+  const minP = 970;
+  const maxP = 1050;
+  const clamped = Math.max(minP, Math.min(maxP, val));
+  const fraction = (clamped - minP) / (maxP - minP);
+
+  // 240° arc spanning from 150° (bottom-left) to 30° / 390° (bottom-right)
+  const startAngle = 150;
+  const sweepAngle = 240;
+  const currentAngle = startAngle + fraction * sweepAngle;
+  const currentRad = (currentAngle * Math.PI) / 180;
+
+  const cx = 60;
+  const cy = 52;
+  const r = 48;
+
+  const dotX = cx + r * Math.cos(currentRad);
+  const dotY = cy + r * Math.sin(currentRad);
+
+  // Standard Sea Level Benchmark Tick (1013.25 hPa)
+  const stdFraction = (1013.25 - minP) / (maxP - minP);
+  const stdAngle = startAngle + stdFraction * sweepAngle;
+  const stdRad = (stdAngle * Math.PI) / 180;
+  const stdX1 = cx + 42 * Math.cos(stdRad);
+  const stdY1 = cy + 42 * Math.sin(stdRad);
+  const stdX2 = cx + 54 * Math.cos(stdRad);
+  const stdY2 = cy + 54 * Math.sin(stdRad);
+
+  // Arc path geometry
+  const startX = cx + r * Math.cos((startAngle * Math.PI) / 180);
+  const startY = cy + r * Math.sin((startAngle * Math.PI) / 180);
+  const endX = cx + r * Math.cos(((startAngle + sweepAngle) * Math.PI) / 180);
+  const endY = cy + r * Math.sin(((startAngle + sweepAngle) * Math.PI) / 180);
+
+  const isLargeArc = fraction * sweepAngle > 180 ? 1 : 0;
+
+  // Trend classification (ensuring "Measured" is never shown)
+  const isFalling = /fall|drop/i.test(pressure.trend);
+  const isRising = /ris/i.test(pressure.trend);
+  const cleanTrend =
+    pressure.trend && !/measured/i.test(pressure.trend)
+      ? pressure.trend
+      : isFalling
+      ? "Falling"
+      : isRising
+      ? "Rising"
+      : "Steady";
+
   return (
-    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pressure")}</p>
-      <div className="mt-3 flex items-center gap-4">
-        <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
-          <svg viewBox="0 0 76 76" className="h-full w-full">
-            <path d="M14 58 A32 32 0 1 1 62 58" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="5" strokeLinecap="round" />
-            <g transform={`rotate(${angle} 38 40)`}>
-              <line x1="38" y1="40" x2="38" y2="16" stroke={accent} strokeWidth="2.4" strokeLinecap="round" />
-            </g>
-            <circle cx="38" cy="40" r="3.4" fill={accent} />
+    <div className="group relative flex h-full flex-col justify-between rounded-3xl p-4 mausam-glass overflow-hidden transition-all duration-300 hover:border-white/18">
+      {/* ── Header: Title & Chevron (Clean Apple standard) ── */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-1.5">
+          <svg
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-3.5 w-3.5 text-[var(--color-ink-faint)]"
+          >
+            <circle cx="12" cy="12" r="10" />
+            <path d="M12 6v2" />
+            <path d="M18 12h-2" />
+            <path d="M12 18v-2" />
+            <path d="M6 12h2" />
+            <path d="m14 10-3 2" />
+            <circle cx="12" cy="12" r="1.5" fill="currentColor" />
           </svg>
+          <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+            {t("Pressure")}
+          </span>
         </div>
-        <div>
-          <p className="text-[22px] font-semibold leading-none text-[var(--color-ink)]">{pressure.value} <span className="text-[12px] font-normal text-[var(--color-ink-soft)]">hPa</span></p>
-          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{t(pressure.trend)}</p>
+        <I.Chevron className="h-3 w-3 text-white/30 transition-transform group-hover:translate-x-0.5 group-hover:text-white/60" />
+      </div>
+
+      {/* ── Main Body: Apple Weather Open-Arc Gauge with Centered Value ── */}
+      <div className="my-auto flex flex-col items-center justify-center">
+        <div className="relative grid h-[100px] w-[120px] shrink-0 place-items-center">
+          <svg viewBox="0 0 120 92" className="h-full w-full overflow-visible">
+            {/* Background Track Arc */}
+            <path
+              d={`M ${startX.toFixed(2)} ${startY.toFixed(2)} A ${r} ${r} 0 1 1 ${endX.toFixed(2)} ${endY.toFixed(2)}`}
+              fill="none"
+              stroke="rgba(255,255,255,0.12)"
+              strokeWidth="3.5"
+              strokeLinecap="round"
+            />
+
+            {/* Standard 1013.25 hPa Benchmark Tick at Apex */}
+            <line
+              x1={stdX1.toFixed(2)}
+              y1={stdY1.toFixed(2)}
+              x2={stdX2.toFixed(2)}
+              y2={stdY2.toFixed(2)}
+              stroke="rgba(255,255,255,0.45)"
+              strokeWidth="1.6"
+              strokeLinecap="round"
+            />
+
+            {/* Active Colored Progress Arc */}
+            {fraction > 0.02 && (
+              <path
+                d={`M ${startX.toFixed(2)} ${startY.toFixed(2)} A ${r} ${r} 0 ${isLargeArc} 1 ${dotX.toFixed(2)} ${dotY.toFixed(2)}`}
+                fill="none"
+                stroke={accent}
+                strokeWidth="3.5"
+                strokeLinecap="round"
+                style={{
+                  transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+                }}
+              />
+            )}
+
+            {/* Luminous Indicator Thumb */}
+            <circle
+              cx={dotX.toFixed(2)}
+              cy={dotY.toFixed(2)}
+              r="4.5"
+              fill="#ffffff"
+              style={{
+                filter: "drop-shadow(0 2px 4px rgba(0,0,0,0.6))",
+                transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+            />
+            <circle
+              cx={dotX.toFixed(2)}
+              cy={dotY.toFixed(2)}
+              r="1.8"
+              fill={accent}
+              style={{
+                transition: "all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
+              }}
+            />
+          </svg>
+
+          {/* Centered Readout inside Arc with generous clearance */}
+          <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none pt-2.5">
+            <span className="text-[25px] font-bold tracking-tight text-white leading-none">
+              {val}
+            </span>
+            <span className="font-mono text-[9.5px] text-white/50 tracking-wider mt-1">
+              hPa
+            </span>
+          </div>
         </div>
+
+        {/* Clean Trend Status (No Arrow) */}
+        <p className="mt-1 text-center text-[12px] font-medium text-white/70">
+          {t(cleanTrend)}
+        </p>
       </div>
     </div>
   );
 }
 
-/** Helper to calculate accurate 3D lunar terminator shadow path for any phase (0..1) */
-function getPhaseShadowPath(p: number, R = 36): string {
-  if (p <= 0.02 || p >= 0.98) {
-    return `M 0,${R} A ${R},${R} 0 1,0 ${R * 2},${R} A ${R},${R} 0 1,0 0,${R} Z`;
-  }
-  if (p >= 0.48 && p <= 0.52) {
-    return "";
-  }
-
-  const termX = -Math.cos(p * 2 * Math.PI) * R;
-  const rx = Math.abs(termX).toFixed(2);
-
-  if (p < 0.5) {
-    // Waxing: right side illuminated, shadow on left
-    const sweepInner = termX > 0 ? 1 : 0;
-    return `M ${R},0 A ${R},${R} 0 0,0 ${R},${2 * R} A ${rx},${R} 0 0,${sweepInner} ${R},0 Z`;
-  } else {
-    // Waning: left side illuminated, shadow on right
-    const sweepInner = termX < 0 ? 1 : 0;
-    return `M ${R},0 A ${R},${R} 0 0,1 ${R},${2 * R} A ${rx},${R} 0 0,${sweepInner} ${R},0 Z`;
-  }
-}
-
-/** Moon phase — real high-resolution photograph of the moon with realistic phase shadow */
-export function MoonCard({ moon: moonIn, lang }: { moon?: Moon; lang: Lang }) {
+/** Moon phase — Apple Weather inspired realistic lunar widget with astronomical data */
+export function MoonCard({
+  moon: moonIn,
+  cityKey,
+  coords,
+  lang,
+}: {
+  moon?: Moon;
+  cityKey?: string;
+  coords?: { lat?: number; lng?: number };
+  lang: Lang;
+}) {
   const t = makeT(lang);
-  const moon = moonIn ?? { phase: 0.75, name: "Last Quarter", illum: 48 };
-  const shadowPath = getPhaseShadowPath(moon.phase, 36);
+  const [dayOffset, setDayOffset] = useState<0 | 1>(0);
+
+  // Compute live astronomical data with coordinates and dayOffset
+  const targetDate = useMemo(() => {
+    const d = new Date();
+    if (dayOffset === 1) {
+      d.setDate(d.getDate() + 1);
+    }
+    return d;
+  }, [dayOffset]);
+
+  const astro = useMemo(() => {
+    let c = coords;
+    if (!c && cityKey && CITY_COORDINATES[cityKey.toLowerCase()]) {
+      c = CITY_COORDINATES[cityKey.toLowerCase()];
+    }
+    return getCompleteMoonData(targetDate, c);
+  }, [coords, cityKey, targetDate]);
+
+  // Live astronomical phase or graceful fallback
+  const phase = astro.phase;
+  const phaseName = astro.name;
+  const illum = astro.illumination;
+
+  const cityName = cityKey ? cityKey.charAt(0).toUpperCase() + cityKey.slice(1) : "";
 
   return (
-    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Moon phase")}</p>
-      <div className="mt-3 flex items-center gap-4">
-        <div className="relative h-[72px] w-[72px] shrink-0 overflow-hidden rounded-full shadow-md bg-black">
-          {/* Real photo of the moon scaled edge-to-edge */}
-          <img
-            src="/moon.png"
-            alt="Moon Phase"
-            className="h-[120%] w-[120%] max-w-none -translate-x-[8.3%] -translate-y-[8.3%] object-cover rounded-full"
-          />
-
-          {/* Soft translucent phase shadow overlay (Apple Weather style) */}
-          {shadowPath && (
-            <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full pointer-events-none">
-              <defs>
-                <linearGradient id="lunarShadow" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="rgba(10, 16, 28, 0.65)" />
-                  <stop offset="100%" stopColor="rgba(6, 10, 18, 0.75)" />
-                </linearGradient>
-              </defs>
-              <path d={shadowPath} fill="url(#lunarShadow)" />
+    <div className="group relative flex h-full flex-col rounded-3xl p-4 mausam-glass transition-all duration-300 hover:border-white/18 overflow-hidden">
+      {/* Top: header + large moon side-by-side */}
+      <div className="flex flex-1 items-start justify-between gap-2">
+        {/* Left column: label → phase name → illumination */}
+        <div className="flex flex-col flex-1 gap-3">
+          <span className="flex items-center gap-1.5 font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" className="h-3.5 w-3.5 opacity-60">
+              <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z" />
             </svg>
-          )}
+            {t("Moon")}
+          </span>
+          <div>
+            <h4 className="text-[17px] font-semibold leading-snug tracking-tight text-[var(--color-ink)]">
+              {t(phaseName)}
+            </h4>
+            <p className="mt-0.5 text-[12px] text-[var(--color-ink-soft)]">
+              {illum}% {t("illuminated")}
+            </p>
+          </div>
         </div>
-        <div>
-          <p className="text-[16px] font-semibold text-[var(--color-ink)]">{t(moon.name)}</p>
-          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{moon.illum}% {t("illuminated")}</p>
+
+        {/* Right: 3D moon sphere */}
+        <div className="relative -mr-1 mt-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+          <div className="transition-transform duration-300 hover:scale-[1.04]">
+            <RealisticMoon phase={phase} size={96} interactive={true} />
+          </div>
+        </div>
+      </div>
+
+      {/* Divider */}
+      <div className="my-2.5 border-t border-white/8" />
+
+      {/* Bottom: Moonrise | divider | Moonset */}
+      <div className="flex items-stretch justify-center">
+        <div className="flex flex-1 items-center justify-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0 text-[var(--color-ink-faint)]">
+            <path d="M12 19V5" /><path d="m5 12 7-7 7 7" />
+          </svg>
+          <div>
+            <p className="font-mono text-[8.5px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Moonrise")}</p>
+            <p className="text-[15px] font-semibold leading-tight text-[var(--color-ink)]">{astro.moonrise}</p>
+            {cityName && <p className="text-[10px] text-[var(--color-ink-faint)]">{cityName}</p>}
+          </div>
+        </div>
+        {/* Vertical separator */}
+        <div className="mx-3 self-stretch w-px bg-white/10" />
+        <div className="flex flex-1 items-center justify-center gap-2">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4 flex-shrink-0 text-[var(--color-ink-faint)]">
+            <path d="M12 5v14" /><path d="m19 12-7 7-7-7" />
+          </svg>
+          <div>
+            <p className="font-mono text-[8.5px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Moonset")}</p>
+            <p className="text-[15px] font-semibold leading-tight text-[var(--color-ink)]">{astro.moonset}</p>
+            {cityName && <p className="text-[10px] text-[var(--color-ink-faint)]">{cityName}</p>}
+          </div>
         </div>
       </div>
     </div>

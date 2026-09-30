@@ -13,11 +13,17 @@ import * as I from "./icons";
 
 /* ─────────────────── CONFIGURATION ─────────────────── */
 
-// Authentic GIS Basemaps (CartoDB Dark Matter & ESRI World Imagery)
-export const TILE_URL_CARTO_DARK = "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
-export const TILE_URL_CARTO_DARK_FALLBACK = "https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
-export const TILE_URL_PRIMARY = TILE_URL_CARTO_DARK;
-export const TILE_URL_FALLBACK = TILE_URL_CARTO_DARK_FALLBACK;
+// Authentic GIS Basemaps (ESRI World Dark Gray Canvas & ESRI World Imagery)
+export const TILE_URL_ESRI_DARK_BASE = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+export const TILE_URL_ESRI_DARK_BASE_FALLBACK = "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}";
+export const TILE_URL_ESRI_DARK_REFERENCE = "https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}";
+
+export const TILE_URL_PRIMARY = TILE_URL_ESRI_DARK_BASE;
+export const TILE_URL_FALLBACK = TILE_URL_ESRI_DARK_BASE_FALLBACK;
+
+// Backwards-compatible aliases
+export const TILE_URL_CARTO_DARK = TILE_URL_ESRI_DARK_BASE;
+export const TILE_URL_CARTO_DARK_FALLBACK = TILE_URL_ESRI_DARK_BASE_FALLBACK;
 
 export const TILE_URL_ESRI_SATELLITE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 export const TILE_URL_ESRI_REFERENCE = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
@@ -278,16 +284,10 @@ function useTilePositions(
         let fallbackUrl: string;
         let overlayUrl: string | undefined;
 
-        if (layer === "satellite") {
-          // ESRI slippy tiles use {z}/{y}/{x}
-          baseTileUrl = TILE_URL_ESRI_SATELLITE.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx));
-          fallbackUrl = baseTileUrl;
-          overlayUrl = TILE_URL_ESRI_REFERENCE.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx));
-        } else {
-          // CartoDB Dark Matter slippy tiles {z}/{x}/{y}
-          baseTileUrl = TILE_URL_CARTO_DARK.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty));
-          fallbackUrl = TILE_URL_CARTO_DARK_FALLBACK.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty));
-        }
+        // All layers use real satellite imagery as the basemap
+        baseTileUrl = TILE_URL_ESRI_SATELLITE.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx));
+        fallbackUrl = baseTileUrl;
+        overlayUrl = TILE_URL_ESRI_REFERENCE.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx));
 
         let rainTileUrl: string | undefined;
         if (layer === "rain" && rainViewerData && rainFrame) {
@@ -691,27 +691,9 @@ function WindMapCanvas({
                 width: 256,
                 height: 256,
                 display: "block",
+                filter: activeLayer === "satellite" ? "none" : "brightness(0.5) saturate(0.35)",
               }}
             />
-
-            {/* Satellite ESRI Boundaries & Place Names overlay */}
-            {t.overlayUrl && (
-              <img
-                src={t.overlayUrl}
-                alt=""
-                draggable={false}
-                loading="lazy"
-                crossOrigin="anonymous"
-                style={{
-                  position: "absolute",
-                  inset: 0,
-                  width: 256,
-                  height: 256,
-                  display: "block",
-                  opacity: 0.9,
-                }}
-              />
-            )}
 
             {/* Live RainViewer Radar Doppler Precipitation tile overlay */}
             {t.rainTileUrl && (
@@ -732,6 +714,25 @@ function WindMapCanvas({
                   display: "block",
                   opacity: 0.85,
                   mixBlendMode: "screen",
+                }}
+              />
+            )}
+
+            {/* ESRI Boundaries & Place Names Reference overlay */}
+            {t.overlayUrl && (
+              <img
+                src={t.overlayUrl}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                crossOrigin="anonymous"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: 256,
+                  height: 256,
+                  display: "block",
+                  opacity: 0.85,
                 }}
               />
             )}

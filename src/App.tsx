@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, type CSSProperties } from "react";
+import { useState, useEffect, useCallback, useMemo, type CSSProperties } from "react";
 import Home from "./mausam/Home";
 import { Onboarding, Menu, Chat, Alerts } from "./mausam/screens";
 import TranslateScreen from "./mausam/TranslateScreen";
@@ -11,6 +11,10 @@ import { useProfile, type Interest } from "./engine/profile";
 import { initWeights } from "./engine/weights";
 import type { AlertOverride } from "./engine/ranking";
 import DemoPanel from "./demo/DemoPanel";
+import BackgroundEngine, {
+  type TimeOfDayPhase,
+  type EnvironmentalWeatherCondition,
+} from "./mausam/background";
 
 type Screen = "usertype" | "home" | "menu" | "chat" | "alerts" | "translate";
 
@@ -27,6 +31,8 @@ export default function App() {
 
   // Simulated hour state for testing (null = system clock, DEV_TIME_OVERRIDE = code setting)
   const [simulatedHour, setSimulatedHour] = useState<number | null>(DEV_TIME_OVERRIDE);
+  const [simulatedCondition, setSimulatedCondition] = useState<EnvironmentalWeatherCondition | null>(null);
+  const [simulatedPhase, setSimulatedPhase] = useState<TimeOfDayPhase | null>(null);
   const [showTimePicker, setShowTimePicker] = useState(false);
 
   const [liveLocation, setLiveLocation] = useState<Location | null>(null);
@@ -72,16 +78,15 @@ export default function App() {
     transition: "background 0.6s ease",
   };
 
-  const formattedTimeLabel =
-    simulatedHour !== null
-      ? simulatedHour === 6
-        ? "6:00 AM"
-        : simulatedHour === 12
-        ? "12:00 PM"
-        : simulatedHour === 18
-        ? "6:30 PM"
-        : "10:00 PM"
-      : "9:41";
+  const formattedTimeLabel = useMemo(() => {
+    if (simulatedHour === null) return "9:41";
+    let h = Math.floor(simulatedHour);
+    const m = Math.round((simulatedHour - h) * 60);
+    const ampm = h >= 12 ? "PM" : "AM";
+    h = h % 12;
+    if (h === 0) h = 12;
+    return `${h}:${m < 10 ? "0" : ""}${m} ${ampm}`;
+  }, [simulatedHour]);
 
   return (
     <div className="flex min-h-[100dvh] items-stretch justify-center bg-[#020306] sm:items-center sm:py-6">
@@ -89,21 +94,20 @@ export default function App() {
         className="mausam-device relative w-full overflow-hidden text-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] sm:w-[410px] sm:rounded-[44px] border border-white/10"
         style={deviceStyle}
       >
-        {/* Active sky photo background — exact transparency & clarity from Image 2 reference */}
-        <div
-          aria-hidden
-          className="pointer-events-none absolute inset-0 bg-cover bg-center transition-all duration-700"
-          style={{
-            backgroundImage: `linear-gradient(180deg, rgba(6, 12, 24, 0.15) 0%, rgba(6, 10, 16, 0.05) 45%, rgba(4, 6, 10, 0.35) 100%), url(${theme.photo})`,
-          }}
+        {/* Dynamic Environmental Background Engine — 7 photorealistic layered system */}
+        <BackgroundEngine
+          location={location}
+          currentHour={currentHour}
+          conditionOverride={simulatedCondition ?? undefined}
+          timePhaseOverride={simulatedPhase ?? undefined}
         />
 
         {/* Status bar — clicking the time opens the unofficial time switcher */}
         <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-7 pt-3.5 text-[13px] font-semibold text-white pointer-events-auto">
           <button
             onClick={() => setShowTimePicker((s) => !s)}
-            className="flex items-center gap-1 rounded-full bg-white/10 px-2 py-0.5 text-xs font-bold font-mono tracking-tight transition hover:bg-white/20 active:scale-95 border border-white/15"
-            title="Click to toggle Time of Day preview"
+            className="flex items-center gap-1 rounded-full bg-white/10 px-2.5 py-0.5 text-xs font-bold font-mono tracking-tight transition hover:bg-white/20 active:scale-95 border border-white/15 backdrop-blur-md"
+            title="Click to toggle Time of Day & Environmental Preview"
           >
             <span>{formattedTimeLabel}</span>
           </button>
@@ -116,17 +120,17 @@ export default function App() {
           </div>
         </div>
 
-        {/* ── Unofficial Time Changer Floating Panel ── */}
+        {/* ── Unofficial Time & Environmental Atmosphere Changer ── */}
         {showTimePicker && (
           <>
             <button
-              className="absolute inset-0 z-50 cursor-default bg-black/30 backdrop-blur-[2px]"
+              className="absolute inset-0 z-50 cursor-default bg-black/40 backdrop-blur-[3px]"
               aria-label="Close time switcher"
               onClick={() => setShowTimePicker(false)}
             />
-            <div className="animate-insight absolute left-1/2 top-12 z-50 w-[310px] -translate-x-1/2 rounded-3xl border border-white/20 bg-[color:rgba(12,18,28,0.96)] p-4 shadow-[0_24px_50px_-18px_rgba(0,0,0,0.9)] backdrop-blur-2xl text-center">
-              <div className="flex items-center justify-between pb-2 mb-3 border-b border-white/10">
-                <span className="font-mono text-[10px] uppercase tracking-widest text-white/60">⚡ Time Changer</span>
+            <div className="animate-insight absolute left-1/2 top-12 z-50 w-[340px] max-h-[85vh] overflow-y-auto scroll-hide -translate-x-1/2 rounded-3xl border border-white/20 bg-[color:rgba(10,14,24,0.96)] p-4 shadow-[0_24px_60px_-16px_rgba(0,0,0,0.95)] backdrop-blur-2xl text-center">
+              <div className="flex items-center justify-between pb-2 mb-2.5 border-b border-white/10">
+                <span className="font-mono text-[10px] uppercase tracking-widest text-white/70">⚡ Environmental Engine</span>
                 <button
                   onClick={() => setShowTimePicker(false)}
                   className="grid h-6 w-6 place-items-center rounded-full text-white/60 hover:text-white hover:bg-white/10 text-xs"
@@ -134,42 +138,105 @@ export default function App() {
                   ✕
                 </button>
               </div>
-              <p className="text-[12px] text-white/70 mb-3">Preview weather sky & background photos across different times of day:</p>
-              <div className="grid grid-cols-2 gap-2">
+
+              {/* 24-Hour Continuous Solar Scrubber Slider */}
+              <div className="mb-3 rounded-2xl bg-white/5 p-2.5 text-left border border-white/8">
+                <div className="flex items-center justify-between text-[11px] font-mono text-white/80 mb-1">
+                  <span>Solar Scrubber</span>
+                  <span className="font-bold text-amber-300">{formattedTimeLabel}</span>
+                </div>
+                <input
+                  type="range"
+                  min="0"
+                  max="23.9"
+                  step="0.1"
+                  value={simulatedHour ?? 12}
+                  onChange={(e) => {
+                    setSimulatedHour(parseFloat(e.target.value));
+                    setSimulatedPhase(null);
+                  }}
+                  className="w-full h-1.5 bg-white/20 rounded-lg appearance-none cursor-pointer accent-amber-400"
+                />
+              </div>
+
+              {/* 9 Canonical Time of Day Phases */}
+              <p className="text-[11px] text-white/60 mb-2 text-left font-mono uppercase tracking-wider">Time of Day (9 Phases):</p>
+              <div className="grid grid-cols-3 gap-1.5 mb-3">
                 {[
-                  { label: "🌅 Dawn", sub: "5 AM – 7 AM", hour: 6 },
-                  { label: "☀️ Day", sub: "8 AM – 4 PM", hour: 12 },
-                  { label: "🌇 Sunset", sub: "5 PM – 7 PM", hour: 18 },
-                  { label: "🌙 Night", sub: "8 PM – 4 AM", hour: 22 },
+                  { label: "🌌 Pre-dawn", sub: "4:45 AM", hour: 4.75, phase: "pre-dawn" as TimeOfDayPhase },
+                  { label: "🌅 Sunrise", sub: "6:05 AM", hour: 6.1, phase: "sunrise" as TimeOfDayPhase },
+                  { label: "☀️ Morning", sub: "9:00 AM", hour: 9.0, phase: "morning" as TimeOfDayPhase },
+                  { label: "🌞 Midday", sub: "12:30 PM", hour: 12.5, phase: "midday" as TimeOfDayPhase },
+                  { label: "🌤️ Afternoon", sub: "3:30 PM", hour: 15.5, phase: "afternoon" as TimeOfDayPhase },
+                  { label: "🌇 Golden", sub: "5:30 PM", hour: 17.5, phase: "golden-hour" as TimeOfDayPhase },
+                  { label: "🌆 Sunset", sub: "6:15 PM", hour: 18.25, phase: "sunset" as TimeOfDayPhase },
+                  { label: "🏙️ Dusk", sub: "7:00 PM", hour: 19.0, phase: "dusk" as TimeOfDayPhase },
+                  { label: "🌙 Night", sub: "10:30 PM", hour: 22.5, phase: "night" as TimeOfDayPhase },
                 ].map((t) => {
-                  const active = currentHour === t.hour;
+                  const active = simulatedPhase === t.phase || (simulatedHour !== null && Math.abs(simulatedHour - t.hour) < 0.6);
                   return (
                     <button
-                      key={t.hour}
+                      key={t.phase}
                       onClick={() => {
                         setSimulatedHour(t.hour);
-                        setShowTimePicker(false);
+                        setSimulatedPhase(t.phase);
                       }}
-                      className="rounded-2xl p-2.5 text-left transition active:scale-95"
+                      className="rounded-xl p-1.5 text-left transition active:scale-95"
                       style={{
-                        background: active ? `${accent}33` : "rgba(255,255,255,0.08)",
-                        border: active ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.1)",
+                        background: active ? `${accent}33` : "rgba(255,255,255,0.06)",
+                        border: active ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.08)",
                       }}
                     >
-                      <span className="block text-xs font-semibold text-white">{t.label}</span>
-                      <span className="block text-[10px] opacity-60 text-white">{t.sub}</span>
+                      <span className="block text-[11px] font-semibold text-white leading-tight">{t.label}</span>
+                      <span className="block text-[9.5px] opacity-60 text-white font-mono">{t.sub}</span>
                     </button>
                   );
                 })}
               </div>
+
+              {/* Weather State Selector */}
+              <p className="text-[11px] text-white/60 mb-2 text-left font-mono uppercase tracking-wider">Weather Conditions:</p>
+              <div className="grid grid-cols-2 gap-1.5 mb-3">
+                {[
+                  { label: "☀️ Clear", cond: "clear" as EnvironmentalWeatherCondition },
+                  { label: "⛅ Partly Cloudy", cond: "partly-cloudy" as EnvironmentalWeatherCondition },
+                  { label: "☁️ Cloudy", cond: "cloudy" as EnvironmentalWeatherCondition },
+                  { label: "🌫️ Overcast", cond: "overcast" as EnvironmentalWeatherCondition },
+                  { label: "🌧️ Rain", cond: "rain" as EnvironmentalWeatherCondition },
+                  { label: "⛈️ Heavy Rain", cond: "heavy-rain" as EnvironmentalWeatherCondition },
+                  { label: "⚡ Thunderstorm", cond: "thunderstorm" as EnvironmentalWeatherCondition },
+                  { label: "🌁 Fog / Mist", cond: "fog" as EnvironmentalWeatherCondition },
+                  { label: "💨 Haze / Dust", cond: "haze" as EnvironmentalWeatherCondition },
+                  { label: "❄️ Snow", cond: "snow" as EnvironmentalWeatherCondition },
+                ].map((w) => {
+                  const active = simulatedCondition === w.cond;
+                  return (
+                    <button
+                      key={w.cond}
+                      onClick={() => setSimulatedCondition(w.cond)}
+                      className="rounded-xl px-2 py-1.5 text-left transition active:scale-95"
+                      style={{
+                        background: active ? `${accent}33` : "rgba(255,255,255,0.06)",
+                        border: active ? `1px solid ${accent}` : "1px solid rgba(255,255,255,0.08)",
+                      }}
+                    >
+                      <span className="text-[11px] font-medium text-white">{w.label}</span>
+                    </button>
+                  );
+                })}
+              </div>
+
+              {/* Reset to live button */}
               <button
                 onClick={() => {
                   setSimulatedHour(null);
+                  setSimulatedCondition(null);
+                  setSimulatedPhase(null);
                   setShowTimePicker(false);
                 }}
-                className="mt-3 w-full rounded-xl bg-white/10 py-2 text-[11px] font-mono uppercase tracking-wider text-white/70 hover:bg-white/20 transition active:scale-95"
+                className="w-full rounded-xl bg-white/10 py-2 text-[11px] font-mono uppercase tracking-wider text-white/80 hover:bg-white/20 transition active:scale-95 border border-white/10"
               >
-                ⚡ Reset to Live Clock ({new Date().getHours()}:00)
+                ⚡ Reset to Live Clock & Weather
               </button>
             </div>
           </>
