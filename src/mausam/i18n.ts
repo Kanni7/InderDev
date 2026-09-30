@@ -36,6 +36,8 @@ const dict: Record<string, Tr> = {
   },
   "Skip": { hi: "छोड़ें", te: "దాటవేయి", ml: "ഒഴിവാക്കുക", ta: "தவிர்", pa: "ਛੱਡੋ" },
   "Skip for now": { hi: "अभी छोड़ें", te: "ఇప్పటికి దాటవేయి", ml: "ഇപ്പോൾ ഒഴിവാക്കുക", ta: "இப்போது தவிர்", pa: "ਹੁਣੇ ਛੱਡੋ" },
+  "match": { hi: "सटीकता", te: "సరిపోలిక", ml: "പൊരുത്തം", ta: "பொருத்தம்", pa: "ਮੇਲ" },
+  "MATCH": { hi: "सटीकता", te: "సరిపోలిక", ml: "പൊരുത്തം", ta: "பொருத்தம்", pa: "ਮੇਲ" },
   "Continue": { hi: "आगे बढ़ें", te: "కొనసాగించు", ml: "തുടരുക", ta: "தொடரவும்", pa: "ਅੱਗੇ ਵਧੋ" },
   "You can change this anytime in the menu": {
     hi: "इसे मेनू में कभी भी बदल सकते हैं",
@@ -1484,6 +1486,72 @@ function translateDynamicPattern(en: string, lang: Lang): string {
     if (lang === "pa") {
       const notePa = isModerate ? "ਦਰਮਿਆਨੀ AQI - ਲੰਬੀ ਦੌੜ ਵਿੱਚ ਮਾਸਕ ਪਹਿਨੋ।" : "ਸਾਫ਼ ਹਵਾ।";
       return `${temp}°C, ${wind} ਕਿਲੋਮੀਟਰ/ਘੰਟਾ ਹਵਾ, AQI ${aqi}। ${notePa}`;
+    }
+  }
+
+  // 4b. Clean air window headline: "Clean air window: AQI X in City"
+  const cleanAirHeadline = en.match(/^(?:([\d.]+)\s*hrs\s+logged\s*-\s*)?Clean\s+air\s+window:\s*AQI\s*(\d+)\s+in\s+(.+)$/i);
+  if (cleanAirHeadline) {
+    const [, hrs, aqi, city] = cleanAirHeadline;
+    const hrsP = hrs ? hrs + " घंटे दर्ज - " : "";
+    switch (lang) {
+      case "hi": return `${hrsP}${city} में स्वच्छ हवा: AQI ${aqi}`;
+      case "te": return `${hrs ? hrs + " గం నమోదైంది - " : ""}${city}లో స్వచ్ఛమైన గాలి: AQI ${aqi}`;
+      case "ta": return `${hrs ? hrs + " மணி பதிவானது - " : ""}${city}இல் தூய காற்று: AQI ${aqi}`;
+      case "ml": return `${hrs ? hrs + " മണിക്കൂർ - " : ""}${city}ൽ ശുദ്ധവായു: AQI ${aqi}`;
+      case "pa": return `${hrs ? hrs + " ਘੰਟੇ ਦਰਜ - " : ""}${city} ਵਿੱਚ ਸਾਫ਼ ਹਵਾ: AQI ${aqi}`;
+    }
+  }
+
+  // 4c. Prime conditions workout detail: "X°C with Y km/h DIR breeze. Prime conditions for an outdoor workout."
+  const workoutDetail = en.match(/^([\d.]+)°C\s+with\s+([\d.]+)\s*km\/h\s*([A-Za-z]+)?\s*breeze\.\s*Prime\s+conditions\s+for\s+an\s+outdoor\s+workout\.?$/i);
+  if (workoutDetail) {
+    const [, temp, wind] = workoutDetail;
+    switch (lang) {
+      case "hi": return `${temp}°C और ${wind} किमी/घं हवा। आउटडोर कसरत के लिए उत्तम परिस्थितियाँ।`;
+      case "te": return `${temp}°C మరియు ${wind} కి.మీ/గం గాలి. బహిరంగ వ్యాయామానికి అనుకూలం.`;
+      case "ta": return `${temp}°C மற்றும் ${wind} கிமீ/மணி காற்று. உடற்பயிற்சிக்கு சிறந்த நிலை.`;
+      case "ml": return `${temp}°C-ഉം ${wind} കി.മീ/മണിക്കൂർ കാറ്റും. വ്യായാമത്തിന് അനുയോജ്യം.`;
+      case "pa": return `${temp}°C ਅਤੇ ${wind} ਕਿਲੋਮੀਟਰ/ਘੰਟਾ ਹਵਾ। ਕਸਰਤ ਲਈ ਸ਼ਾਨਦਾਰ ਮੌਸਮ।`;
+    }
+  }
+
+  // 4d. Cycling optimal detail
+  const cyclingDry = en.match(/^Pavement\s+is\s+dry,\s*wind\s+is\s+gentle,\s*and\s+AQI\s+is\s*(\d+)\.\s*Great\s+conditions\s+for\s+outdoor\s+endurance\.?$/i);
+  if (cyclingDry) {
+    const aqi = cyclingDry[1];
+    switch (lang) {
+      case "hi": return `सड़कें सूखी हैं, हवा मंद है और AQI ${aqi} है। लंबी राइड के लिए बेहतरीन परिस्थितियाँ।`;
+      case "te": return `రోడ్లు పొడిగా ఉన్నాయి, AQI ${aqi}. సైక్లింగ్‌కు అనుకూలం.`;
+      case "ta": return `சாலைகள் உலர்ந்துள்ளன, AQI ${aqi}. சைக்கிள் ஓட்ட சிறந்தது.`;
+      case "ml": return `റോഡുകൾ സുരക്ഷിതം, AQI ${aqi}. സൈക്ലിംഗിന് അനുയോജ്യം.`;
+      case "pa": return `ਸੜਕਾਂ ਸੁੱਕੀਆਂ ਹਨ, AQI ${aqi}। ਸਾਈਕਲਿੰਗ ਲਈ ਵਧੀਆ ਮੌਸਮ।`;
+    }
+  }
+
+  // 4e. Headwind alert: "Headwind alert - X km/h DIR today"
+  const headwindMatch = en.match(/^Headwind\s+alert\s*-\s*([\d.]+)\s*km\/h\s*([A-Za-z]+)?\s*today$/i);
+  if (headwindMatch) {
+    const wind = headwindMatch[1];
+    switch (lang) {
+      case "hi": return `विपरीत हवा की चेतावनी - आज ${wind} किमी/घं हवा`;
+      case "te": return `ఎదురుగాలి హెచ్చరిక - నేడు ${wind} కి.మీ/గం గాలి`;
+      case "ta": return `எதிர் காற்று எச்சரிக்கை - இன்று ${wind} கிமீ/மணி காற்று`;
+      case "ml": return `എതിർകാറ്റ് മുന്നറിയിപ്പ് - இன்று ${wind} കി.മീ/മണിക്കൂർ കാറ്റ്`;
+      case "pa": return `ਉਲਟ ਹਵਾ ਦੀ ਚੇਤਾਵਨੀ - ਅੱਜ ${wind} ਕਿਲੋਮੀਟਰ/ਘੰਟਾ ਹਵਾ`;
+    }
+  }
+
+  // 4f. Running pollution headline
+  const pollutionMatch = en.match(/^Elevated\s+AQI\s*(\d+)\s*-\s*switch\s+run\s+indoors\s+or\s+wear\s+a\s+sports\s+mask$/i);
+  if (pollutionMatch) {
+    const aqi = pollutionMatch[1];
+    switch (lang) {
+      case "hi": return `बढ़ा हुआ AQI ${aqi} - घर के अंदर दौड़ें या स्पोर्ट्स मास्क पहनें`;
+      case "te": return `ఎక్కువైన AQI ${aqi} - ఇండోర్ రన్నింగ్ చేయండి లేదా మాస్క్ ధరించండి`;
+      case "ta": return `அதிகரித்த AQI ${aqi} - வீட்டிற்குள் ஓடவும் அல்லது முகக்கவசம் அணியவும்`;
+      case "ml": return `കൂടിയ AQI ${aqi} - ഇൻഡോർ വ്യായാമം ചെയ്യുക അല്ലെങ്കിൽ മാസ്ക് ധരിക്കുക`;
+      case "pa": return `ਵਧਿਆ ਹੋਇਆ AQI ${aqi} - ਅੰਦਰ ਦੌੜੋ ਜਾਂ ਮਾਸਕ ਪਹਿਨੋ`;
     }
   }
 

@@ -149,41 +149,6 @@ export const CelestialLayer: React.FC<CelestialLayerProps> = ({
           ))}
         </div>
       )}
-
-      {/* 2. Sun Disc (Clean, minimal, photorealistic solar disk) */}
-      {sunDiscOpacity > 0.02 && (
-        <div
-          className="absolute transition-all duration-1000 ease-out pointer-events-none"
-          style={{
-            left: `${solar.screenX}%`,
-            top: `${solar.screenY}%`,
-            width: "36px",
-            height: "36px",
-            transform: "translate(-50%, -50%)",
-            opacity: sunDiscOpacity,
-          }}
-        >
-          {/* Intense solar core */}
-          <div className="w-full h-full rounded-full bg-white shadow-[0_0_24px_rgba(255,245,210,0.9),0_0_48px_rgba(255,215,140,0.6)]" />
-        </div>
-      )}
-
-      {/* 3. Authentic Moon Disc matching astronomy calculation */}
-      {moonOpacity > 0.02 && (
-        <div
-          className="absolute transition-all duration-1000 ease-out pointer-events-none"
-          style={{
-            left: `${lunar.screenX}%`,
-            top: `${lunar.screenY}%`,
-            width: "32px",
-            height: "32px",
-            transform: "translate(-50%, -50%)",
-            opacity: moonOpacity,
-          }}
-        >
-          {moonPhaseSvg}
-        </div>
-      )}
     </div>
   );
 };

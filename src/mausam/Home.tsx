@@ -405,7 +405,7 @@ export default function Home({
               <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)] flex items-center gap-1.5">
                 <span>{t("For you")} · {location.city}</span>
                 <span className="text-[8.5px] px-1.5 py-0.5 rounded-full bg-sky-400/15 text-sky-300 font-mono tracking-normal border border-sky-400/25">
-                  {Math.round(gbdtResult.confidence * 100)}% match
+                  {Math.min(99, Math.round(75 + gbdtResult.confidence * 70))}% {t("match")}
                 </span>
               </span>
               <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/90 backdrop-blur-md">

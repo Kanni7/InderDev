@@ -1,4 +1,4 @@
-import type { Location, Air, Precip, Wind, Sun, HourlyPoint, DailyPoint } from "../mausam/data";
+import { locations, type Location, type Air, type Precip, type Wind, type Sun, type HourlyPoint, type DailyPoint } from "../mausam/data";
 import type { Condition } from "../mausam/theme";
 
 /** City coordinates for the 6 supported cities. */
@@ -309,6 +309,13 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
         title: "Yellow Advisory: Dense fog",
         body: "Visibility below 400 m, use fog lamps.",
       };
+    }
+
+    if (!loc.alert) {
+      const mock = locations.find((l) => l.key === cityKey);
+      if (mock?.alert) {
+        loc.alert = mock.alert;
+      }
     }
 
     cache.set(cityKey, { data: loc, ts: Date.now() });

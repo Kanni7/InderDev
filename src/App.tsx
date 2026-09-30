@@ -89,15 +89,18 @@ export default function App() {
   const mockLocation = locations.find((l) => l.key === locationKey) ?? locations[0];
   const baseLocation = liveLocation && liveLocation.key === locationKey ? liveLocation : mockLocation;
   const location = useMemo<Location>(() => {
-    if (!weatherOverride) return baseLocation;
+    const activeAlert = baseLocation.alert ?? mockLocation.alert;
+    const resolvedBase = { ...baseLocation, alert: activeAlert };
+    if (!weatherOverride) return resolvedBase;
     return {
-      ...baseLocation,
+      ...resolvedBase,
       ...weatherOverride,
-      wind: { ...baseLocation.wind, ...(weatherOverride.wind ?? {}) },
-      air: { ...baseLocation.air, ...(weatherOverride.air ?? {}) },
-      precip: { ...baseLocation.precip, ...(weatherOverride.precip ?? {}) },
+      alert: weatherOverride.alert !== undefined ? weatherOverride.alert : resolvedBase.alert,
+      wind: { ...resolvedBase.wind, ...(weatherOverride.wind ?? {}) },
+      air: { ...resolvedBase.air, ...(weatherOverride.air ?? {}) },
+      precip: { ...resolvedBase.precip, ...(weatherOverride.precip ?? {}) },
     };
-  }, [baseLocation, weatherOverride]);
+  }, [baseLocation, mockLocation, weatherOverride]);
   const currentHour = simulatedHour ?? (DEV_TIME_OVERRIDE ?? new Date().getHours());
   const theme = getWeatherTheme(location.condition, currentHour);
 
