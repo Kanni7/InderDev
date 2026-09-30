@@ -42,11 +42,11 @@ body {
 .scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scroll-hide::-webkit-scrollbar { display: none; }
 
-/* Transparent cards with 3D depth shadow only — no tint */
+/* Transparent cards with a subtle, gentle blur and 3D depth */
 .mausam-glass {
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.03);
+  backdrop-filter: blur(6px);
+  -webkit-backdrop-filter: blur(6px);
   border: 1px solid rgba(255, 255, 255, 0.10);
   box-shadow: 0 8px 28px -4px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
@@ -58,11 +58,11 @@ body {
   box-shadow: 8px 0 40px 0 rgba(0, 0, 0, 0.6);
 }
 
-/* "For you" card — transparent with stronger 3D depth */
+/* "For you" card — transparent with subtle blur and stronger 3D depth */
 .mausam-glass-strong {
-  background: transparent !important;
-  backdrop-filter: none;
-  -webkit-backdrop-filter: none;
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   border: 1px solid rgba(255, 255, 255, 0.12);
   box-shadow: 0 12px 36px -4px rgba(0, 0, 0, 0.6), inset 0 1px 0 rgba(255, 255, 255, 0.08);
 }
