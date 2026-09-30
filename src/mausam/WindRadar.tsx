@@ -744,12 +744,36 @@ function WindMapCanvas({
             ctx.lineCap = "round";
             ctx.stroke();
 
-            // Subtle luminous head dot
+            // Real directional arrowhead at the tip of each streamline
             const head = screenTrail[screenTrail.length - 1];
-            ctx.beginPath();
-            ctx.arc(head.x, head.y, 0.9, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
-            ctx.fill();
+            const prev = screenTrail[screenTrail.length - 2] ?? screenTrail[0];
+            const dx = head.x - prev.x;
+            const dy = head.y - prev.y;
+            const len = Math.hypot(dx, dy);
+
+            if (len > 0.8) {
+              const angle = Math.atan2(dy, dx);
+              const arrowSize = Math.min(6.0, Math.max(3.0, 2.5 + (vec.speed / 20) * 2.5));
+              ctx.beginPath();
+              ctx.moveTo(head.x, head.y);
+              ctx.lineTo(
+                head.x - arrowSize * Math.cos(angle - 0.45),
+                head.y - arrowSize * Math.sin(angle - 0.45)
+              );
+              ctx.moveTo(head.x, head.y);
+              ctx.lineTo(
+                head.x - arrowSize * Math.cos(angle + 0.45),
+                head.y - arrowSize * Math.sin(angle + 0.45)
+              );
+              ctx.lineWidth = 1.35;
+              ctx.strokeStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
+              ctx.stroke();
+            } else {
+              ctx.beginPath();
+              ctx.arc(head.x, head.y, 1.0, 0, Math.PI * 2);
+              ctx.fillStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
+              ctx.fill();
+            }
           }
         }
       } else if (activeLayer === "temp") {
@@ -1499,7 +1523,13 @@ export function FullScreenWindRadar({
             <span className="text-[13px] font-bold tracking-tight text-sky-400">radar</span>
             <span className="h-3 w-px bg-white/20" />
             <span className="text-[12px] font-semibold text-emerald-300">
-              {activeLayer === "wind" && `${location.city} ${activeWind.speed} km/h`}
+              {activeLayer === "wind" && (
+                <span className="inline-flex items-center gap-1">
+                  <span>{location.city} {activeWind.speed} km/h</span>
+                  <span className="text-sky-300 font-bold text-[13px]">{getMotionArrow(meteoDirToDegrees(activeWind.dir))}</span>
+                  <span className="text-[10px] text-white/60 font-mono">({activeWind.dir})</span>
+                </span>
+              )}
               {activeLayer === "temp" && `${location.city} ${activeTemp}°C`}
               {activeLayer === "rain" && `${location.city} Rain Radar`}
               {activeLayer === "satellite" && `${location.city} Satellite`}
@@ -1524,6 +1554,21 @@ export function FullScreenWindRadar({
 
         {/* ── LEFT VERTICAL MAP CONTROLS ── */}
         <div className="absolute left-4 top-28 z-30 flex flex-col gap-2 pointer-events-auto">
+          {/* North Compass Orientation Arrow */}
+          <button
+            onClick={resetToLocation}
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg group"
+            title="Compass: North"
+          >
+            <div className="flex flex-col items-center justify-center">
+              <span className="text-[8px] font-black text-rose-400 font-mono -mb-0.5">N</span>
+              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none">
+                <polygon points="12,2 16,11 8,11" fill="#f43f5e" />
+                <polygon points="12,22 8,13 16,13" fill="rgba(255,255,255,0.4)" />
+              </svg>
+            </div>
+          </button>
+
           {/* Target / My Location button */}
           <button
             onClick={resetToLocation}
@@ -1835,10 +1880,41 @@ export function FullScreenWindRadar({
             </div>
           </div>
         )}
-        {/* ── METEOROLOGICAL WIND SPEED SCALE LEGEND ── */}
+        {/* ── METEOROLOGICAL WIND SPEED & DIRECTION SCALE LEGEND ── */}
         {activeLayer === "wind" && (
-          <div className="absolute left-4 bottom-3 z-30 pointer-events-none animate-in fade-in duration-200">
-            <div className="flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-md border border-white/12 shadow-lg">
+          <div className="absolute left-4 bottom-3 z-30 pointer-events-none animate-in fade-in duration-200 flex flex-col gap-1.5">
+            {/* Real-time Wind Direction Compass Indicator */}
+            <div className="flex items-center gap-2 rounded-full bg-black/75 px-3 py-1.5 backdrop-blur-md border border-white/15 shadow-xl w-fit">
+              {/* Compass Rose with current wind direction arrow */}
+              <div className="relative h-6 w-6 rounded-full border border-sky-400/40 bg-sky-950/60 flex items-center justify-center">
+                <span className="absolute -top-1 text-[6.5px] font-black text-rose-400 font-mono">N</span>
+                {/* Arrow pointing in the physical direction of particle motion */}
+                <div
+                  className="transition-transform duration-500 flex items-center justify-center"
+                  style={{
+                    transform: `rotate(${meteoDirToDegrees(activeWind.dir) + 180}deg)`,
+                  }}
+                >
+                  <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-sky-300" fill="currentColor">
+                    <path d="M12 2L17 11H13.5V22H10.5V11H7L12 2Z" />
+                  </svg>
+                </div>
+              </div>
+              <div className="flex items-center gap-1.5 font-mono text-[10px]">
+                <span className="font-bold text-white tracking-wide">
+                  {activeWind.dir}
+                </span>
+                <span className="text-sky-300 font-bold text-sm leading-none">
+                  {getMotionArrow(meteoDirToDegrees(activeWind.dir))}
+                </span>
+                <span className="text-white/50 text-[8px] uppercase tracking-wider">
+                  Flow
+                </span>
+              </div>
+            </div>
+
+            {/* Speed scale bar */}
+            <div className="flex items-center gap-2 rounded-full bg-black/75 px-3 py-1.5 backdrop-blur-md border border-white/12 shadow-lg">
               <span className="text-[9.5px] font-mono font-bold tracking-wider text-white/50 uppercase">WIND</span>
               <div className="h-1.5 w-24 rounded-full overflow-hidden flex bg-white/10">
                 <span className="h-full flex-1 bg-sky-400/40" />
