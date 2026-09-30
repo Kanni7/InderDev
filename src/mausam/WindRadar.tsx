@@ -1245,21 +1245,8 @@ export function FullScreenWindRadar({
             </span>
           </div>
 
-          {/* Top Right Actions (Share + Info) */}
+          {/* Top Right Action (Info) */}
           <div className="pointer-events-auto flex items-center gap-2">
-            <button
-              onClick={() => {
-                if (navigator.share) {
-                  navigator.share({ title: `Weather & Radar - ${location.city}`, url: window.location.href }).catch(() => {});
-                }
-              }}
-              className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
-              aria-label="Share"
-            >
-              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-                <path d="M4 12v8a2 2 0 002 2h12a2 2 0 002-2v-8m-4-6l-4-4m0 0L8 6m4-4v12" strokeLinecap="round" strokeLinejoin="round" />
-              </svg>
-            </button>
             <button
               onClick={() => setShowInfo((s) => !s)}
               className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
