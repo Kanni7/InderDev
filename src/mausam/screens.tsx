@@ -1,4 +1,4 @@
-import { useState, useEffect, type SVGProps, type ReactElement, type CSSProperties } from "react";
+import { useState, useEffect, useRef, type SVGProps, type ReactElement, type CSSProperties } from "react";
 import { userTypes, chatChips, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
 import { getWeatherTheme } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
@@ -270,7 +270,10 @@ export function Chat({
 }) {
   const t = makeT(lang);
   const { updateProfile } = useProfile();
-  const INITIAL_Q = initialQ ?? t("Should I go for a run at noon?");
+  const hasAskedInitialRef = useRef(false);
+
+  // If initialQ is explicitly provided (e.g. from an action card), seed with that question.
+  // Otherwise, greet the user with a welcoming intro message and wait for user input.
   const [thread, setThread] = useState<{
     role: "user" | "ai";
     text?: string;
@@ -278,16 +281,36 @@ export function Chat({
     errorReason?: string;
     source?: string;
     confidence?: string;
-  }[]>([{ role: "user", text: INITIAL_Q }]);
-  const [typing, setTyping] = useState(true);
+  }[]>(() => {
+    if (initialQ) {
+      return [{ role: "user", text: initialQ }];
+    }
+    return [
+      {
+        role: "ai",
+        text: t(
+          "Hello! I'm Mausam AI. Ask me anything about today's weather, rain forecast, air quality, or planning your day."
+        ),
+        source: "Mausam AI",
+        confidence: "high",
+      },
+    ];
+  });
+
+  const [typing, setTyping] = useState<boolean>(Boolean(initialQ));
   const [inputVal, setInputVal] = useState("");
 
   useEffect(() => {
+    // Only auto-ask if an explicit initial question was passed from a card, and ensure it only runs once
+    if (!initialQ || hasAskedInitialRef.current) return;
+    hasAskedInitialRef.current = true;
+
     if (!location) {
       setTyping(false);
       return;
     }
-    askWhy(INITIAL_Q, location.city, location, lang).then((res) => {
+
+    askWhy(initialQ, location.city, location, lang).then((res) => {
       setTyping(false);
       setThread((th) => [
         ...th,
@@ -309,7 +332,7 @@ export function Chat({
       }));
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [initialQ]);
 
   function ask(q: string) {
     setThread((th) => [...th, { role: "user", text: q }]);
