@@ -95,6 +95,36 @@ describe("LightGBM / GBDT 'For You' Engine", () => {
     expect(result.insight.window).toBe("Commute watch");
   });
 
+  it("switches to agricultural advisory when userType is agri", () => {
+    const result = runGBDTInference(baseProfile, pune, 10, [], undefined, "agri");
+    expect(result.intent).toBe("AGRI_SPRAY_ADVISORY");
+    expect(result.confidence).toBeGreaterThan(0.3);
+  });
+
+  it("switches to beach window when userType is beach", () => {
+    const result = runGBDTInference(baseProfile, pune, 11, [], undefined, "beach");
+    expect(result.intent).toBe("BEACH_COASTAL_WINDOW");
+    expect(result.confidence).toBeGreaterThan(0.3);
+  });
+
+  it("switches to health & air monitoring when userType is health", () => {
+    const result = runGBDTInference(baseProfile, pune, 8, [], undefined, "health");
+    expect(result.intent).toBe("HEALTH_AIR_POLLEN");
+    expect(result.confidence).toBeGreaterThan(0.3);
+  });
+
+  it("switches to farm advisory when profile locationContext is farm", () => {
+    const farmProfile = { ...baseProfile, locationContext: "farm" as const };
+    const result = runGBDTInference(farmProfile, pune, 10);
+    expect(result.intent).toBe("AGRI_SPRAY_ADVISORY");
+  });
+
+  it("switches to transit advisory when profile locationContext is other_city", () => {
+    const transitProfile = { ...baseProfile, locationContext: "other_city" as const };
+    const result = runGBDTInference(transitProfile, pune, 10);
+    expect(result.intent).toBe("TRAVELER_TRANSIT_ADVISORY");
+  });
+
   it("executes ultra-fast (< 2ms) on-device", () => {
     const result = runGBDTInference(baseProfile, pune, 14);
     expect(result.inferenceTimeMs).toBeLessThan(2.0);

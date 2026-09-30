@@ -85,8 +85,19 @@ export default function App() {
     fetchLive();
   }, [fetchLive]);
 
+  const [weatherOverride, setWeatherOverride] = useState<Partial<Location> | null>(null);
   const mockLocation = locations.find((l) => l.key === locationKey) ?? locations[0];
-  const location = liveLocation && liveLocation.key === locationKey ? liveLocation : mockLocation;
+  const baseLocation = liveLocation && liveLocation.key === locationKey ? liveLocation : mockLocation;
+  const location = useMemo<Location>(() => {
+    if (!weatherOverride) return baseLocation;
+    return {
+      ...baseLocation,
+      ...weatherOverride,
+      wind: { ...baseLocation.wind, ...(weatherOverride.wind ?? {}) },
+      air: { ...baseLocation.air, ...(weatherOverride.air ?? {}) },
+      precip: { ...baseLocation.precip, ...(weatherOverride.precip ?? {}) },
+    };
+  }, [baseLocation, weatherOverride]);
   const currentHour = simulatedHour ?? (DEV_TIME_OVERRIDE ?? new Date().getHours());
   const theme = getWeatherTheme(location.condition, currentHour);
 
@@ -367,7 +378,13 @@ export default function App() {
         )}
       </div>
       {onboarded && (
-        <DemoPanel lang={lang} location={location} onSetAlertOverrides={setAlertOverrides} />
+        <DemoPanel
+          lang={lang}
+          location={location}
+          onSetAlertOverrides={setAlertOverrides}
+          weatherOverride={weatherOverride}
+          onSetWeatherOverride={setWeatherOverride}
+        />
       )}
       {/* Offline data badge */}
       {onboarded && !usingLiveData && (

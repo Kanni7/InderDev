@@ -36,10 +36,14 @@ export default function DemoPanel({
   lang,
   location,
   onSetAlertOverrides,
+  weatherOverride,
+  onSetWeatherOverride,
 }: {
   lang: Lang;
   location: Location;
   onSetAlertOverrides: (a: AlertOverride[]) => void;
+  weatherOverride?: Partial<Location> | null;
+  onSetWeatherOverride?: (w: Partial<Location> | null) => void;
 }) {
   const t = makeT(lang);
   const { profile, updateProfile, setProfile } = useProfile();
@@ -70,18 +74,23 @@ export default function DemoPanel({
   };
 
   // LightGBM Live Weather Override state
-  const [weatherOverride, setWeatherOverride] = useState<Partial<Location> | null>(null);
+  const [localWeatherOverride, setLocalWeatherOverride] = useState<Partial<Location> | null>(null);
+  const activeWeatherOverride = weatherOverride !== undefined ? weatherOverride : localWeatherOverride;
+  const setWeatherOverride = (w: Partial<Location> | null) => {
+    setLocalWeatherOverride(w);
+    onSetWeatherOverride?.(w);
+  };
 
   const effectiveLocation = useMemo<Location>(() => {
-    if (!weatherOverride) return location;
+    if (!activeWeatherOverride) return location;
     return {
       ...location,
-      ...weatherOverride,
-      wind: { ...location.wind, ...(weatherOverride.wind ?? {}) },
-      air: { ...location.air, ...(weatherOverride.air ?? {}) },
-      precip: { ...location.precip, ...(weatherOverride.precip ?? {}) },
+      ...activeWeatherOverride,
+      wind: { ...location.wind, ...(activeWeatherOverride.wind ?? {}) },
+      air: { ...location.air, ...(activeWeatherOverride.air ?? {}) },
+      precip: { ...location.precip, ...(activeWeatherOverride.precip ?? {}) },
     };
-  }, [location, weatherOverride]);
+  }, [location, activeWeatherOverride]);
 
   const gbdtLiveResult = useMemo(
     () => runGBDTInference(profile, effectiveLocation, new Date().getHours(), [], lastLSTMResult),

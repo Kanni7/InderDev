@@ -87,8 +87,8 @@ export default function Home({
 
   const t = makeT(lang);
   const gbdtResult = useMemo(
-    () => runGBDTInference(profile, location, currentHour, alertOverrides),
-    [profile, location, currentHour, alertOverrides],
+    () => runGBDTInference(profile, location, currentHour, alertOverrides, undefined, userType),
+    [profile, location, currentHour, alertOverrides, userType],
   );
   const insight = gbdtResult.insight;
   const [unit, setUnit] = useState<TemperatureUnit>("C");

@@ -3,9 +3,11 @@
  * 
  * Takes:
  *  1. User Profile weights (from ProfileEngine & LSTM)
- *  2. Recent Activity signals (cycling, running, walking, driving, commute)
- *  3. All real-time Widget telemetry (Temp, Wind, Gust, Rain, AQI, UV, Humidity, etc.)
- *  4. Time & Alert context (hour, sunrise/sunset, alert overrides)
+ *  2. Explicitly selected UserType / Vocation (e.g., Agri, Beach, Health, Fitness, Commuter, Parent, Traveler, Event)
+ *  3. Location context (Farm, Beach, Other city, Home)
+ *  4. Recent Activity signals (cycling, running, walking, driving, commute)
+ *  5. Real-time Widget telemetry (Temp, Feels, Wind, Gust, Rain, AQI, UV, Humidity, etc.)
+ *  6. Time & Alert context (hour, sunrise/sunset, alert overrides)
  * 
  * Output:
  *  - Ranked winning intent with calibrated confidence (Softmax)
@@ -15,7 +17,7 @@
  */
 
 import type { UserProfile, Interest } from "./profile";
-import type { Location, Insight, LocationAlert } from "../mausam/data";
+import type { Location, Insight, UserTypeKey } from "../mausam/data";
 import type { LSTMInferenceResult } from "./lstmModel";
 
 // ── Candidate Intents ──
@@ -31,6 +33,10 @@ export type GBDTIntent =
   | "GOLDEN_HOUR"
   | "AGRI_SPRAY_ADVISORY"
   | "PARENT_OUTDOOR_WINDOW"
+  | "BEACH_COASTAL_WINDOW"
+  | "TRAVELER_TRANSIT_ADVISORY"
+  | "HEALTH_AIR_POLLEN"
+  | "EVENT_OUTDOOR_COMFORT"
   | "SEVERE_WEATHER_ALERT"
   | "GENERAL_MILD_DAY";
 
@@ -59,12 +65,18 @@ export interface GBDTFeatures {
   wBeach: number;
   wEvent: number;
 
+  // Location context flags
+  isFarmContext: number; // 0 or 1
+  isBeachContext: number; // 0 or 1
+  isOtherCityContext: number; // 0 or 1
+
   // Activity signals & LSTM duration scale
   cyclingMin: number;
   runningMin: number;
   walkingMin: number;
   commuteMin: number;
   driveMin: number;
+  schoolWalks: number;
   lstmDurationScale: number;
 
   // Temporal & context
@@ -75,13 +87,13 @@ export interface GBDTFeatures {
 export interface FeatureContribution {
   feature: string;
   value: number | string;
-  impact: number; // positive = boosted this intent
+  impact: number;
   reason: string;
 }
 
 export interface GBDTInferenceResult {
   intent: GBDTIntent;
-  confidence: number; // 0..1 probability
+  confidence: number;
   allScores: Record<GBDTIntent, number>;
   topContributions: FeatureContribution[];
   inferenceTimeMs: number;
@@ -89,17 +101,15 @@ export interface GBDTInferenceResult {
 }
 
 // ── Decision Tree Node Structure ──
-// Represents a single split in a gradient boosted regression tree
 interface DecisionNode {
   feature: keyof GBDTFeatures;
   threshold: number;
-  left: DecisionNode | number; // if <= threshold: recurse or leaf score
-  right: DecisionNode | number; // if > threshold: recurse or leaf score
+  left: DecisionNode | number;
+  right: DecisionNode | number;
   reasonLeft?: string;
   reasonRight?: string;
 }
 
-// A tree ensemble per intent
 interface IntentTreeEnsemble {
   baseScore: number;
   trees: {
@@ -109,29 +119,28 @@ interface IntentTreeEnsemble {
 }
 
 // ── Gradient Boosted Tree Definitions ──
-// Pre-trained decision trees capturing non-linear domain interactions
 const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
   CYCLING_HEADWIND: {
-    baseScore: -0.5,
+    baseScore: -0.6,
     trees: [
       {
-        weight: 1.0,
+        weight: 1.2,
         root: {
           feature: "windSpeed",
           threshold: 20,
-          left: -0.8,
+          left: -1.2,
           right: {
             feature: "cyclingMin",
             threshold: 15,
             left: {
               feature: "wFitness",
-              threshold: 0.18,
-              left: -0.4,
-              right: 1.4,
-              reasonRight: "High fitness interest with 20+ km/h wind",
+              threshold: 0.22,
+              left: -0.5,
+              right: 1.8,
+              reasonRight: "High fitness persona with 20+ km/h wind",
             },
-            right: 2.2,
-            reasonRight: "Active cycling session logged with strong wind",
+            right: 2.6,
+            reasonRight: "Active cycling session logged in strong wind",
           },
         },
       },
@@ -143,38 +152,29 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
           left: 0.0,
           right: {
             feature: "wFitness",
-            threshold: 0.12,
+            threshold: 0.15,
             left: 0.2,
-            right: 1.1,
+            right: 1.2,
             reasonRight: "Gusts exceed 28 km/h - crosswind hazard",
           },
-        },
-      },
-      {
-        weight: 0.5,
-        root: {
-          feature: "isWet",
-          threshold: 0.5,
-          left: 0.3, // dry high wind is typical headwind
-          right: -0.6, // if pouring rain, rain/commute hazard takes precedence
         },
       },
     ],
   },
 
   CYCLING_OPTIMAL: {
-    baseScore: -0.6,
+    baseScore: -0.7,
     trees: [
       {
-        weight: 1.0,
+        weight: 1.1,
         root: {
           feature: "cyclingMin",
           threshold: 15,
           left: {
             feature: "wFitness",
-            threshold: 0.2,
-            left: -0.5,
-            right: 0.8,
+            threshold: 0.25,
+            left: -0.8,
+            right: 1.0,
           },
           right: {
             feature: "windSpeed",
@@ -182,8 +182,8 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
             left: {
               feature: "precipChance",
               threshold: 25,
-              left: 2.1,
-              right: -0.8,
+              left: 2.4,
+              right: -1.0,
               reasonLeft: "Calm wind (<18 km/h) & dry roads for cycling",
             },
             right: -1.2,
@@ -196,52 +196,36 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
           feature: "aqi",
           threshold: 90,
           left: 0.8,
-          right: -1.5, // don't recommend outdoor endurance if AQI is high
+          right: -1.5,
           reasonLeft: "Clean breathable air (AQI < 90)",
-          reasonRight: "High AQI reduces outdoor ride suitability",
+          reasonRight: "Elevated AQI reduces outdoor ride suitability",
         },
       },
     ],
   },
 
   RUNNING_POLLUTION: {
-    baseScore: -0.7,
+    baseScore: -0.6,
     trees: [
       {
-        weight: 1.2,
+        weight: 1.3,
         root: {
           feature: "aqi",
           threshold: 100,
-          left: -1.8,
+          left: -2.0,
           right: {
             feature: "runningMin",
             threshold: 15,
             left: {
               feature: "wFitness",
-              threshold: 0.18,
-              left: {
-                feature: "wHealth",
-                threshold: 0.2,
-                left: -0.2,
-                right: 1.4,
-                reasonRight: "Health-conscious user in polluted air (AQI > 100)",
-              },
-              right: 1.8,
-              reasonRight: "Runner facing elevated AQI",
+              threshold: 0.2,
+              left: -0.4,
+              right: 2.0,
+              reasonRight: "Runner facing elevated AQI (>100)",
             },
-            right: 2.5,
-            reasonRight: "Active runner logged in AQI > 100 - mask or treadmill recommended",
+            right: 2.8,
+            reasonRight: "Active runner logged in AQI > 100 - indoor workout recommended",
           },
-        },
-      },
-      {
-        weight: 0.6,
-        root: {
-          feature: "aqi",
-          threshold: 150,
-          left: 0.0,
-          right: 1.2,
-          reasonRight: "Unhealthy AQI tier (>150)",
         },
       },
     ],
@@ -251,62 +235,57 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
     baseScore: -0.7,
     trees: [
       {
-        weight: 1.1,
+        weight: 1.2,
         root: {
           feature: "feels",
           threshold: 33,
-          left: -1.5,
+          left: -1.8,
           right: {
             feature: "runningMin",
             threshold: 15,
             left: {
               feature: "wFitness",
-              threshold: 0.18,
-              left: -0.3,
-              right: 1.3,
+              threshold: 0.2,
+              left: -0.5,
+              right: 1.6,
               reasonRight: "Fitness user with heat index >= 33°C",
             },
-            right: 2.2,
+            right: 2.5,
             reasonRight: "Running logged in high heat index - hydration critical",
           },
-        },
-      },
-      {
-        weight: 0.7,
-        root: {
-          feature: "humidity",
-          threshold: 70,
-          left: 0.2,
-          right: 0.9,
-          reasonRight: "High humidity limits sweat cooling",
         },
       },
     ],
   },
 
   RUNNING_CLEAN_AIR: {
-    baseScore: -0.6,
+    baseScore: -0.7,
     trees: [
       {
-        weight: 1.0,
+        weight: 1.1,
         root: {
           feature: "runningMin",
           threshold: 15,
           left: {
             feature: "wFitness",
-            threshold: 0.2,
-            left: -0.6,
-            right: 0.9,
+            threshold: 0.25,
+            left: {
+              feature: "wFitness",
+              threshold: 0.15,
+              left: -1.0,
+              right: 0.5,
+            },
+            right: 1.8,
           },
           right: {
             feature: "aqi",
-            threshold: 55,
+            threshold: 60,
             left: {
               feature: "isWet",
               threshold: 0.5,
-              left: 2.2,
-              right: -1.0,
-              reasonLeft: "Pristine air (AQI <= 55) & dry pavement for running",
+              left: 2.6,
+              right: -1.2,
+              reasonLeft: "Pristine air (AQI <= 60) & dry pavement for running",
             },
             right: -0.5,
           },
@@ -319,71 +298,61 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
     baseScore: -0.5,
     trees: [
       {
-        weight: 1.2,
+        weight: 1.3,
         root: {
           feature: "isWet",
           threshold: 0.5,
           left: {
             feature: "precipChance",
             threshold: 45,
-            left: -1.5,
+            left: -1.8,
             right: {
               feature: "wCommuter",
-              threshold: 0.15,
-              left: 0.4,
-              right: 1.5,
-              reasonRight: "Precipitation probability >= 45% on commute",
+              threshold: 0.18,
+              left: 0.2,
+              right: 2.0,
+              reasonRight: "Precipitation probability >= 45% on commute route",
             },
           },
           right: {
             feature: "commuteMin",
-            threshold: 20,
+            threshold: 15,
             left: {
               feature: "wCommuter",
-              threshold: 0.15,
-              left: 0.9,
-              right: 2.2,
+              threshold: 0.18,
+              left: 1.2,
+              right: 2.6,
               reasonRight: "Rain/storm along commute route",
             },
-            right: 2.7,
+            right: 3.0,
             reasonRight: "Active commute logged during rainfall - waterlogging hazard",
           },
-        },
-      },
-      {
-        weight: 0.7,
-        root: {
-          feature: "driveMin",
-          threshold: 60,
-          left: 0.0,
-          right: 1.2,
-          reasonRight: "Long drive trip scheduled in rain",
         },
       },
     ],
   },
 
   COMMUTE_CLEAR: {
-    baseScore: -0.8,
+    baseScore: -0.7,
     trees: [
       {
-        weight: 1.0,
+        weight: 1.2,
         root: {
           feature: "isWet",
           threshold: 0.5,
           left: {
             feature: "wCommuter",
-            threshold: 0.18,
-            left: -0.4,
+            threshold: 0.22,
+            left: -0.8,
             right: {
               feature: "precipChance",
               threshold: 20,
-              left: 1.8,
-              right: -0.2,
+              left: 2.5,
+              right: 0.2,
               reasonLeft: "Clear dry roads & low rain chance for daily commute",
             },
           },
-          right: -2.5, // cannot be clear commute if wet
+          right: -3.0,
         },
       },
     ],
@@ -393,38 +362,28 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
     baseScore: -0.7,
     trees: [
       {
-        weight: 1.1,
+        weight: 1.2,
         root: {
           feature: "uv",
           threshold: 6,
-          left: -1.8,
+          left: -2.0,
           right: {
             feature: "hour",
             threshold: 16,
             left: {
               feature: "hour",
               threshold: 9,
-              left: -1.0,
+              left: -1.2,
               right: {
                 feature: "wHealth",
                 threshold: 0.15,
-                left: 1.4,
-                right: 2.3,
+                left: 1.5,
+                right: 2.6,
                 reasonRight: "Peak midday UV index (>= 6) - sun protection essential",
               },
             },
-            right: -1.0, // after 4 PM UV drops
+            right: -1.2,
           },
-        },
-      },
-      {
-        weight: 0.6,
-        root: {
-          feature: "walkingMin",
-          threshold: 20,
-          left: 0.0,
-          right: 1.0,
-          reasonRight: "Active outdoor walking logged under intense sun",
         },
       },
     ],
@@ -438,14 +397,14 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
         root: {
           feature: "isGoldenHour",
           threshold: 0.5,
-          left: -2.5,
+          left: -3.0,
           right: {
             feature: "isWet",
             threshold: 0.5,
             left: {
               feature: "temp",
               threshold: 34,
-              left: 2.4,
+              left: 2.8,
               right: 0.5,
               reasonLeft: "Gentle golden-hour light & pleasant outdoor temperatures",
             },
@@ -453,73 +412,152 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
           },
         },
       },
-      {
-        weight: 0.6,
-        root: {
-          feature: "wEvent",
-          threshold: 0.15,
-          left: 0.3,
-          right: 1.2,
-          reasonRight: "Optimal window for photography and outdoor leisure",
-        },
-      },
     ],
   },
 
   AGRI_SPRAY_ADVISORY: {
-    baseScore: -1.0,
+    baseScore: -0.7,
     trees: [
       {
-        weight: 1.3,
+        weight: 1.4,
         root: {
-          feature: "wAgri",
-          threshold: 0.2,
-          left: -2.0,
-          right: {
-            feature: "windSpeed",
-            threshold: 18,
-            left: {
-              feature: "precipChance",
-              threshold: 20,
-              left: 2.5, // calm & dry = ideal spraying window
-              right: 1.8, // rain risk
-              reasonLeft: "Calm winds (<18 km/h) & dry canopy - optimal spraying window",
-              reasonRight: "Rain wash-off risk for pesticide or fertiliser application",
-            },
-            right: 2.2, // high wind drift
-            reasonRight: "Wind speeds >= 18 km/h cause chemical spray drift",
+          feature: "isFarmContext",
+          threshold: 0.5,
+          left: {
+            feature: "wAgri",
+            threshold: 0.2,
+            left: -2.0,
+            right: 2.4,
+            reasonRight: "Agriculture persona selected",
           },
+          right: 3.2,
+          reasonRight: "Farm location context active",
+        },
+      },
+      {
+        weight: 0.8,
+        root: {
+          feature: "windSpeed",
+          threshold: 18,
+          left: {
+            feature: "precipChance",
+            threshold: 20,
+            left: 1.0,
+            right: 0.6,
+            reasonLeft: "Calm winds (<18 km/h) & dry canopy - optimal spraying window",
+          },
+          right: 1.2,
+          reasonRight: "Wind speeds >= 18 km/h cause chemical spray drift",
         },
       },
     ],
   },
 
   PARENT_OUTDOOR_WINDOW: {
-    baseScore: -1.0,
+    baseScore: -0.8,
     trees: [
       {
-        weight: 1.2,
+        weight: 1.3,
         root: {
           feature: "wParent",
           threshold: 0.2,
+          left: {
+            feature: "schoolWalks",
+            threshold: 0.5,
+            left: -2.0,
+            right: 2.5,
+            reasonRight: "School run walk logged",
+          },
+          right: 2.7,
+          reasonRight: "Family & parent persona selected",
+        },
+      },
+    ],
+  },
+
+  BEACH_COASTAL_WINDOW: {
+    baseScore: -0.8,
+    trees: [
+      {
+        weight: 1.3,
+        root: {
+          feature: "isBeachContext",
+          threshold: 0.5,
+          left: {
+            feature: "wBeach",
+            threshold: 0.2,
+            left: -2.0,
+            right: 2.6,
+            reasonRight: "Beach & surf persona selected",
+          },
+          right: 3.2,
+          reasonRight: "Beach location context active",
+        },
+      },
+    ],
+  },
+
+  TRAVELER_TRANSIT_ADVISORY: {
+    baseScore: -0.8,
+    trees: [
+      {
+        weight: 1.3,
+        root: {
+          feature: "isOtherCityContext",
+          threshold: 0.5,
+          left: {
+            feature: "wTraveler",
+            threshold: 0.2,
+            left: {
+              feature: "driveMin",
+              threshold: 60,
+              left: -2.0,
+              right: 2.2,
+              reasonRight: "Long trip logged",
+            },
+            right: 2.6,
+            reasonRight: "Traveler persona selected",
+          },
+          right: 3.1,
+          reasonRight: "Transit to other city active",
+        },
+      },
+    ],
+  },
+
+  HEALTH_AIR_POLLEN: {
+    baseScore: -0.7,
+    trees: [
+      {
+        weight: 1.3,
+        root: {
+          feature: "wHealth",
+          threshold: 0.2,
           left: -2.0,
           right: {
-            feature: "isWet",
-            threshold: 0.5,
-            left: {
-              feature: "temp",
-              threshold: 32,
-              left: {
-                feature: "aqi",
-                threshold: 75,
-                left: 2.6,
-                right: 0.2,
-                reasonLeft: "Pleasant air, safe temperature & dry parks for children",
-              },
-              right: 0.3,
-            },
-            right: -1.5,
+            feature: "aqi",
+            threshold: 90,
+            left: 2.0,
+            right: 3.0,
+            reasonRight: "Health persona monitoring elevated air pollution",
+            reasonLeft: "Health persona monitoring clean air ventilation",
           },
+        },
+      },
+    ],
+  },
+
+  EVENT_OUTDOOR_COMFORT: {
+    baseScore: -0.8,
+    trees: [
+      {
+        weight: 1.3,
+        root: {
+          feature: "wEvent",
+          threshold: 0.2,
+          left: -2.0,
+          right: 2.7,
+          reasonRight: "Event planner persona selected",
         },
       },
     ],
@@ -540,31 +578,26 @@ const GBDT_MODEL: Record<GBDTIntent, IntentTreeEnsemble> = {
             right: 2.5,
             reasonRight: "Thunderstorm active in local area",
           },
-          right: 3.2,
-          reasonRight: "Official Meteorological Alert Override active",
+          right: 3.4,
+          reasonRight: "Official Meteorological Alert active",
         },
       },
     ],
   },
 
   GENERAL_MILD_DAY: {
-    baseScore: 0.3, // baseline intent when no specialized conditions dominate
+    baseScore: 0.1,
     trees: [
       {
-        weight: 0.8,
+        weight: 0.6,
         root: {
           feature: "isWet",
           threshold: 0.5,
           left: {
             feature: "temp",
             threshold: 33,
-            left: {
-              feature: "aqi",
-              threshold: 90,
-              left: 1.2,
-              right: -0.4,
-            },
-            right: -0.6,
+            left: 1.0,
+            right: -0.5,
           },
           right: -1.2,
         },
@@ -580,6 +613,7 @@ export function extractGBDTFeatures(
   currentHour = new Date().getHours(),
   alertOverrides: { moduleId: string; tier: "warning" | "critical" }[] = [],
   lastLSTMResult?: LSTMInferenceResult | null,
+  userType?: UserTypeKey,
 ): GBDTFeatures {
   const sig = profile.activitySignals ?? {};
   const weights = profile.interestWeights;
@@ -595,14 +629,29 @@ export function extractGBDTFeatures(
   const hasAlert =
     alertOverrides.length > 0 || location.alert !== undefined ? 1 : 0;
 
-  // Determine golden hour window (typically 6-7 AM and 5-7 PM in India)
   const isGoldenHour =
     (currentHour >= 6 && currentHour <= 7) ||
     (currentHour >= 17 && currentHour <= 19)
       ? 1
       : 0;
 
-  // Effective duration scale from LSTM model
+  // Location context checks
+  const locCtx = profile.locationContext ?? "home_city";
+  const isFarmContext = locCtx === "farm" ? 1 : 0;
+  const isBeachContext = locCtx === "beach" ? 1 : 0;
+  const isOtherCityContext = locCtx === "other_city" ? 1 : 0;
+
+  // If user explicitly selected a persona/userType, give a dominant weight bonus to that vocation
+  const effectiveUserType = userType ?? profile.selectedInterests?.[0];
+  const wFitness = effectiveUserType === "fitness" ? Math.max(weights.fitness ?? 0, 0.45) : (weights.fitness ?? 0.125);
+  const wCommuter = effectiveUserType === "commuter" ? Math.max(weights.commuter ?? 0, 0.45) : (weights.commuter ?? 0.125);
+  const wTraveler = effectiveUserType === "traveler" || isOtherCityContext ? Math.max(weights.traveler ?? 0, 0.45) : (weights.traveler ?? 0.125);
+  const wParent = effectiveUserType === "parent" ? Math.max(weights.parent ?? 0, 0.45) : (weights.parent ?? 0.125);
+  const wAgri = effectiveUserType === "agri" || isFarmContext ? Math.max(weights.agri ?? 0, 0.45) : (weights.agri ?? 0.125);
+  const wHealth = effectiveUserType === "health" ? Math.max(weights.health ?? 0, 0.45) : (weights.health ?? 0.125);
+  const wBeach = effectiveUserType === "beach" || isBeachContext ? Math.max(weights.beach ?? 0, 0.45) : (weights.beach ?? 0.125);
+  const wEvent = effectiveUserType === "event" ? Math.max(weights.event ?? 0, 0.45) : (weights.event ?? 0.125);
+
   let lstmScale = lastLSTMResult?.durationScale ?? 1.0;
   if (!lastLSTMResult) {
     const totalMins =
@@ -624,20 +673,25 @@ export function extractGBDTFeatures(
     isStorm,
     hasAlert,
 
-    wFitness: weights.fitness ?? 0.125,
-    wCommuter: weights.commuter ?? 0.125,
-    wTraveler: weights.traveler ?? 0.125,
-    wParent: weights.parent ?? 0.125,
-    wAgri: weights.agri ?? 0.125,
-    wHealth: weights.health ?? 0.125,
-    wBeach: weights.beach ?? 0.125,
-    wEvent: weights.event ?? 0.125,
+    wFitness,
+    wCommuter,
+    wTraveler,
+    wParent,
+    wAgri,
+    wHealth,
+    wBeach,
+    wEvent,
+
+    isFarmContext,
+    isBeachContext,
+    isOtherCityContext,
 
     cyclingMin: sig.cyclingMin ?? 0,
     runningMin: sig.runningMin ?? 0,
     walkingMin: sig.walkingMin ?? 0,
     commuteMin: sig.vehicleCommuteMin ?? 0,
     driveMin: sig.vehicleLongTripMin ?? 0,
+    schoolWalks: sig.schoolRunWalks ?? 0,
     lstmDurationScale: lstmScale,
 
     hour: currentHour,
@@ -807,6 +861,101 @@ function formatIntentInsight(
       };
     }
 
+    case "BEACH_COASTAL_WINDOW": {
+      if (features.isStorm) {
+        return {
+          headline: "Storm warning - unsafe beach conditions",
+          detail: `Gusts up to ${features.windGust} km/h with rough seas. Beach conditions are unsafe. Wait for the front to pass.`,
+          window: "Beach alert",
+        };
+      }
+      if (features.windSpeed >= 20) {
+        return {
+          headline: `Offshore wind at ${features.windSpeed} km/h - great for water sports`,
+          detail: "Strong offshore wind creates ideal kite and wind-surf conditions. Swimmers should stay close to shore.",
+          window: "Surf watch",
+        };
+      }
+      return {
+        headline: `Beach conditions: ${features.temp}°C, UV ${features.uv}`,
+        detail: `${features.uv >= 6 ? "High UV - apply SPF 50 and reapply every 90 min." : "Comfortable UV and calm waters for swimming."}`,
+        window: "Coast",
+      };
+    }
+
+    case "TRAVELER_TRANSIT_ADVISORY": {
+      if (features.isWet) {
+        return {
+          headline: `Rain en route - pack a compact umbrella`,
+          detail: `${features.precipChance}% chance of rain. Keep a raincoat accessible for transfers.`,
+          window: "Travel alert",
+        };
+      }
+      if (features.temp >= 33) {
+        return {
+          headline: `Destination is warm at ${features.temp}°C - pack light breathable fabrics`,
+          detail: `Feels like ${features.feels}°C. Carry hydration and light layers for transit days.`,
+          window: "Packing",
+        };
+      }
+      return {
+        headline: `Clear skies make for smooth travel today`,
+        detail: `${features.temp}°C with good visibility and ${features.windSpeed} km/h breeze. Favourable transit conditions.`,
+        window: "Travel",
+      };
+    }
+
+    case "HEALTH_AIR_POLLEN": {
+      if (features.aqi >= 120) {
+        return {
+          headline: `Poor air quality - stay indoors today`,
+          detail: `AQI is ${features.aqi} (${location.air.aqiLabel}). Keep windows closed and avoid strenuous outdoor exercise.`,
+          window: "Air advisory",
+        };
+      }
+      if (features.uv >= 8) {
+        return {
+          headline: `UV index ${features.uv} - high sun risk today`,
+          detail: `Peak UV between 11 AM and 3 PM. Apply SPF 50+, wear a hat, and seek shade during midday hours.`,
+          window: "11 AM - 3 PM",
+        };
+      }
+      if (features.isWet) {
+        return {
+          headline: `Rain keeps pollen low - a good day for outdoor walks`,
+          detail: `Rainfall washes pollen from the air. AQI is ${features.aqi}. Enjoy outdoor walks while counts remain low.`,
+          window: "Low pollen",
+        };
+      }
+      return {
+        headline: `Pollen ${location.pollen.level} today, AQI ${features.aqi}`,
+        detail: `${features.aqi <= 50 ? "Air quality is fresh and clean - great time for home ventilation." : "Moderate conditions - N95 mask advised if sensitive to dust."}`,
+        window: "Health check",
+      };
+    }
+
+    case "EVENT_OUTDOOR_COMFORT": {
+      if (features.isWet) {
+        return {
+          headline: `${features.precipChance}% rain risk - have a covered backup for your event`,
+          detail: "Set up a canopy or identify an indoor fallback. Light showers may pass but plan for damp ground.",
+          window: "Event watch",
+        };
+      }
+      if (features.temp >= 32 && features.hour < 17) {
+        return {
+          headline: `Hot at ${features.temp}°C - schedule outdoor events after 5 PM`,
+          detail: "Comfort improves significantly as the sun drops. The evening slot offers the best guest experience.",
+          window: "After 5 PM",
+        };
+      }
+      return {
+        headline: `Perfect window for an outdoor event today`,
+        detail: `${features.temp}°C, gentle ${features.windSpeed} km/h breeze, and clear skies. Comfort score is optimal through evening.`,
+        window: "High comfort",
+      };
+    }
+
     case "SEVERE_WEATHER_ALERT": {
       const alertTitle = location.alert?.title ?? "Severe Weather Warning";
       return {
@@ -834,6 +983,7 @@ export function runGBDTInference(
   currentHour = new Date().getHours(),
   alertOverrides: { moduleId: string; tier: "warning" | "critical" }[] = [],
   lastLSTMResult?: LSTMInferenceResult | null,
+  userType?: UserTypeKey,
 ): GBDTInferenceResult {
   const startTime = performance.now();
 
@@ -843,6 +993,7 @@ export function runGBDTInference(
     currentHour,
     alertOverrides,
     lastLSTMResult,
+    userType,
   );
 
   const rawScores: Partial<Record<GBDTIntent, number>> = {};
@@ -858,11 +1009,14 @@ export function runGBDTInference(
     GOLDEN_HOUR: [],
     AGRI_SPRAY_ADVISORY: [],
     PARENT_OUTDOOR_WINDOW: [],
+    BEACH_COASTAL_WINDOW: [],
+    TRAVELER_TRANSIT_ADVISORY: [],
+    HEALTH_AIR_POLLEN: [],
+    EVENT_OUTDOOR_COMFORT: [],
     SEVERE_WEATHER_ALERT: [],
     GENERAL_MILD_DAY: [],
   };
 
-  // Evaluate each intent's tree ensemble
   const intents = Object.keys(GBDT_MODEL) as GBDTIntent[];
   for (const intent of intents) {
     const ensemble = GBDT_MODEL[intent];
@@ -880,10 +1034,8 @@ export function runGBDTInference(
     rawScores[intent] = score;
   }
 
-  // Softmax calibration
   const probabilities = softmax(rawScores as Record<GBDTIntent, number>);
 
-  // Select winning intent (argmax)
   let bestIntent: GBDTIntent = "GENERAL_MILD_DAY";
   let highestProb = -1;
 
@@ -898,7 +1050,6 @@ export function runGBDTInference(
   const insight = formatIntentInsight(bestIntent, features, location);
   const endTime = performance.now();
 
-  // Deduplicate and rank top feature contributions for explainability
   const winningContributions = allContributions[bestIntent];
   const uniqueContributions = winningContributions.filter(
     (c, idx, arr) => arr.findIndex((x) => x.feature === c.feature) === idx,
