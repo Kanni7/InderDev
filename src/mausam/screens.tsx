@@ -686,7 +686,7 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
             <h2 className="mt-1 text-[40px] font-semibold leading-none text-[var(--color-ink)]">{air.aqi} <span className="text-sm font-normal text-[var(--color-ink-soft)]">AQI</span></h2>
           </div>
           <span className="rounded-full px-3 py-1 text-[11px] font-semibold bg-emerald-500/20 text-emerald-300">
-            {air.aqiLabel}
+            {t(air.aqiLabel)}
           </span>
         </div>
 
@@ -897,7 +897,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
           </div>
           <div className="text-right">
             <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-              AZIMUTH
+              {t("AZIMUTH")}
             </p>
             <p className="mt-0.5 text-[13px] font-semibold text-[var(--color-ink)] font-mono">
               {solar.azimuth.toFixed(0)}°
@@ -918,15 +918,15 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
 
             {/* 0° Horizon Line */}
             <line x1="16" y1={horizonY} x2="304" y2={horizonY} stroke="rgba(255,255,255,0.18)" strokeWidth="1" strokeDasharray="3 3" />
-            <text x="18" y={horizonY - 4} fontSize="8" fontFamily="monospace" fill="rgba(255,255,255,0.35)">0° HORIZON</text>
+            <text x="18" y={horizonY - 4} fontSize="8" fontFamily="monospace" fill="rgba(255,255,255,0.35)">{t("0° HORIZON")}</text>
 
             {/* Civil Twilight Threshold (-6°) */}
             <line x1="16" y1={yForAlt(-6)} x2="304" y2={yForAlt(-6)} stroke="rgba(255,255,255,0.08)" strokeWidth="0.8" strokeDasharray="2 4" />
-            <text x="18" y={yForAlt(-6) + 8} fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.22)">-6° TWILIGHT</text>
+            <text x="18" y={yForAlt(-6) + 8} fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.22)">{t("-6° TWILIGHT")}</text>
 
             {/* Solar Noon Culmination Peak Marker (+72°) */}
             <line x1="16" y1={24} x2="304" y2={24} stroke="rgba(255,255,255,0.06)" strokeWidth="0.8" strokeDasharray="1 4" />
-            <text x="302" y="22" textAnchor="end" fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.25)">PEAK +72°</text>
+            <text x="302" y="22" textAnchor="end" fontSize="7" fontFamily="monospace" fill="rgba(255,255,255,0.25)">{t("PEAK +72°")}</text>
 
             {/* Area fill for daylight */}
             {dayAreaPath && <path d={dayAreaPath} fill="url(#modalSunGlow)" />}
@@ -1133,7 +1133,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
             {t("Daylight Distribution")}
           </p>
           <span className="font-mono text-[11px] text-[var(--color-ink-soft)]">
-            {daylightPct}% Day · {100 - daylightPct}% Night
+            {daylightPct}% {t("Day")} · {100 - daylightPct}% {t("Night")}
           </span>
         </div>
 
@@ -1268,7 +1268,7 @@ function WindDetail({ location, accent, lang, onOpenRadar }: { location: Locatio
           </div>
         </div>
         <h2 className="text-[32px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-sm font-normal text-[var(--color-ink-soft)]">km/h</span></h2>
-        <p className="text-[12px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
+        <p className="text-[12px] text-[var(--color-ink-soft)]">{t("From")} {t(w.dir)} · {t("gusts")} {w.gust} km/h</p>
       </div>
 
       <div className="grid grid-cols-2 gap-2.5">
@@ -1649,21 +1649,21 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
         <div className="grid grid-cols-3 gap-2.5">
           {/* Inches of Mercury */}
           <div className="rounded-2xl bg-white/6 p-3">
-            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">Inches of Mercury</p>
+            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">{t("Inches of Mercury")}</p>
             <p className="mt-1 text-[17px] font-semibold text-white leading-tight">{inHg}</p>
             <p className="text-[10px] text-[var(--color-ink-soft)] font-mono">inHg · QNH</p>
           </div>
 
           {/* Millimeters of Mercury / Torr */}
           <div className="rounded-2xl bg-white/6 p-3">
-            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">Millimeters of Hg</p>
+            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">{t("Millimeters of Hg")}</p>
             <p className="mt-1 text-[17px] font-semibold text-white leading-tight">{mmHg}</p>
             <p className="text-[10px] text-[var(--color-ink-soft)] font-mono">mmHg · Torr</p>
           </div>
 
           {/* Standard Atmospheres */}
           <div className="rounded-2xl bg-white/6 p-3">
-            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">Standard Atmospheres</p>
+            <p className="text-[10px] font-mono text-[var(--color-ink-faint)] uppercase">{t("Standard Atmospheres")}</p>
             <p className="mt-1 text-[17px] font-semibold text-white leading-tight">{atm}</p>
             <p className="text-[10px] text-[var(--color-ink-soft)] font-mono">atm</p>
           </div>
@@ -1680,7 +1680,17 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
         </p>
         <div className="border-t border-white/8 pt-2">
           <p className="text-[11.5px] leading-relaxed text-[var(--color-ink-soft)]">
-            Barometric pressure normalized to Mean Sea Level (QNH) for {location.city}. A {isFalling ? "downward" : isRising ? "upward" : "steady"} trend of {tendencyText} suggests {isFalling ? "incoming front development and possible cloud cover" : isRising ? "gradual atmospheric clearing and stable air mass subsidence" : "continued atmospheric stability without immediate frontal passage"}.
+            {lang === "hi"
+              ? `${location.city} के लिए समुद्र तल (QNH) के अनुसार सामान्यीकृत वायुमंडलीय दाब। ${tendencyText} की ${isFalling ? "गिरावट" : isRising ? "बढ़त" : "स्थिर"} प्रवृत्ति ${isFalling ? "बादल छाने व मौसम में बदलाव की संभावना" : isRising ? "मौसम साफ़ होने व स्थिरता" : "मौसम में निरंतर स्थिरता"} का संकेत देती है।`
+              : lang === "te"
+              ? `${location.city} కోసం సముద్ర మట్టం (QNH) వద్ద బారోమెట్రిక్ పీడనం. ${tendencyText} యొక్క ${isFalling ? "తగ్గుదల" : isRising ? "పెరుగుదల" : "స్థిర"} ధోరణి వాతావరణ స్థిరత్వాన్ని సూచిస్తుంది.`
+              : lang === "ta"
+              ? `${location.city} கடல் மட்டத்திற்கு (QNH) ஏற்ப கணக்கிடப்பட்ட காற்றழுத்தம்.`
+              : lang === "ml"
+              ? `${location.city} സമുദ്രനിരപ്പിലെ അന്തരീക്ഷമർദ്ദം.`
+              : lang === "pa"
+              ? `${location.city} ਲਈ ਸਮੁੰਦਰੀ ਤਲ (QNH) ਅਨੁਸਾਰ ਵਾਯੂਮੰਡਲ ਦਬਾਅ।`
+              : `Barometric pressure normalized to Mean Sea Level (QNH) for ${location.city}. A ${isFalling ? "downward" : isRising ? "upward" : "steady"} trend of ${tendencyText} suggests ${isFalling ? "incoming front development and possible cloud cover" : isRising ? "gradual atmospheric clearing and stable air mass subsidence" : "continued atmospheric stability without immediate frontal passage"}.`}
           </p>
         </div>
       </div>

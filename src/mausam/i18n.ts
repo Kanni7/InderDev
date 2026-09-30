@@ -1134,7 +1134,23 @@ const dict: Record<string, Tr> = {
   "Critical": { hi: "गंभीर", te: "క్లిష్టమైన", ml: "ഗുരുതരം", ta: "ஆபத்தான", pa: "ਗੰਭੀਰ" },
 
   /* ── Demo panel & engine ── */
-  "Day": { hi: "दिन" },
+  "Day": { hi: "दिन", te: "పగలు", ml: "പകൽ", ta: "பகல்", pa: "ਦਿਨ" },
+  "AZIMUTH": { hi: "दिगंश", te: "దిగంశం", ml: "അസിമുത്ത്", ta: "திசைக் கோணம்", pa: "ਦਿਗੰਸ਼" },
+  "Azimuth": { hi: "दिगंश", te: "దిగంశం", ml: "അസിമുത്ത്", ta: "திசைக் கோணம்", pa: "ਦਿਗੰਸ਼" },
+  "0° HORIZON": { hi: "0° क्षितिज", te: "0° క్షితిజం", ml: "0° ചക്രവാളം", ta: "0° அடிவானம்", pa: "0° ਖਿਤਿਜ" },
+  "-6° TWILIGHT": { hi: "-6° गोधूलि", te: "-6° సంధ్యా సమయం", ml: "-6° സന്ധ്യ", ta: "-6° அந்தி நேரம்", pa: "-6° ਸੰਝ" },
+  "PEAK +72°": { hi: "शिखर +72°", te: "శిఖరం +72°", ml: "ഉച്ചം +72°", ta: "உச்சம் +72°", pa: "ਸਿਖਰ +72°" },
+  "Inches of Mercury": { hi: "इंच ऑफ मर्करी", te: "ఇంచెస్ ఆఫ్ మెర్క్యురీ", ml: "ഇഞ്ചസ് ഓഫ് മെർക്കുറി", ta: "பாதரச அங்குலம்", pa: "ਇੰਚ ਆਫ਼ ਮਰਕਰੀ" },
+  "Millimeters of Hg": { hi: "मिमी ऑफ मर्करी", te: "మి.మీ ఆఫ్ మెర్క్యురీ", ml: "മില്ലിമീറ്റർ ഓഫ് മെർക്കുറി", ta: "பாதரச மில்லிமீட்டர்", pa: "ਮਿਲੀਮੀਟਰ ਆਫ਼ ਮਰਕਰੀ" },
+  "Standard Atmospheres": { hi: "मानक वायुमंडल", te: "ప్రామాణిక వాతావరణం", ml: "സ്റ്റാൻഡേർഡ് അന്തരീക്ഷം", ta: "நிலையான வளிமண்டலம்", pa: "ਮਿਆਰੀ ਵਾਯੂਮੰਡਲ" },
+  "N": { hi: "उत्तर", te: "ఉత్తరం", ml: "വടക്ക്", ta: "வடக்கு", pa: "ਉੱਤਰ" },
+  "S": { hi: "दक्षिण", te: "దక్షిణం", ml: "തെക്ക്", ta: "தெற்கு", pa: "ਦੱਖਣ" },
+  "E": { hi: "पूर्व", te: "తూర్పు", ml: "കിഴക്ക്", ta: "கிழக்கு", pa: "ਪੂਰਬ" },
+  "W": { hi: "पश्चिम", te: "పడమర", ml: "പടിഞ്ഞാറ്", ta: "மேற்கு", pa: "ਪੱਛਮ" },
+  "NE": { hi: "उत्तर-पूर्व", te: "ఈశాన్యం", ml: "വടക്കുകിഴക്ക്", ta: "வடகிழக்கு", pa: "ਉੱਤਰ-ਪੂਰਬ" },
+  "NW": { hi: "उत्तर-पश्चिम", te: "వాయువ్యం", ml: "വടക്കുപടിഞ്ഞാറ്", ta: "வடமேற்கு", pa: "ਉੱਤਰ-ਪੱਛਮ" },
+  "SE": { hi: "दक्षिण-पूर्व", te: "ఆగ్నేయం", ml: "തെക്കുകിഴക്ക്", ta: "தென்கிழக்கு", pa: "ਦੱਖਣ-ਪੂਰਬ" },
+  "SW": { hi: "दक्षिण-पश्चिम", te: "నైరుతి", ml: "തെക്കുപടിഞ്ഞാറ്", ta: "தென்மேற்கு", pa: "ਦੱਖਣ-ਪੱਛਮ" },
   "Prototype uses Open-Meteo in place of IMD/CPCB feeds.": { hi: "प्रोटोटाइप IMD/CPCB फ़ीड के स्थान पर Open-Meteo का उपयोग करता है।" },
   "offline data": { hi: "ऑफ़लाइन डेटा" },
   "offline answer": { hi: "ऑफ़लाइन उत्तर" },
@@ -1641,6 +1657,34 @@ function translateDynamicPattern(en: string, lang: Lang): string {
       case "ta": return `${r}% மழை வாய்ப்பு — பாசனத்தை தள்ளிப்போடுங்கள்`;
       case "ml": return `${r}% മഴ സാധ്യത — നനയ്ക്കൽ ഒഴിവാക്കുക`;
       case "pa": return `${r}% ਮੀਂਹ ਦੀ ਸੰਭਾਵਨਾ — ਸਿੰਚਾਈ ਮੁਲਤਵੀ ਕਰੋ`;
+    }
+  }
+
+  // 16. Dynamic AI weather summary: "Overcast skies, 26°C", "Clear skies, 28°C", etc.
+  const summaryMatch = en.match(/^(Clear skies|Rain expected|Thunderstorm warning|Foggy conditions|Overcast skies|Night time),\s*([\d.]+)°C$/i);
+  if (summaryMatch) {
+    const condKey = summaryMatch[1].trim();
+    const temp = summaryMatch[2];
+    const condTrans: Record<string, Record<Lang, string>> = {
+      "Clear skies": { hi: "साफ़ आसमान", te: "స్వచ్ఛమైన ఆకాశం", ta: "தெளிவான வானம்", ml: "തെളിഞ്ഞ ആകാശം", pa: "ਸਾਫ਼ ਅਸਮਾਨ" },
+      "Rain expected": { hi: "बारिश की संभावना", te: "వర్షం పడే అవకాశం", ta: "மழை எதிர்பார்க்கப்படுகிறது", ml: "മഴ പ്രതീക്ഷിക്കുന്നു", pa: "ਮੀਂਹ ਦੀ ਸੰਭਾਵਨਾ" },
+      "Thunderstorm warning": { hi: "आंधी-तूफ़ान की चेतावनी", te: "ఉరుములతో కూడిన తుఫాను హెచ్చరిక", ta: "இடியுடன் கூடிய புயல் எச்சரிக்கை", ml: "ഇടിമിന്നൽ മുന്നറിയിപ്പ്", pa: "ਗਰਜ-ਤੂਫ਼ਾਨ ਦੀ ਚੇਤਾਵਨੀ" },
+      "Foggy conditions": { hi: "कोहरे भरा मौसम", te: "పొగమంచు పరిస్థితులు", ta: "மூடுபனி சூழல்", ml: "മൂടൽമഞ്ഞ് അന്തരീക്ഷം", pa: "ਧੁੰਦ ਭਰਿਆ ਮੌਸਮ" },
+      "Overcast skies": { hi: "घने बादल छाए रहेंगे", te: "మేఘావృతమైన ఆకాశం", ta: "மேகமூட்டமான வானம்", ml: "മേഘാവൃതമായ ആകാശം", pa: "ਬੱਦਲਵਾਈ ਰਹੇਗੀ" },
+      "Night time": { hi: "रात का समय", te: "రాత్రి సమయం", ta: "இரவு நேரம்", ml: "രാത്രി സമയം", pa: "ਰਾਤ ਦਾ ਸਮਾਂ" },
+    };
+    const translatedCond = condTrans[condKey]?.[lang] ?? dict[condKey]?.[lang] ?? condKey;
+    return `${translatedCond}, ${temp}°C`;
+  }
+
+  // 17. Any condition + temperature format: "Condition Name, 25°C"
+  const generalCondTemp = en.match(/^([^,]+),\s*([\d.]+)°C$/);
+  if (generalCondTemp) {
+    const rawCond = generalCondTemp[1].trim();
+    const temp = generalCondTemp[2];
+    const transCond = dict[rawCond]?.[lang];
+    if (transCond) {
+      return `${transCond}, ${temp}°C`;
     }
   }
 

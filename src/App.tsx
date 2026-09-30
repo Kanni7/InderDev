@@ -18,7 +18,29 @@ import BackgroundEngine, {
 type Screen = "usertype" | "home" | "menu" | "chat" | "alerts";
 
 export default function App() {
-  const [lang, setLang] = useState<Lang>("en");
+  const [lang, setLangState] = useState<Lang>(() => {
+    try {
+      const saved = localStorage.getItem("mausam_lang");
+      if (saved && ["en", "hi", "te", "ta", "ml", "pa"].includes(saved)) {
+        return saved as Lang;
+      }
+      const prof = localStorage.getItem("mausam_profile");
+      if (prof) {
+        const p = JSON.parse(prof);
+        if (p.language && ["en", "hi", "te", "ta", "ml", "pa"].includes(p.language)) {
+          return p.language as Lang;
+        }
+      }
+    } catch {}
+    return "en";
+  });
+
+  const setLang = useCallback((l: Lang) => {
+    setLangState(l);
+    try {
+      localStorage.setItem("mausam_lang", l);
+    } catch {}
+  }, []);
   const [userType, setUserType] = useState<UserTypeKey>("fitness");
   const [locationKey, setLocationKey] = useState<string>("pune");
   const [screen, setScreen] = useState<Screen>("home");

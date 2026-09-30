@@ -299,7 +299,9 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       loc.alert = {
         tier: "warning",
         title: "Orange Alert: Heavy rainfall",
-        body: `${totalPrecip.toFixed(0)} mm expected in the next 24 hours.`,
+        body: totalPrecip < 1
+          ? "Heavy rain expected. Low-lying areas at flood risk."
+          : `${Math.round(totalPrecip)} mm expected in the next 24 hours.`,
       };
     } else if (condition === "fog") {
       loc.alert = {
