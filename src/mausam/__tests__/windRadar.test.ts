@@ -86,5 +86,22 @@ describe("Wind Radar Configuration & Data", () => {
       expect(typeof loc.wind.gust).toBe("number");
     }
   });
+
+  it("exports marine observation points for ocean boundary circulation", async () => {
+    const { MARINE_WIND_OBS, getWindVector, createWindField, getMotionArrow } = await import("../WindRadar");
+    expect(MARINE_WIND_OBS.length).toBeGreaterThanOrEqual(6);
+    for (const m of MARINE_WIND_OBS) {
+      expect(m.speed).toBeGreaterThan(0);
+      expect(m.lat).toBeGreaterThanOrEqual(4);
+      expect(m.lng).toBeGreaterThanOrEqual(60);
+    }
+
+    // Verify re-exported wind vector utilities
+    expect(typeof getWindVector).toBe("function");
+    expect(typeof createWindField).toBe("function");
+    expect(typeof getMotionArrow).toBe("function");
+    // Meteorological East wind (air moving West) gives left arrow
+    expect(getMotionArrow(90)).toBe("←");
+  });
 });
 

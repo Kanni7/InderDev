@@ -10,6 +10,21 @@ import {
   type RainViewerData,
 } from "../data/openMeteo";
 import * as I from "./icons";
+import {
+  type WindField,
+  type WindVector,
+  type ObservationPoint,
+  createWindField,
+  getWindVector,
+  interpolateWindFields,
+  getMotionArrow,
+  meteoDirToDegrees,
+  DEFAULT_INDIA_BOUNDS,
+} from "./windField";
+
+// Re-export wind field interfaces and functions for full modularity
+export type { WindField, WindVector, ObservationPoint };
+export { getWindVector, createWindField, interpolateWindFields, getMotionArrow };
 
 /* ─────────────────── CONFIGURATION ─────────────────── */
 
@@ -44,6 +59,7 @@ export interface RadarCity {
   lng: number;
   baseSpeed: number; // default fallback if live data pending
   baseTemp: number;  // realistic regional temperature baseline
+  baseDir?: string;  // realistic meteorological direction FROM where wind blows
   tier: 1 | 2 | 3;   // 1 = major hub, 2 = regional city, 3 = local town/hill station
 }
 
@@ -425,48 +441,15 @@ function useTilePositions(
   }, [center.lat, center.lng, zoom, w, h, layer, rainViewerData, rainFrameIndex]);
 }
 
-/* ─────────────────── METEOROLOGICAL FLOW VECTORS ─────────────────── */
+/* ─────────────────── GEOGRAPHIC WIND PARTICLE SYSTEM ─────────────────── */
 
-const COMPASS_DEGREES: Record<string, number> = {
-  N: 0, NNE: 22.5, NE: 45, ENE: 67.5,
-  E: 90, ESE: 112.5, SE: 135, SSE: 157.5,
-  S: 180, SSW: 202.5, SW: 225, WSW: 247.5,
-  W: 270, WNW: 292.5, NW: 315, NNW: 337.5,
-};
-
-/**
- * Converts meteorological direction (from where wind blows) to canvas velocity unit vector (where particles go).
- * In canvas: +x is East, +y is South (downwards).
- * θ = 0° (North wind) blows southward → vx = 0, vy = +1
- * θ = 90° (East wind) blows westward → vx = -1, vy = 0
- * θ = 180° (South wind) blows northward → vx = 0, vy = -1
- * θ = 270° (West wind) blows eastward → vx = +1, vy = 0
- */
-function getWindFlowVector(dirStr: string, x = 0, y = 0, w = 400, h = 700) {
-  const metDeg = COMPASS_DEGREES[dirStr.toUpperCase()] ?? 270;
-  const rad = (metDeg * Math.PI) / 180;
-  const baseVx = -Math.sin(rad);
-  const baseVy = Math.cos(rad);
-
-  // Subtle natural curvature across the visual field
-  const wave = Math.sin((x / w) * 2.2) * 0.14 + Math.cos((y / h) * 1.8) * 0.10;
-  const currentAngle = Math.atan2(baseVy, baseVx) + wave;
-
-  return {
-    vx: Math.cos(currentAngle),
-    vy: Math.sin(currentAngle),
-  };
-}
-
-/* ─────────────────── WIND PARTICLE SYSTEM ─────────────────── */
-
-interface WindParticle {
-  x: number;
-  y: number;
+interface GeographicWindParticle {
+  lat: number;
+  lng: number;
   age: number;
   maxAge: number;
-  speed: number;
-  trail: { x: number; y: number }[];
+  speedMultiplier: number;
+  trail: { lat: number; lng: number }[];
 }
 
 /* ─────────────────── WIND RADAR CANVAS ─────────────────── */
@@ -480,6 +463,7 @@ function WindMapCanvas({
   activeLayer = "wind",
   rainViewerData,
   rainFrameIndex = 0,
+  activeWindField,
 }: {
   center: { lat: number; lng: number };
   zoom: number;
@@ -489,13 +473,33 @@ function WindMapCanvas({
   activeLayer?: "wind" | "rain" | "temp" | "satellite";
   rainViewerData?: RainViewerData | null;
   rainFrameIndex?: number;
+  activeWindField?: WindField;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [size, setSize] = useState({ w: 400, h: 700 });
   const animRef = useRef<number | null>(null);
-  const particlesRef = useRef<WindParticle[]>([]);
+  const particlesRef = useRef<GeographicWindParticle[]>([]);
   const thermalCanvasRef = useRef<HTMLCanvasElement | null>(null);
+  const windScalarCanvasRef = useRef<HTMLCanvasElement | null>(null);
+
+  // Fallback standalone wind field if not provided by parent
+  const fallbackWindField = useMemo(() => {
+    if (activeWindField) return activeWindField;
+    const obs: ObservationPoint[] = WIND_CITIES.map((c) => {
+      const isSel = c.name.toLowerCase() === selectedCityName.toLowerCase();
+      const live = liveCitiesWind[c.name.toLowerCase()];
+      return {
+        lat: c.lat,
+        lng: c.lng,
+        speed: isSel ? wind.speed : (live?.speed ?? c.baseSpeed),
+        dirDeg: isSel ? meteoDirToDegrees(wind.dir) : (live?.deg ?? meteoDirToDegrees(c.baseDir ?? "W")),
+      };
+    });
+    return createWindField(obs, { bounds: DEFAULT_INDIA_BOUNDS, gridWidth: 48, gridHeight: 48 });
+  }, [activeWindField, selectedCityName, liveCitiesWind, wind.speed, wind.dir]);
+
+  const currentField = activeWindField ?? fallbackWindField;
 
   // Update container size
   useEffect(() => {
@@ -515,31 +519,40 @@ function WindMapCanvas({
   const { w, h } = size;
   const tiles = useTilePositions(center, zoom, w, h, activeLayer, rainViewerData, rainFrameIndex);
 
-  // Initialize particles with calm, realistic velocity
+  // Initialize geographic wind particles distributed across the current map viewport
   useEffect(() => {
-    const count = Math.min(160, Math.floor((w * h) / 2400));
-    const parts: WindParticle[] = [];
+    const prefersReducedMotion =
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
-    // Realistic calm wind speed in px/frame (approx 0.22 to 0.55 px per frame at 60 FPS)
-    const normSpeed = Math.max(3, Math.min(50, wind.speed));
-    const basePxSpeed = 0.22 + (normSpeed / 50) * 0.32;
+    const count = prefersReducedMotion
+      ? Math.min(280, Math.floor((w * h) / 2500))
+      : Math.min(1050, Math.max(500, Math.floor((w * h) / 720)));
 
+    const tl = pixelToGeo(-40, -40, center, zoom, w, h);
+    const br = pixelToGeo(w + 40, h + 40, center, zoom, w, h);
+    const minLat = Math.min(tl.lat, br.lat);
+    const maxLat = Math.max(tl.lat, br.lat);
+    const minLng = Math.min(tl.lng, br.lng);
+    const maxLng = Math.max(tl.lng, br.lng);
+
+    const parts: GeographicWindParticle[] = [];
     for (let i = 0; i < count; i++) {
-      const px = Math.random() * w;
-      const py = Math.random() * h;
+      const lat = minLat + Math.random() * (maxLat - minLat);
+      const lng = minLng + Math.random() * (maxLng - minLng);
+      const maxAge = 50 + Math.floor(Math.random() * 55);
       parts.push({
-        x: px,
-        y: py,
-        age: Math.floor(Math.random() * 80),
-        maxAge: 60 + Math.floor(Math.random() * 50),
-        speed: basePxSpeed * (0.85 + Math.random() * 0.3),
-        trail: [{ x: px, y: py }],
+        lat,
+        lng,
+        age: Math.floor(Math.random() * maxAge),
+        maxAge,
+        speedMultiplier: 0.85 + Math.random() * 0.3,
+        trail: [{ lat, lng }],
       });
     }
     particlesRef.current = parts;
-  }, [w, h, wind.speed]);
+  }, [w, h, center.lat, center.lng, zoom]);
 
-  // Main render loop
+  // Main render loop (60 FPS GPU-accelerated canvas)
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -551,6 +564,9 @@ function WindMapCanvas({
     canvas.height = h * dpr;
     ctx.scale(dpr, dpr);
 
+    const prefersReducedMotion =
+      typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
     let running = true;
 
     const render = () => {
@@ -558,86 +574,181 @@ function WindMapCanvas({
 
       ctx.clearRect(0, 0, w, h);
 
-      // ── 1. ACTIVE LAYER SPECIFIC ATMOSPHERE & HALOS ──
+      // ── 1. ACTIVE LAYER SPECIFIC ATMOSPHERE & FLOW ──
       if (activeLayer === "wind") {
-        // Soft translucent atmospheric emerald tint
+        // Subtle dark meteorological ocean-atmosphere tint
         const gradBg = ctx.createLinearGradient(0, 0, w, h);
-        gradBg.addColorStop(0, "rgba(6, 78, 59, 0.12)");
-        gradBg.addColorStop(0.5, "rgba(4, 120, 87, 0.08)");
-        gradBg.addColorStop(1, "rgba(6, 78, 59, 0.14)");
+        gradBg.addColorStop(0, "rgba(8, 28, 44, 0.16)");
+        gradBg.addColorStop(0.5, "rgba(6, 36, 48, 0.10)");
+        gradBg.addColorStop(1, "rgba(8, 28, 44, 0.18)");
         ctx.fillStyle = gradBg;
         ctx.fillRect(0, 0, w, h);
 
-        // Render soft heat halos around real cities based on their live wind speeds
-        for (const city of WIND_CITIES) {
-          const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
-          const live = liveCitiesWind[city.name.toLowerCase()];
-          const speed = isSelected ? wind.speed : (live?.speed ?? city.baseSpeed);
-
-          if (speed > 13) {
-            const pt = geoToPixel(city.lat, city.lng, center, zoom, w, h);
-            if (pt.x < -80 || pt.x > w + 80 || pt.y < -80 || pt.y > h + 80) continue;
-
-            const rad = (Math.min(speed, 40) / 25) * 65 * Math.pow(1.15, zoom - 6);
-            const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rad);
-
-            if (speed >= 28) {
-              g.addColorStop(0, "rgba(245, 158, 11, 0.38)");
-              g.addColorStop(0.6, "rgba(234, 179, 8, 0.14)");
-              g.addColorStop(1, "rgba(34, 197, 94, 0)");
-            } else if (speed >= 18) {
-              g.addColorStop(0, "rgba(163, 230, 53, 0.28)");
-              g.addColorStop(0.6, "rgba(132, 204, 22, 0.12)");
-              g.addColorStop(1, "rgba(34, 197, 94, 0)");
-            } else {
-              g.addColorStop(0, "rgba(74, 222, 128, 0.20)");
-              g.addColorStop(1, "rgba(34, 197, 94, 0)");
-            }
-
-            ctx.fillStyle = g;
-            ctx.beginPath();
-            ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2);
-            ctx.fill();
-          }
+        // ── RESTRAINED METEOROLOGICAL WIND INTENSITY FIELD ──
+        const gw = 48;
+        const gh = 56;
+        if (!windScalarCanvasRef.current) {
+          windScalarCanvasRef.current = document.createElement("canvas");
+        }
+        const sCanvas = windScalarCanvasRef.current;
+        if (sCanvas.width !== gw || sCanvas.height !== gh) {
+          sCanvas.width = gw;
+          sCanvas.height = gh;
         }
 
-        // Draw flowing meteorological particles & streamlines
+        const sCtx = sCanvas.getContext("2d");
+        if (sCtx) {
+          const imgData = sCtx.createImageData(gw, gh);
+          const data = imgData.data;
+
+          const tl = pixelToGeo(0, 0, center, zoom, w, h);
+          const br = pixelToGeo(w, h, center, zoom, w, h);
+          const minLat = Math.min(tl.lat, br.lat);
+          const maxLat = Math.max(tl.lat, br.lat);
+          const minLng = Math.min(tl.lng, br.lng);
+          const maxLng = Math.max(tl.lng, br.lng);
+          const dLat = (maxLat - minLat) / (gh - 1);
+          const dLng = (maxLng - minLng) / (gw - 1);
+
+          for (let gy = 0; gy < gh; gy++) {
+            const lat = maxLat - gy * dLat;
+            for (let gx = 0; gx < gw; gx++) {
+              const lng = minLng + gx * dLng;
+              const vec = getWindVector(currentField, lat, lng);
+              const spd = vec.speed;
+              const idx = (gy * gw + gx) * 4;
+
+              // Restrained meteorological intensity gradient (satellite basemap remains clearly visible)
+              if (spd < 6) {
+                // Calm: transparent
+                data[idx] = 14;
+                data[idx + 1] = 116;
+                data[idx + 2] = 144;
+                data[idx + 3] = 0;
+              } else if (spd < 16) {
+                // Gentle breeze: subtle teal/cyan
+                const f = (spd - 6) / 10;
+                data[idx] = 6;
+                data[idx + 1] = Math.round(182 * f);
+                data[idx + 2] = 212;
+                data[idx + 3] = Math.round(35 + 30 * f);
+              } else if (spd < 26) {
+                // Moderate wind: clean teal-emerald
+                const f = (spd - 16) / 10;
+                data[idx] = Math.round(6 + (16 - 6) * f);
+                data[idx + 1] = Math.round(182 + (185 - 182) * f);
+                data[idx + 2] = Math.round(212 + (129 - 212) * f);
+                data[idx + 3] = Math.round(65 + 35 * f);
+              } else if (spd < 38) {
+                // Fresh / Strong: soft warm amber
+                const f = (spd - 26) / 12;
+                data[idx] = Math.round(16 + (245 - 16) * f);
+                data[idx + 1] = Math.round(185 + (158 - 185) * f);
+                data[idx + 2] = Math.round(129 + (11 - 129) * f);
+                data[idx + 3] = Math.round(100 + 40 * f);
+              } else {
+                // Gale / High: soft coral
+                data[idx] = 239;
+                data[idx + 1] = 68;
+                data[idx + 2] = 68;
+                data[idx + 3] = 145;
+              }
+            }
+          }
+          sCtx.putImageData(imgData, 0, 0);
+
+          ctx.save();
+          ctx.globalAlpha = 0.22;
+          ctx.imageSmoothingEnabled = true;
+          ctx.imageSmoothingQuality = "high";
+          ctx.drawImage(sCanvas, 0, 0, w, h);
+          ctx.restore();
+        }
+
+        // ── GEOGRAPHIC PARTICLES & VECTOR STREAMLINES ──
+        const tl = pixelToGeo(-35, -35, center, zoom, w, h);
+        const br = pixelToGeo(w + 35, h + 35, center, zoom, w, h);
+        const viewMinLat = Math.min(tl.lat, br.lat);
+        const viewMaxLat = Math.max(tl.lat, br.lat);
+        const viewMinLng = Math.min(tl.lng, br.lng);
+        const viewMaxLng = Math.max(tl.lng, br.lng);
+
         const parts = particlesRef.current;
+        const timeScale = prefersReducedMotion ? 0.008 : 0.034;
+        const dt = 0.016;
+
         for (let i = 0; i < parts.length; i++) {
           const p = parts[i];
           p.age++;
 
-          const vec = getWindFlowVector(wind.dir, p.x, p.y, w, h);
-          p.x += vec.vx * p.speed;
-          p.y += vec.vy * p.speed;
+          // Sample wind vector at particle's exact geographic coordinate
+          const vec = getWindVector(currentField, p.lat, p.lng);
 
-          p.trail.push({ x: p.x, y: p.y });
-          if (p.trail.length > 4) p.trail.shift();
+          // Physical motion displacement in degrees:
+          // 1° lat ≈ 111 km. 1° lng ≈ 111 * cos(lat) km.
+          // vec.u and vec.v are in km/h.
+          const scale = timeScale * p.speedMultiplier;
+          const dLat = (vec.v * scale * dt) / 111;
+          const cosLat = Math.max(0.2, Math.cos((p.lat * Math.PI) / 180));
+          const dLng = (vec.u * scale * dt) / (111 * cosLat);
 
-          if (p.age > p.maxAge || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) {
-            p.x = Math.random() * w;
-            p.y = Math.random() * h;
+          p.lat += dLat;
+          p.lng += dLng;
+
+          p.trail.push({ lat: p.lat, lng: p.lng });
+          if (p.trail.length > 8) p.trail.shift();
+
+          // Out-of-bounds or lifespan expired -> respawn naturally
+          if (
+            p.age > p.maxAge ||
+            p.lat < viewMinLat ||
+            p.lat > viewMaxLat ||
+            p.lng < viewMinLng ||
+            p.lng > viewMaxLng
+          ) {
+            p.lat = viewMinLat + Math.random() * (viewMaxLat - viewMinLat);
+            p.lng = viewMinLng + Math.random() * (viewMaxLng - viewMinLng);
             p.age = 0;
-            p.maxAge = 60 + Math.floor(Math.random() * 50);
-            p.trail = [{ x: p.x, y: p.y }];
+            p.maxAge = 45 + Math.floor(Math.random() * 50);
+            p.trail = [{ lat: p.lat, lng: p.lng }];
+            continue;
           }
 
           if (p.trail.length >= 2) {
             const progress = p.age / p.maxAge;
-            const alpha = Math.sin(progress * Math.PI) * 0.65;
+            const envelope = Math.sin(progress * Math.PI);
+            const baseAlpha = envelope * Math.min(0.85, 0.35 + (vec.speed / 35) * 0.45);
+
+            // Convert geographic trail to screen coordinates
+            const screenTrail = p.trail.map((pt) =>
+              geoToPixel(pt.lat, pt.lng, center, zoom, w, h)
+            );
+
+            // Draw streamline segment
             ctx.beginPath();
-            ctx.moveTo(p.trail[0].x, p.trail[0].y);
-            for (let t = 1; t < p.trail.length; t++) {
-              ctx.lineTo(p.trail[t].x, p.trail[t].y);
+            ctx.moveTo(screenTrail[0].x, screenTrail[0].y);
+            for (let t = 1; t < screenTrail.length; t++) {
+              ctx.lineTo(screenTrail[t].x, screenTrail[t].y);
             }
-            ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0.08, alpha)})`;
-            ctx.lineWidth = 1.4;
+
+            if (vec.speed >= 28) {
+              ctx.strokeStyle = `rgba(224, 242, 254, ${baseAlpha})`;
+              ctx.lineWidth = 1.45;
+            } else if (vec.speed >= 14) {
+              ctx.strokeStyle = `rgba(125, 211, 252, ${baseAlpha * 0.88})`;
+              ctx.lineWidth = 1.3;
+            } else {
+              ctx.strokeStyle = `rgba(186, 230, 253, ${baseAlpha * 0.72})`;
+              ctx.lineWidth = 1.15;
+            }
             ctx.lineCap = "round";
             ctx.stroke();
 
+            // Subtle luminous head dot
+            const head = screenTrail[screenTrail.length - 1];
             ctx.beginPath();
-            ctx.arc(p.x, p.y, 1.1, 0, Math.PI * 2);
-            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
+            ctx.arc(head.x, head.y, 0.9, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
             ctx.fill();
           }
         }
@@ -668,7 +779,6 @@ function WindMapCanvas({
             const live = liveCitiesWind[c.name.toLowerCase()];
             const temp = isSel ? (live?.temp ?? c.baseTemp ?? 29) : (live?.temp ?? c.baseTemp ?? 28);
             const pt = geoToPixel(c.lat, c.lng, center, zoom, w, h);
-            // Include stations within and around viewport for seamless edge blending
             if (pt.x > -250 && pt.x < w + 250 && pt.y > -250 && pt.y < h + 250) {
               stationPoints.push({ x: pt.x, y: pt.y, temp });
             }
@@ -705,13 +815,12 @@ function WindMapCanvas({
               data[idx] = r;
               data[idx + 1] = g;
               data[idx + 2] = b;
-              data[idx + 3] = 230; // Solid alpha for thermal blending
+              data[idx + 3] = 230;
             }
           }
 
           tCtx.putImageData(imgData, 0, 0);
 
-          // Render the continuous thermal field scaled up with smooth bilinear filtering
           ctx.save();
           ctx.globalAlpha = 0.55;
           ctx.imageSmoothingEnabled = true;
@@ -719,7 +828,6 @@ function WindMapCanvas({
           ctx.drawImage(tCanvas, 0, 0, w, h);
           ctx.restore();
 
-          // Subtle atmospheric warmth shimmer
           const gradOverlay = ctx.createLinearGradient(0, 0, 0, h);
           gradOverlay.addColorStop(0, "rgba(245, 158, 11, 0.04)");
           gradOverlay.addColorStop(1, "rgba(239, 68, 68, 0.06)");
@@ -727,7 +835,6 @@ function WindMapCanvas({
           ctx.fillRect(0, 0, w, h);
         }
       } else if (activeLayer === "rain") {
-        // Atmospheric cool rain tint
         const gradBg = ctx.createLinearGradient(0, 0, w, h);
         gradBg.addColorStop(0, "rgba(14, 165, 233, 0.08)");
         gradBg.addColorStop(0.5, "rgba(2, 132, 199, 0.05)");
@@ -736,7 +843,7 @@ function WindMapCanvas({
         ctx.fillRect(0, 0, w, h);
       }
 
-      // ── 2. DRAW CITIES & REAL METRIC READINGS ──
+      // ── 2. DRAW CITIES & SECONDARY METEOROLOGICAL LABELS ──
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
@@ -746,19 +853,16 @@ function WindMapCanvas({
 
         const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
         const live = liveCitiesWind[city.name.toLowerCase()];
-        const displaySpeed = isSelected ? wind.speed : (live?.speed ?? city.baseSpeed);
         const displayTemp = isSelected ? (live?.temp ?? city.baseTemp) : (live?.temp ?? city.baseTemp);
 
-        // Highlight active selected location with prominent glowing beacon pin
+        // Selected station prominent beacon pin
         if (isSelected) {
           ctx.save();
-          // Soft outer pulsing beacon halo
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 16, 0, Math.PI * 2);
-          ctx.fillStyle = activeLayer === "temp" ? "rgba(245, 158, 11, 0.25)" : "rgba(14, 165, 233, 0.28)";
+          ctx.fillStyle = activeLayer === "temp" ? "rgba(245, 158, 11, 0.25)" : "rgba(56, 189, 248, 0.28)";
           ctx.fill();
 
-          // Inner solid core ring with white border
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
           ctx.fillStyle = activeLayer === "temp" ? "#f59e0b" : "#0284c7";
@@ -767,7 +871,6 @@ function WindMapCanvas({
           ctx.strokeStyle = "#ffffff";
           ctx.stroke();
 
-          // Central piercing white focal dot
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
           ctx.fillStyle = "#ffffff";
@@ -776,10 +879,6 @@ function WindMapCanvas({
         }
 
         if (activeLayer === "temp") {
-          // Dynamic density by zoom level (LOD):
-          // Zoom 5: Tier 1 only (Major regional hubs)
-          // Zoom 6: Tier 1 & 2 (Regional state capitals & hubs)
-          // Zoom >= 7: All tiers (Local stations, hill stations, towns)
           const shouldShowCity = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
           if (!shouldShowCity) continue;
 
@@ -787,7 +886,6 @@ function WindMapCanvas({
           const tempColor = getThermalCSSColor(tempVal);
           const pillText = `${tempVal}°`;
 
-          // Apple Weather-style temperature pill badge
           ctx.font = isSelected ? "bold 12px system-ui, -apple-system, sans-serif" : "bold 11px system-ui, -apple-system, sans-serif";
           const tw = ctx.measureText(pillText).width;
           const pw = tw + 12;
@@ -800,18 +898,15 @@ function WindMapCanvas({
           ctx.shadowBlur = 6;
           ctx.shadowOffsetY = 1.5;
 
-          // Frosted pill capsule
           ctx.fillStyle = isSelected ? "rgba(15, 23, 42, 0.95)" : "rgba(10, 16, 26, 0.88)";
           ctx.beginPath();
           ctx.roundRect(px, py, pw, ph, 9);
           ctx.fill();
 
-          // Colored border matching thermal category
           ctx.lineWidth = isSelected ? 2 : 1.4;
           ctx.strokeStyle = isSelected ? "#ffffff" : tempColor;
           ctx.stroke();
 
-          // Downward pointer notch
           ctx.beginPath();
           ctx.moveTo(pt.x - 3, py + ph);
           ctx.lineTo(pt.x + 3, py + ph);
@@ -820,12 +915,10 @@ function WindMapCanvas({
           ctx.fillStyle = isSelected ? "#ffffff" : tempColor;
           ctx.fill();
 
-          // Temperature number
           ctx.shadowColor = "transparent";
           ctx.fillStyle = isSelected ? "#ffffff" : tempColor;
           ctx.fillText(pillText, pt.x, py + ph / 2);
 
-          // City Name
           ctx.shadowColor = "rgba(0,0,0,0.95)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 1;
@@ -834,62 +927,68 @@ function WindMapCanvas({
           ctx.fillText(city.name, pt.x, pt.y + 4);
           ctx.restore();
         } else if (activeLayer === "wind") {
+          // Dynamic density by zoom level (LOD):
+          // Wind flow is primary; city labels are secondary, compact, and translucent
           const shouldShowWind = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
           if (!shouldShowWind) continue;
 
-          const pillText = `${displaySpeed} km/h`;
-          ctx.font = isSelected ? "bold 11.5px system-ui, -apple-system, sans-serif" : "600 10px system-ui, -apple-system, sans-serif";
+          // Sample wind vector from the active field for this city
+          const cityVec = getWindVector(currentField, city.lat, city.lng);
+          const speedVal = Math.round(cityVec.speed);
+          const motionArrow = getMotionArrow(cityVec.deg);
+          const pillText = `${speedVal} km/h ${motionArrow}`;
+
+          ctx.font = isSelected ? "bold 10.5px system-ui, -apple-system, sans-serif" : "600 9.5px system-ui, -apple-system, sans-serif";
           const tw = ctx.measureText(pillText).width;
-          const pw = tw + 14;
-          const ph = 18;
+          const pw = tw + 12;
+          const ph = 16;
           const px = pt.x - pw / 2;
-          const py = pt.y - (isSelected ? 26 : 20);
+          const py = pt.y - (isSelected ? 24 : 18);
 
           ctx.save();
           ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-          ctx.shadowBlur = 6;
-          ctx.shadowOffsetY = 1.5;
+          ctx.shadowBlur = 5;
+          ctx.shadowOffsetY = 1;
 
-          // Frosted pill capsule
-          ctx.fillStyle = isSelected ? "rgba(15, 23, 42, 0.95)" : "rgba(10, 16, 26, 0.88)";
+          // Frosted compact translucent badge (secondary visual weight)
+          ctx.fillStyle = isSelected ? "rgba(12, 22, 34, 0.92)" : "rgba(8, 14, 22, 0.78)";
           ctx.beginPath();
-          ctx.roundRect(px, py, pw, ph, 9);
+          ctx.roundRect(px, py, pw, ph, 8);
           ctx.fill();
 
-          // Sky blue border
-          ctx.lineWidth = isSelected ? 2 : 1.4;
-          ctx.strokeStyle = isSelected ? "#ffffff" : "rgba(56, 189, 248, 0.75)";
+          // Restrained border
+          ctx.lineWidth = isSelected ? 1.8 : 1.0;
+          ctx.strokeStyle = isSelected ? "rgba(56, 189, 248, 0.9)" : "rgba(255, 255, 255, 0.20)";
           ctx.stroke();
 
-          // Downward pointer notch
+          // Small downward notch
           ctx.beginPath();
-          ctx.moveTo(pt.x - 3, py + ph);
-          ctx.lineTo(pt.x + 3, py + ph);
-          ctx.lineTo(pt.x, py + ph + 3);
+          ctx.moveTo(pt.x - 2.5, py + ph);
+          ctx.lineTo(pt.x + 2.5, py + ph);
+          ctx.lineTo(pt.x, py + ph + 2.5);
           ctx.closePath();
-          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(56, 189, 248, 0.75)";
+          ctx.fillStyle = isSelected ? "rgba(56, 189, 248, 0.9)" : "rgba(255, 255, 255, 0.20)";
           ctx.fill();
 
-          // Speed number
+          // Speed and motion direction arrow
           ctx.shadowColor = "transparent";
-          ctx.fillStyle = isSelected ? "#ffffff" : "#38bdf8";
+          ctx.fillStyle = isSelected ? "#ffffff" : "#bae6fd";
           ctx.fillText(pillText, pt.x, py + ph / 2);
 
           // City Name
           ctx.shadowColor = "rgba(0,0,0,0.95)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 1;
-          ctx.font = isSelected ? "bold 11.5px sans-serif" : "600 10px sans-serif";
-          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.92)";
+          ctx.font = isSelected ? "bold 10.5px sans-serif" : "600 9px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.80)";
           ctx.fillText(city.name, pt.x, pt.y + 4);
           ctx.restore();
         } else {
-          // Rain / Satellite layers - Clean frosted city station pins
+          // Rain / Satellite layers: Clean frosted city station pins
           const shouldShowCity = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
           if (!shouldShowCity) continue;
 
           ctx.save();
-          // Anchor point
           ctx.beginPath();
           ctx.arc(pt.x, pt.y - 4, 3, 0, Math.PI * 2);
           ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.85)";
@@ -898,7 +997,6 @@ function WindMapCanvas({
           ctx.strokeStyle = isSelected ? "#0284c7" : "rgba(0, 0, 0, 0.7)";
           ctx.stroke();
 
-          // City Name
           ctx.shadowColor = "rgba(0,0,0,0.95)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 1;
@@ -918,7 +1016,7 @@ function WindMapCanvas({
       running = false;
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [w, h, center, zoom, wind.dir, wind.speed, selectedCityName, liveCitiesWind, activeLayer]);
+  }, [w, h, center, zoom, currentField, selectedCityName, liveCitiesWind, activeLayer]);
 
   return (
     <div
@@ -1023,6 +1121,54 @@ function WindMapCanvas({
    FULL SCREEN WIND RADAR (MATCHING USER REFERENCE IMAGE)
    ══════════════════════════════════════════════════════ */
 
+export const MARINE_WIND_OBS: ObservationPoint[] = [
+  { lat: 21.5, lng: 66.0, speed: 17, dirDeg: 260 }, // North Arabian Sea
+  { lat: 17.5, lng: 67.5, speed: 18, dirDeg: 265 }, // Central Arabian Sea off Konkan
+  { lat: 13.0, lng: 69.5, speed: 16, dirDeg: 270 }, // Arabian Sea off Malabar
+  { lat: 8.5,  lng: 72.0, speed: 19, dirDeg: 280 }, // Lakshadweep Sea
+  { lat: 5.5,  lng: 78.5, speed: 20, dirDeg: 275 }, // Southern Oceanic Corridor
+  { lat: 9.0,  lng: 85.0, speed: 15, dirDeg: 80 },  // South Bay of Bengal
+  { lat: 14.5, lng: 86.5, speed: 16, dirDeg: 120 }, // Central Bay of Bengal
+  { lat: 19.5, lng: 89.5, speed: 14, dirDeg: 160 }, // North Bay of Bengal
+];
+
+function buildObservations(
+  cities: RadarCity[],
+  liveMap: Record<string, LiveRadarCityWind>,
+  selectedCity: string,
+  targetSpeed: number,
+  targetDir: string,
+  speedScale: number = 1.0
+): ObservationPoint[] {
+  const list: ObservationPoint[] = [];
+
+  for (const c of cities) {
+    const isSel = c.name.toLowerCase() === selectedCity.toLowerCase();
+    const live = liveMap[c.name.toLowerCase()];
+    const spd = isSel ? targetSpeed : Math.round((live?.speed ?? c.baseSpeed) * speedScale);
+    const dirDeg = isSel
+      ? meteoDirToDegrees(targetDir)
+      : live?.deg ?? (c.baseDir ? meteoDirToDegrees(c.baseDir) : 270);
+    list.push({
+      lat: c.lat,
+      lng: c.lng,
+      speed: Math.max(1, spd),
+      dirDeg,
+    });
+  }
+
+  for (const m of MARINE_WIND_OBS) {
+    list.push({
+      lat: m.lat,
+      lng: m.lng,
+      speed: Math.max(2, Math.round(m.speed * speedScale)),
+      dirDeg: m.dirDeg,
+    });
+  }
+
+  return list;
+}
+
 export function FullScreenWindRadar({
   location,
   accent,
@@ -1065,7 +1211,7 @@ export function FullScreenWindRadar({
   const [timelineFrames, setTimelineFrames] = useState<WindTimelineFrame[]>([]);
   const [rainViewerData, setRainViewerData] = useState<RainViewerData | null>(null);
   const [rainFrameIndex, setRainFrameIndex] = useState(0);
-  const [timeIndex, setTimeIndex] = useState(1); // 1 = "now"
+  const [timeProgress, setTimeProgress] = useState(1.0); // 1.0 = "now", floating-point for continuous transitions
   const [isPlaying, setIsPlaying] = useState(false); // Paused by default
   const [showInfo, setShowInfo] = useState(false);
   const [tempProbe, setTempProbe] = useState<{ lat: number; lng: number; temp: number; x: number; y: number } | null>(null);
@@ -1094,7 +1240,6 @@ export function FullScreenWindRadar({
       if (mounted && data) {
         setRainViewerData(data);
         if (data.frames.length > 0) {
-          // Default to latest frame (or nowcast)
           setRainFrameIndex(Math.max(0, data.frames.length - 1));
         }
       }
@@ -1117,26 +1262,6 @@ export function FullScreenWindRadar({
     };
   }, [selectedCityCenter.lat, selectedCityCenter.lng, location.wind, location.temp]);
 
-  // Current active wind reading based on timeline selection
-  const activeFrame = timelineFrames[timeIndex];
-  const activeWind: Wind = useMemo(() => {
-    if (activeFrame && timeIndex !== 1) {
-      return {
-        speed: activeFrame.speed,
-        dir: activeFrame.dir,
-        gust: activeFrame.gust,
-      };
-    }
-    return location.wind;
-  }, [activeFrame, timeIndex, location.wind]);
-
-  const activeTemp: number = useMemo(() => {
-    if (activeFrame && activeFrame.temp !== undefined && timeIndex !== 1) {
-      return activeFrame.temp;
-    }
-    return location.temp;
-  }, [activeFrame, timeIndex, location.temp]);
-
   // Fallback timeline labels if frames haven't loaded yet
   const displayTimeLabels = useMemo(() => {
     if (timelineFrames.length > 0) return timelineFrames;
@@ -1150,6 +1275,72 @@ export function FullScreenWindRadar({
     ];
   }, [timelineFrames, location.wind, location.temp]);
 
+  // Precompute gridded wind fields for each forecast timeline frame
+  const timelineFields = useMemo(() => {
+    return displayTimeLabels.map((frame) => {
+      const scale = location.wind.speed > 0 ? frame.speed / location.wind.speed : 1;
+      const obs = buildObservations(
+        WIND_CITIES,
+        liveCitiesWind,
+        location.city,
+        frame.speed,
+        frame.dir,
+        scale
+      );
+      return createWindField(obs, {
+        bounds: DEFAULT_INDIA_BOUNDS,
+        gridWidth: 48,
+        gridHeight: 48,
+        timestamp: Date.now(),
+      });
+    });
+  }, [displayTimeLabels, liveCitiesWind, location.city, location.wind.speed]);
+
+  // Continuously interpolated active wind field based on floating timeProgress
+  const activeWindField = useMemo(() => {
+    if (timelineFields.length === 0) {
+      const obs = buildObservations(
+        WIND_CITIES,
+        liveCitiesWind,
+        location.city,
+        location.wind.speed,
+        location.wind.dir,
+        1.0
+      );
+      return createWindField(obs, { bounds: DEFAULT_INDIA_BOUNDS, gridWidth: 48, gridHeight: 48 });
+    }
+    const idxA = Math.floor(timeProgress);
+    const idxB = Math.min(timelineFields.length - 1, idxA + 1);
+    const alpha = timeProgress - idxA;
+    if (idxA === idxB || alpha <= 0.001) {
+      return timelineFields[idxA];
+    }
+    return interpolateWindFields(timelineFields[idxA], timelineFields[idxB], alpha);
+  }, [timelineFields, timeProgress, liveCitiesWind, location.city, location.wind.speed, location.wind.dir]);
+
+  // Current active wind reading at the user's selected location sampled from the continuous field
+  const activeWind: Wind = useMemo(() => {
+    const vec = getWindVector(activeWindField, selectedCityCenter.lat, selectedCityCenter.lng);
+    return {
+      speed: Math.round(vec.speed),
+      dir: vec.direction,
+      gust: Math.round(vec.speed * 1.35),
+    };
+  }, [activeWindField, selectedCityCenter.lat, selectedCityCenter.lng]);
+
+  const nearestTimeIndex = Math.min(
+    displayTimeLabels.length - 1,
+    Math.max(0, Math.round(timeProgress))
+  );
+  const activeFrame = displayTimeLabels[nearestTimeIndex];
+
+  const activeTemp: number = useMemo(() => {
+    if (activeFrame && activeFrame.temp !== undefined && nearestTimeIndex !== 1) {
+      return activeFrame.temp;
+    }
+    return location.temp;
+  }, [activeFrame, nearestTimeIndex, location.temp]);
+
   const isRain = activeLayer === "rain";
   const rainFrames = rainViewerData?.frames || [];
 
@@ -1157,10 +1348,10 @@ export function FullScreenWindRadar({
     if (isRain && rainFrames.length > 0) {
       return rainFrames[rainFrameIndex]?.timeStr ?? "Now";
     }
-    return displayTimeLabels[timeIndex]?.timeStr ?? "Now";
-  }, [isRain, rainFrames, rainFrameIndex, displayTimeLabels, timeIndex]);
+    return displayTimeLabels[nearestTimeIndex]?.timeStr ?? "Now";
+  }, [isRain, rainFrames, rainFrameIndex, displayTimeLabels, nearestTimeIndex]);
 
-  // Timelapse auto-play
+  // Continuous Playback Animation: smoothly evolves the field while particles flow uninterrupted
   useEffect(() => {
     if (!isPlaying) return;
     if (isRain && rainFrames.length > 0) {
@@ -1169,10 +1360,20 @@ export function FullScreenWindRadar({
       }, 1000);
       return () => clearInterval(interval);
     } else {
-      const interval = setInterval(() => {
-        setTimeIndex((prev) => (prev + 1) % displayTimeLabels.length);
-      }, 2200);
-      return () => clearInterval(interval);
+      let animId: number;
+      let lastTime = performance.now();
+      const tick = (now: number) => {
+        const dt = (now - lastTime) / 1000;
+        lastTime = now;
+        setTimeProgress((prev) => {
+          const maxIdx = displayTimeLabels.length - 1;
+          const next = prev + dt * 0.45; // ~2.2 seconds per timeline frame
+          return next >= maxIdx ? 0 : next;
+        });
+        animId = requestAnimationFrame(tick);
+      };
+      animId = requestAnimationFrame(tick);
+      return () => cancelAnimationFrame(animId);
     }
   }, [isPlaying, isRain, rainFrames.length, displayTimeLabels.length]);
 
@@ -1275,6 +1476,7 @@ export function FullScreenWindRadar({
           activeLayer={activeLayer}
           rainViewerData={rainViewerData}
           rainFrameIndex={rainFrameIndex}
+          activeWindField={activeWindField}
         />
 
         {/* ── TOP BAR (Back + Header Brand + Share/Info) ── */}
@@ -1404,7 +1606,7 @@ export function FullScreenWindRadar({
             onClick={() => switchLayer("wind")}
             className={`relative grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
               activeLayer === "wind"
-                ? "bg-blue-600 border-blue-300 text-white shadow-[0_0_15px_rgba(37,99,235,0.75)]"
+                ? "bg-sky-950/80 border-sky-400/80 text-sky-200 shadow-[0_0_12px_rgba(56,189,248,0.35)]"
                 : "bg-black/55 border-white/15 text-white/80 hover:bg-black/70"
             }`}
             title="Wind Streamlines Radar"
@@ -1416,8 +1618,7 @@ export function FullScreenWindRadar({
             </svg>
             {activeLayer === "wind" && (
               <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-300 opacity-75" />
-                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-400" />
+                <span className="relative inline-flex rounded-full h-2 w-2 bg-sky-400" />
               </span>
             )}
           </button>
@@ -1634,6 +1835,27 @@ export function FullScreenWindRadar({
             </div>
           </div>
         )}
+        {/* ── METEOROLOGICAL WIND SPEED SCALE LEGEND ── */}
+        {activeLayer === "wind" && (
+          <div className="absolute left-4 bottom-3 z-30 pointer-events-none animate-in fade-in duration-200">
+            <div className="flex items-center gap-2 rounded-full bg-black/70 px-3 py-1.5 backdrop-blur-md border border-white/12 shadow-lg">
+              <span className="text-[9.5px] font-mono font-bold tracking-wider text-white/50 uppercase">WIND</span>
+              <div className="h-1.5 w-24 rounded-full overflow-hidden flex bg-white/10">
+                <span className="h-full flex-1 bg-sky-400/40" />
+                <span className="h-full flex-1 bg-teal-400/60" />
+                <span className="h-full flex-1 bg-emerald-400/70" />
+                <span className="h-full flex-1 bg-amber-400/80" />
+                <span className="h-full flex-1 bg-rose-500/90" />
+              </div>
+              <div className="flex items-center gap-1 text-[8.5px] font-mono text-white/70">
+                <span>0</span>
+                <span>10</span>
+                <span>20</span>
+                <span>30+ km/h</span>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* ── BOTTOM TIMELINE & CONTROLS ── */}
@@ -1658,19 +1880,20 @@ export function FullScreenWindRadar({
               type="range"
               min="0"
               max={isRain && rainFrames.length > 0 ? rainFrames.length - 1 : displayTimeLabels.length - 1}
-              value={isRain && rainFrames.length > 0 ? rainFrameIndex : timeIndex}
+              step={isRain ? "1" : "0.02"}
+              value={isRain && rainFrames.length > 0 ? rainFrameIndex : timeProgress}
               onChange={(e) => {
                 const val = Number(e.target.value);
                 if (isRain && rainFrames.length > 0) {
                   setRainFrameIndex(val);
                 } else {
-                  setTimeIndex(val);
+                  setTimeProgress(val);
                 }
                 setIsPlaying(false);
               }}
               className="w-full accent-amber-400 h-1.5 rounded-full cursor-pointer bg-white/20"
               style={{
-                accentColor: isRain ? "#38bdf8" : activeLayer === "temp" ? "#f59e0b" : "#3b82f6",
+                accentColor: isRain ? "#38bdf8" : activeLayer === "temp" ? "#f59e0b" : "#38bdf8",
               }}
             />
           </div>
@@ -1697,12 +1920,12 @@ export function FullScreenWindRadar({
         {/* Quick Time Jump Tabs */}
         <div className="mt-2.5 flex items-center justify-between gap-1">
           {displayTimeLabels.map((item, idx) => {
-            const active = (!isRain || rainFrames.length === 0) && timeIndex === idx;
+            const active = (!isRain || rainFrames.length === 0) && Math.round(timeProgress) === idx;
             return (
               <button
                 key={item.id}
                 onClick={() => {
-                  setTimeIndex(idx);
+                  setTimeProgress(idx);
                   setIsPlaying(false);
                 }}
                 className={`flex-1 rounded-lg py-1.5 text-center text-[11px] font-semibold transition active:scale-95 ${
