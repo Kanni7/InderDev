@@ -1,7 +1,8 @@
 {
-  "description": "Create stunning UI/UX designs effortlessly with this tool, ideal for designers and developers seeking to enhance user experiences and streamline workflows.",
+  "title": "Mausam — Apple Weather Inspired Forecast",
+  "description": "A refined, minimalist weather forecasting and atmospheric tracking application.",
   "robots": {
-    "index": false
+    "index": true
   },
   "accessibility": {
     "addBypassLinks": false,
