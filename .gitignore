@@ -11,6 +11,8 @@ logs/
 *.log
 .claude-replay.*
 .tmp-*
+__pycache__/
+*.py[cod]
 /.figma/design-context/
 
 # Platform-managed agentplat state, not project source. In the

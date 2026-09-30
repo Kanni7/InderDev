@@ -8,7 +8,12 @@ import { buildTemplate, buildCurrentValueTemplate, buildOutOfScopeTemplate } fro
 
 // ── Groq fallback (used when the FastAPI server is unreachable) ──
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_MODEL = "llama-3.3-70b-versatile";
+const GROQ_CANDIDATE_MODELS = [
+  "openai/gpt-oss-120b",
+  "openai/gpt-oss-20b",
+  "qwen/qwen3.8-27b",
+  "llama-3.3-70b-versatile",
+];
 const TIMEOUT_MS = 10000;
 
 /** Cache for generateInsight cards (not for chat) */
@@ -37,29 +42,39 @@ async function callGroqDirect(
   const key = getGroqKey();
   if (!key) return { error: "VITE_GROQ_API_KEY not set" };
 
-  const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
-  try {
-    const res = await fetch(GROQ_API_URL, {
-      method: "POST",
-      headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
-      body: JSON.stringify({ model: GROQ_MODEL, messages, max_tokens: 200, temperature: 0.3 }),
-      signal: controller.signal,
-    });
-    clearTimeout(timer);
-    if (!res.ok) {
-      const body = await res.text().catch(() => "");
-      if (res.status === 401) return { error: "Groq key invalid (401)" };
-      if (res.status === 429) return { error: "Groq rate limit (429) — retry in a moment" };
-      return { error: `Groq error ${res.status}: ${body.slice(0, 120)}` };
+  for (const model of GROQ_CANDIDATE_MODELS) {
+    const controller = new AbortController();
+    const timer = setTimeout(() => controller.abort(), TIMEOUT_MS);
+    try {
+      const res = await fetch(GROQ_API_URL, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${key}` },
+        body: JSON.stringify({ model, messages, max_tokens: 200, temperature: 0.3 }),
+        signal: controller.signal,
+      });
+      clearTimeout(timer);
+
+      if (res.status === 404) {
+        // Model not available on this key/tier; try next candidate model
+        continue;
+      }
+
+      if (!res.ok) {
+        const body = await res.text().catch(() => "");
+        if (res.status === 401) return { error: "Groq key invalid (401)" };
+        if (res.status === 429) return { error: "Groq rate limit (429) — retry in a moment" };
+        return { error: `Groq error ${res.status}: ${body.slice(0, 120)}` };
+      }
+      const data = await res.json();
+      const text: string = data.choices?.[0]?.message?.content ?? "";
+      return text ? { text } : null;
+    } catch (err) {
+      clearTimeout(timer);
+      return { error: `Network: ${err instanceof Error ? err.message : String(err)}` };
     }
-    const data = await res.json();
-    const text: string = data.choices?.[0]?.message?.content ?? "";
-    return text ? { text } : null;
-  } catch (err) {
-    clearTimeout(timer);
-    return { error: `Network: ${err instanceof Error ? err.message : String(err)}` };
   }
+
+  return { error: "No compatible Groq model found for this key" };
 }
 
 // ── FastAPI server call (/api/assistant via Vite proxy → localhost:8000) ──
