@@ -1055,7 +1055,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               sub: "Last light leaves the sky",
               time: formatHoursToTime(duskH),
               icon: (
-                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4 text-indigo-300">
+                <svg viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-4 w-4 text-blue-300">
                   <path d="M3 15h14M10 11v3M6 13l2-2M14 13l-2-2" strokeLinecap="round" />
                   <path d="M6 15a4 4 0 0 1 8 0" strokeDasharray="2 2" />
                 </svg>

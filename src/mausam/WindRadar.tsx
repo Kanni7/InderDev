@@ -354,7 +354,7 @@ export function pixelToGeo(
 
 export function getThermalRGB(temp: number): [number, number, number] {
   const stops: { t: number; r: number; g: number; b: number }[] = [
-    { t: -5, r: 88, g: 28, b: 135 },   // Deep purple
+    { t: -5, r: 23, g: 37, b: 84 },    // Navy blue
     { t: 6, r: 37, g: 99, b: 235 },    // Royal blue
     { t: 14, r: 6, g: 182, b: 212 },   // Sky cyan
     { t: 19, r: 20, g: 184, b: 166 },  // Teal
@@ -620,9 +620,9 @@ function WindMapCanvas({
       if (activeLayer === "wind") {
         // Subtle dark meteorological ocean-atmosphere tint
         const gradBg = ctx.createLinearGradient(0, 0, w, h);
-        gradBg.addColorStop(0, "rgba(25, 27, 58, 0.44)");
-        gradBg.addColorStop(0.5, "rgba(20, 32, 70, 0.36)");
-        gradBg.addColorStop(1, "rgba(26, 22, 60, 0.46)");
+        gradBg.addColorStop(0, "rgba(8, 20, 32, 0.22)");
+        gradBg.addColorStop(0.5, "rgba(6, 18, 28, 0.16)");
+        gradBg.addColorStop(1, "rgba(8, 22, 34, 0.24)");
         ctx.fillStyle = gradBg;
         ctx.fillRect(0, 0, w, h);
 
@@ -662,32 +662,32 @@ function WindMapCanvas({
 
               // Restrained meteorological intensity gradient (satellite basemap remains clearly visible)
               if (spd < 6) {
-                // Calm: subtle translucent deep violet
-                data[idx] = 45;
-                data[idx + 1] = 35;
-                data[idx + 2] = 80;
-                data[idx + 3] = 40;
+                // Calm: transparent (satellite basemap crisp and clean, zero purple haze)
+                data[idx] = 14;
+                data[idx + 1] = 116;
+                data[idx + 2] = 144;
+                data[idx + 3] = 0;
               } else if (spd < 16) {
-                // Gentle breeze: deep oceanic blue-violet
+                // Gentle breeze: subtle clean oceanic cyan
                 const f = (spd - 6) / 10;
-                data[idx] = Math.round(45 + (30 - 45) * f);
-                data[idx + 1] = Math.round(35 + (58 - 35) * f);
-                data[idx + 2] = Math.round(80 + (120 - 80) * f);
-                data[idx + 3] = Math.round(40 + 35 * f);
+                data[idx] = 6;
+                data[idx + 1] = Math.round(120 + 30 * f);
+                data[idx + 2] = 195;
+                data[idx + 3] = Math.round(28 + 26 * f);
               } else if (spd < 26) {
                 // Moderate wind: clean teal-marine
                 const f = (spd - 16) / 10;
-                data[idx] = Math.round(30 + (20 - 30) * f);
-                data[idx + 1] = Math.round(58 + (95 - 58) * f);
-                data[idx + 2] = Math.round(120 + (150 - 120) * f);
-                data[idx + 3] = Math.round(75 + 30 * f);
+                data[idx] = Math.round(6 + 10 * f);
+                data[idx + 1] = Math.round(150 + 25 * f);
+                data[idx + 2] = Math.round(195 - 40 * f);
+                data[idx + 3] = Math.round(54 + 26 * f);
               } else if (spd < 38) {
-                // Fresh / Strong: soft emerald-teal
+                // Fresh / Strong: soft warm amber/gold
                 const f = (spd - 26) / 12;
-                data[idx] = Math.round(20 + (16 - 20) * f);
-                data[idx + 1] = Math.round(95 + (125 - 95) * f);
-                data[idx + 2] = Math.round(150 + (128 - 150) * f);
-                data[idx + 3] = Math.round(105 + 35 * f);
+                data[idx] = Math.round(16 + 215 * f);
+                data[idx + 1] = Math.round(175 - 15 * f);
+                data[idx + 2] = Math.round(155 - 130 * f);
+                data[idx + 3] = Math.round(80 + 30 * f);
               } else {
                 // Gale / High: soft coral
                 data[idx] = 235;
@@ -1025,7 +1025,7 @@ function WindMapCanvas({
           ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.94)";
           ctx.fillText(city.name, pt.x, pt.y - 10);
 
-          // 2. Small lavender/indigo pill below city name: e.g. "4 ↗" or "0"
+          // 2. Crisp frosted dark slate pill below city name: e.g. "4 ↗" or "0"
           const pillText = speedVal === 0 ? "0" : `${speedVal} ${motionArrow}`;
           ctx.font = "bold 9.5px system-ui, -apple-system, sans-serif";
           const tw = ctx.measureText(pillText).width;
@@ -1038,17 +1038,15 @@ function WindMapCanvas({
           ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
           ctx.beginPath();
           ctx.roundRect(px, py, pw, ph, 7);
-          ctx.fillStyle = isSelected ? "rgba(79, 70, 229, 0.95)" : "rgba(118, 106, 184, 0.84)";
+          ctx.fillStyle = isSelected ? "rgba(2, 132, 199, 0.95)" : "rgba(15, 23, 42, 0.85)";
           ctx.fill();
 
-          if (isSelected) {
-            ctx.lineWidth = 1.5;
-            ctx.strokeStyle = "#ffffff";
-            ctx.stroke();
-          }
+          ctx.lineWidth = isSelected ? 1.5 : 1.0;
+          ctx.strokeStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.25)";
+          ctx.stroke();
 
           ctx.shadowColor = "transparent";
-          ctx.fillStyle = "#ffffff";
+          ctx.fillStyle = isSelected ? "#ffffff" : "#e0f2fe";
           ctx.fillText(pillText, pt.x, py + ph / 2);
           ctx.restore();
         } else {
@@ -1874,7 +1872,7 @@ export function FullScreenWindRadar({
                   <span className="text-[10px] text-white/50 block mb-1.5 uppercase tracking-wider">Doppler Intensity</span>
                   <div className="h-2 w-full rounded-full overflow-hidden flex">
                     <span className="h-full flex-1 bg-sky-400" title="Light" />
-                    <span className="h-full flex-1 bg-purple-500" title="Moderate" />
+                    <span className="h-full flex-1 bg-blue-500" title="Moderate" />
                     <span className="h-full flex-1 bg-yellow-400" title="Heavy" />
                     <span className="h-full flex-1 bg-red-500" title="Extreme" />
                   </div>
