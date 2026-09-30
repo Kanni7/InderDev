@@ -14,6 +14,7 @@ import { makeT, type Lang } from "./i18n";
 import * as I from "./icons";
 import { useProfile } from "../engine/profile";
 import { rankModules, type AlertOverride } from "../engine/ranking";
+import { runGBDTInference } from "../engine/forYouGBDT";
 
 /** Minimal static fallbacks used only if live data hasn't loaded yet. */
 const STATIC_HOURLY: HourlyPoint[] = [
@@ -85,10 +86,11 @@ export default function Home({
   );
 
   const t = makeT(lang);
-  const insight = useMemo(
-    () => getDynamicInsight(userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext),
-    [userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext, lang],
+  const gbdtResult = useMemo(
+    () => runGBDTInference(profile, location, currentHour, alertOverrides),
+    [profile, location, currentHour, alertOverrides],
   );
+  const insight = gbdtResult.insight;
   const [unit, setUnit] = useState<TemperatureUnit>("C");
   const [citySearchQuery, setCitySearchQuery] = useState("");
   const [showLocations, setShowLocations] = useState(false);
@@ -400,8 +402,11 @@ export default function Home({
             className="animate-insight rounded-3xl border border-white/10 p-5 mausam-glass-strong"
           >
             <div className="flex items-center justify-between">
-              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)]">
-                {t("For you")} · {location.city}
+              <span className="font-mono text-[10px] uppercase tracking-[0.18em] text-[var(--color-ink-faint)] flex items-center gap-1.5">
+                <span>{t("For you")} · {location.city}</span>
+                <span className="text-[8.5px] px-1.5 py-0.5 rounded-full bg-sky-400/15 text-sky-300 font-mono tracking-normal border border-sky-400/25">
+                  {Math.round(gbdtResult.confidence * 100)}% match
+                </span>
               </span>
               <span className="flex items-center gap-1.5 rounded-full border border-white/15 bg-white/10 px-2.5 py-1 font-mono text-[10px] uppercase tracking-wider text-white/90 backdrop-blur-md">
                 <CondIcon c={theme.key} className="h-3.5 w-3.5" /> {t(theme.label)}

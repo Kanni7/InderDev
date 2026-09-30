@@ -1,4 +1,4 @@
-import { useState, useRef, useCallback, useEffect } from "react";
+import { useState, useRef, useCallback, useEffect, useMemo } from "react";
 import { useProfile, ALL_INTERESTS, type Interest, defaultActivitySignals } from "../engine/profile";
 import { initWeights, runDayUpdate, updateWeights } from "../engine/weights";
 import { getModuleScores } from "../engine/ranking";
@@ -8,6 +8,7 @@ import type { Location } from "../mausam/data";
 import type { AlertOverride } from "../engine/ranking";
 import { parseActivityText } from "../engine/activityParser";
 import { runLSTMInference, initLSTMState, type LSTMState, type LSTMInferenceResult } from "../engine/lstmModel";
+import { runGBDTInference } from "../engine/forYouGBDT";
 
 const INTEREST_LABELS: Record<Interest, { en: string; hi: string }> = {
   health: { en: "Health", hi: "स्वास्थ्य" },
@@ -68,6 +69,25 @@ export default function DemoPanel({
     setActivityInput("");
   };
 
+  // LightGBM Live Weather Override state
+  const [weatherOverride, setWeatherOverride] = useState<Partial<Location> | null>(null);
+
+  const effectiveLocation = useMemo<Location>(() => {
+    if (!weatherOverride) return location;
+    return {
+      ...location,
+      ...weatherOverride,
+      wind: { ...location.wind, ...(weatherOverride.wind ?? {}) },
+      air: { ...location.air, ...(weatherOverride.air ?? {}) },
+      precip: { ...location.precip, ...(weatherOverride.precip ?? {}) },
+    };
+  }, [location, weatherOverride]);
+
+  const gbdtLiveResult = useMemo(
+    () => runGBDTInference(profile, effectiveLocation, new Date().getHours(), [], lastLSTMResult),
+    [profile, effectiveLocation, lastLSTMResult],
+  );
+
   // Activity signal buttons - immediately recalculate weights for instant feedback
   const addSignal = (key: keyof typeof profile.activitySignals, amount: number) => {
     updateProfile((p) => {
@@ -99,6 +119,7 @@ export default function DemoPanel({
   const resetProfile = () => {
     lstmStateRef.current = initLSTMState();
     setLastLSTMResult(null);
+    setWeatherOverride(null);
     const fresh = {
       ...profile,
       interestWeights: initWeights(profile.selectedInterests),
@@ -423,6 +444,127 @@ export default function DemoPanel({
                 </p>
               </div>
             )}
+          </div>
+
+          {/* For You LightGBM On-Device Decision Engine */}
+          <div className="rounded-2xl border border-emerald-500/25 bg-gradient-to-b from-emerald-500/10 to-transparent p-3 space-y-2.5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-emerald-300 flex items-center gap-1.5">
+                <span>🌲</span>
+                <span>{lang === "hi" ? "LightGBM 'For You' इंजन" : "LightGBM 'For You' Engine"}</span>
+              </h4>
+              <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-emerald-400/20 text-emerald-200 border border-emerald-400/30">
+                {gbdtLiveResult.inferenceTimeMs}ms • On-Device
+              </span>
+            </div>
+
+            <p className="text-[10.5px] text-white/60 leading-tight">
+              {lang === "hi"
+                ? "GBDT डिसीजन ट्री सभी विजेट्स (तापमान, हवा, बारिश, AQI) + प्रोफाइल भार + LSTM संकेतों को मिलाकर सर्वश्रेष्ठ सिफारिश चुनता है:"
+                : "GBDT decision trees evaluate all widgets (wind, rain, temp, AQI) + profile weights + LSTM state to rank the top recommendation:"}
+            </p>
+
+            {/* Live Winning Decision Box */}
+            <div className="rounded-xl bg-black/50 border border-emerald-400/25 p-2.5 text-[10.5px] space-y-2">
+              <div className="flex items-center justify-between">
+                <span className="font-mono text-emerald-300 font-semibold text-[10px] uppercase tracking-wider">
+                  🎯 {gbdtLiveResult.intent}
+                </span>
+                <span className="font-mono text-[9.5px] px-1.5 py-0.5 rounded bg-emerald-400/15 text-emerald-200 border border-emerald-400/20">
+                  {Math.round(gbdtLiveResult.confidence * 100)}% Confidence
+                </span>
+              </div>
+
+              <div>
+                <p className="text-[12px] font-semibold text-white leading-tight">
+                  {gbdtLiveResult.insight.headline}
+                </p>
+                <p className="text-[10.5px] text-white/70 leading-snug mt-1">
+                  {gbdtLiveResult.insight.detail}
+                </p>
+              </div>
+
+              {/* Explainability - Top Tree Splits */}
+              {gbdtLiveResult.topContributions.length > 0 && (
+                <div className="pt-1.5 border-t border-white/10 space-y-1">
+                  <span className="text-[9px] font-mono uppercase tracking-wider text-white/40 block">
+                    Top Contributing Tree Splits:
+                  </span>
+                  <div className="flex flex-col gap-1">
+                    {gbdtLiveResult.topContributions.slice(0, 3).map((c, i) => (
+                      <div key={i} className="flex items-center justify-between text-[9.5px] font-mono text-white/75 bg-white/5 rounded px-2 py-0.5">
+                        <span className="truncate max-w-[200px]">{c.reason}</span>
+                        <span className="text-emerald-300 ml-1 font-semibold">{c.feature}: {c.value}</span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Quick 1-Click Interactive Test Scenarios */}
+            <div>
+              <span className="text-[9.5px] font-mono uppercase tracking-wide text-white/40 block mb-1">
+                {lang === "hi" ? "त्वरित परीक्षण परिदृश्य:" : "1-Click Test Scenarios:"}
+              </span>
+              <div className="flex flex-wrap gap-1">
+                {[
+                  {
+                    label: "🚴 Windy Ride (28 km/h)",
+                    action: () => {
+                      handleRunLSTM("45 min cycling");
+                      setWeatherOverride({
+                        condition: "sunny",
+                        wind: { speed: 28, dir: "NW", gust: 36 },
+                        precip: { ...effectiveLocation.precip, chance: 10 },
+                      });
+                    },
+                  },
+                  {
+                    label: "🏃 Run in AQI 165",
+                    action: () => {
+                      handleRunLSTM("30 min run");
+                      setWeatherOverride({
+                        air: { ...effectiveLocation.air, aqi: 165, aqiLabel: "Unhealthy" },
+                      });
+                    },
+                  },
+                  {
+                    label: "☀️ Midday UV 9",
+                    action: () => {
+                      setWeatherOverride({
+                        condition: "sunny",
+                        air: { ...effectiveLocation.air, uv: 9, uvLabel: "Very high" },
+                        precip: { ...effectiveLocation.precip, chance: 0 },
+                      });
+                    },
+                  },
+                  {
+                    label: "🌧️ Rain Commute (80%)",
+                    action: () => {
+                      handleRunLSTM("1 hour commute");
+                      setWeatherOverride({
+                        condition: "rainy",
+                        precip: { ...effectiveLocation.precip, chance: 80 },
+                      });
+                    },
+                  },
+                  {
+                    label: "🔄 Reset Weather",
+                    action: () => setWeatherOverride(null),
+                  },
+                ].map((s) => (
+                  <button
+                    key={s.label}
+                    type="button"
+                    onClick={s.action}
+                    className="rounded-lg bg-white/8 hover:bg-emerald-500/20 hover:border-emerald-400/40 active:scale-95 px-2 py-1 text-[9.5px] font-mono text-white/80 border border-white/8 transition"
+                  >
+                    {s.label}
+                  </button>
+                ))}
+              </div>
+            </div>
           </div>
 
           {/* Activity buttons */}
