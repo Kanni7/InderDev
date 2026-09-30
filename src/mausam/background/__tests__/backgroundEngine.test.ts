@@ -166,22 +166,23 @@ describe("Background Engine - Sky and Clouds Photography Matrix", () => {
     phases.forEach((phase) => {
       const url = getSkyAndCloudsPhoto(phase, "clear");
       expect(url).toBeDefined();
-      expect(url).toMatch(/^https:\/\/images\.unsplash\.com\/photo-/);
+      // Photos are now bundled locally under /sky/
+      expect(url).toMatch(/^\/sky\/.+\.jpg$/);
     });
   });
 
   it("resolves storm, rain, and fog sky photos correctly", () => {
     const rainUrl = getSkyAndCloudsPhoto("midday", "rain");
     expect(rainUrl).toBeDefined();
-    expect(rainUrl).toMatch(/^https:\/\/images\.unsplash\.com\/photo-/);
+    expect(rainUrl).toMatch(/^\/sky\/.+\.jpg$/);
 
     const stormUrl = getSkyAndCloudsPhoto("night", "thunderstorm");
     expect(stormUrl).toBeDefined();
-    expect(stormUrl).toMatch(/^https:\/\/images\.unsplash\.com\/photo-/);
+    expect(stormUrl).toMatch(/^\/sky\/.+\.jpg$/);
 
     const fogUrl = getSkyAndCloudsPhoto("sunrise", "fog");
     expect(fogUrl).toBeDefined();
-    expect(fogUrl).toMatch(/^https:\/\/images\.unsplash\.com\/photo-/);
+    expect(fogUrl).toMatch(/^\/sky\/.+\.jpg$/);
   });
 });
 
