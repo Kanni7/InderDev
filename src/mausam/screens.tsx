@@ -113,7 +113,7 @@ const PROFILE_COLORS: Record<string, string> = {
 
 /* ───────────── 1. Onboarding - User Type selection ───────────── */
 export function Onboarding({
-  value, onChange, onContinue, lang, onBack, accent,
+  value, onChange, onContinue, lang, onBack, accent, onSkip,
 }: {
   value: UserTypeKey | null;
   onChange: (k: UserTypeKey) => void;
@@ -121,17 +121,30 @@ export function Onboarding({
   lang: Lang;
   onBack?: () => void;
   accent: string;
+  onSkip?: () => void;
 }) {
   const t = makeT(lang);
   return (
     <div className="relative flex h-full flex-col overflow-hidden bg-black" style={{ background: "#000000" }}>
 
       <div className="scroll-hide flex-1 overflow-y-auto px-5 pb-36 pt-14 relative z-10 bg-black">
-        {onBack && (
-          <button onClick={onBack} aria-label="Back" className="mb-5 grid h-9 w-9 place-items-center rounded-full bg-white/10 backdrop-blur-md active:scale-95">
-            <I.Chevron className="h-4 w-4 rotate-180 text-white/70" />
-          </button>
-        )}
+        <div className="mb-5 flex items-center justify-between">
+          {onBack ? (
+            <button onClick={onBack} aria-label="Back" className="grid h-9 w-9 place-items-center rounded-full bg-white/10 backdrop-blur-md active:scale-95">
+              <I.Chevron className="h-4 w-4 rotate-180 text-white/70" />
+            </button>
+          ) : (
+            <div />
+          )}
+          {onSkip && (
+            <button
+              onClick={onSkip}
+              className="rounded-full bg-white/10 px-3.5 py-1.5 text-[12.5px] font-medium text-white/80 hover:bg-white/15 hover:text-white backdrop-blur-md transition active:scale-95 border border-white/10 shadow-sm"
+            >
+              {t("Skip")}
+            </button>
+          )}
+        </div>
 
         <h1 className="text-[26px] font-bold leading-snug text-white">
           {t("Select the profile that fits you best")}
@@ -197,7 +210,15 @@ export function Onboarding({
         >
           {t("Continue")}
         </button>
-        <p className="mt-3 text-center font-mono text-[9.5px] uppercase tracking-wider text-white/25">
+        {onSkip && (
+          <button
+            onClick={onSkip}
+            className="mt-3 flex w-full items-center justify-center py-1.5 text-[13px] font-medium text-white/50 hover:text-white transition active:scale-95"
+          >
+            {t("Skip for now")}
+          </button>
+        )}
+        <p className="mt-2 text-center font-mono text-[9.5px] uppercase tracking-wider text-white/25">
           {t("You can change this anytime in the menu")}
         </p>
       </div>

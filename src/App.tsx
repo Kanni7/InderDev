@@ -302,6 +302,11 @@ export default function App() {
                 }));
               }
             }}
+            onSkip={() => {
+              setUserType("fitness");
+              setOnboarded(true);
+              setScreen("home");
+            }}
           />
         ) : (
           <>
@@ -353,6 +358,7 @@ export default function App() {
                       }));
                     }
                   }}
+                  onSkip={() => setScreen("home")}
                 />
               </div>
             )}
