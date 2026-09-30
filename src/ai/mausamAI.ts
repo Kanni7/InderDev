@@ -33,6 +33,7 @@ const SYSTEM_PROMPT = `You are Mausam AI, an Indian weather assistant. Rules:
 - State the forecast horizon (e.g., "next 6 hours", "today").
 - Answer in the requested language (en or hi).
 - 2-3 sentences max. Decision first, then reasoning.
+- Never use em dashes or en dashes; use standard punctuation like commas or periods.
 - Never mention your model name or that you are an AI.`;
 
 // ── Groq direct call (fallback when server is unavailable) ──
@@ -233,7 +234,7 @@ export async function askWhy(
     // Validate that AI didn't hallucinate numbers
     if (validateNumbers(serverResult.text, decision)) {
       return {
-        text: serverResult.text,
+        text: serverResult.text.replace(/[\u2014\u2013]/g, "-"),
         isOffline: false,
         interest,
         source: decision.source,
@@ -286,8 +287,9 @@ export async function generateInsight(
   ]);
 
   if (result && "text" in result) {
-    insightCache.set(cacheKey, { text: result.text, ts: Date.now() });
-    return { text: result.text, isOffline: false };
+    const cleanText = result.text.replace(/[\u2014\u2013]/g, "-");
+    insightCache.set(cacheKey, { text: cleanText, ts: Date.now() });
+    return { text: cleanText, isOffline: false };
   }
 
   const errorReason = result && "error" in result ? result.error : undefined;

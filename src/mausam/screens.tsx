@@ -1089,7 +1089,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               <span className="h-1.5 w-1.5 rounded-full bg-amber-300/80" />
             </div>
             <p className="mt-1 text-[13.5px] font-semibold text-[var(--color-ink)] font-mono">
-              {formatHoursToTime(morningGoldenStart)} – {formatHoursToTime(morningGoldenEnd)}
+              {formatHoursToTime(morningGoldenStart)} - {formatHoursToTime(morningGoldenEnd)}
             </p>
             <p className="mt-1 text-[10px] text-[var(--color-ink-faint)] leading-tight">
               {t("Warm directional dawn light")}
@@ -1105,7 +1105,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               <span className="h-1.5 w-1.5 rounded-full bg-orange-400" />
             </div>
             <p className="mt-1 text-[13.5px] font-semibold text-[var(--color-ink)] font-mono" style={{ color: isEveningGolden ? accent : undefined }}>
-              {formatHoursToTime(eveningGoldenStart)} – {formatHoursToTime(eveningGoldenEnd)}
+              {formatHoursToTime(eveningGoldenStart)} - {formatHoursToTime(eveningGoldenEnd)}
             </p>
             <p className="mt-1 text-[10px] text-[var(--color-ink-faint)] leading-tight">
               {t("Soft gold & amber portrait window")}
@@ -1118,13 +1118,13 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
           <div className={`rounded-2xl p-2.5 border ${isMorningBlue ? "bg-sky-400/10 border-sky-400/40" : "bg-white/4 border-white/6"}`}>
             <p className="text-[10px] text-[var(--color-ink-faint)]">{t("Dawn Blue Hour")}</p>
             <p className="mt-0.5 text-[12px] font-mono text-[var(--color-ink-soft)] font-medium">
-              {formatHoursToTime(morningBlueStart)} – {formatHoursToTime(morningBlueEnd)}
+              {formatHoursToTime(morningBlueStart)} - {formatHoursToTime(morningBlueEnd)}
             </p>
           </div>
           <div className={`rounded-2xl p-2.5 border ${isEveningBlue ? "bg-sky-400/10 border-sky-400/40" : "bg-white/4 border-white/6"}`}>
             <p className="text-[10px] text-[var(--color-ink-faint)]">{t("Dusk Blue Hour")}</p>
             <p className="mt-0.5 text-[12px] font-mono text-[var(--color-ink-soft)] font-medium">
-              {formatHoursToTime(eveningBlueStart)} – {formatHoursToTime(eveningBlueEnd)}
+              {formatHoursToTime(eveningBlueStart)} - {formatHoursToTime(eveningBlueEnd)}
             </p>
           </div>
         </div>

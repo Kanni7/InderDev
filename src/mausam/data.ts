@@ -458,12 +458,12 @@ export function getDynamicInsight(
       if (isHot && afternoon) return { headline: `Avoid midday runs - feels like ${feels}°C outside`, detail: `UV is ${air.uv >= 7 ? "very high" : "elevated"} and the heat index is ${air.heat}°C. Go out before 8 AM or after 6 PM.`, window: "before 8 AM / after 6 PM" };
       if (isCool && morning) return { headline: "Perfect morning for a long run right now", detail: `${temp}°C with ${wind.dir} breeze at ${wind.speed} km/h. AQI is ${air.aqi <= 50 ? "good" : "moderate"} - ideal conditions for a tempo effort.`, window: "Now" };
       if (highWind) return { headline: `Strong ${wind.speed} km/h winds - adjust your route`, detail: "Run with the wind in the first half so you have a tailwind on the way back. Avoid exposed ridge paths." };
-      if (isClear && morning) return { headline: "Great morning - get out before 9 AM", detail: `Clear skies and ${temp}°C. AQI ${air.aqi} keeps breathing easy. Window closes as feels-like rises after 10 AM.`, window: "Now – 9 AM" };
+      if (isClear && morning) return { headline: "Great morning - get out before 9 AM", detail: `Clear skies and ${temp}°C. AQI ${air.aqi} keeps breathing easy. Window closes as feels-like rises after 10 AM.`, window: "Now - 9 AM" };
       return { headline: `${feels}°C feels-like - comfortable training window open`, detail: `${wind.speed} km/h ${wind.dir} breeze and AQI ${air.aqi}. Good conditions for an easy or recovery run.` };
     }
     case "health": {
       if (air.aqi >= 150) return { headline: "Poor air quality - stay indoors today", detail: `AQI is ${air.aqi} (${air.aqiLabel}). Avoid outdoor exercise and keep windows closed, especially ${afternoon ? "this afternoon" : "midday"}.` };
-      if (air.uv >= 8) return { headline: `UV index ${air.uv} - high sun risk today`, detail: `Peak UV between 11 AM and 3 PM. Apply SPF 50+, wear a hat, and avoid direct sun for more than 20 minutes.`, window: "11 AM – 3 PM" };
+      if (air.uv >= 8) return { headline: `UV index ${air.uv} - high sun risk today`, detail: `Peak UV between 11 AM and 3 PM. Apply SPF 50+, wear a hat, and avoid direct sun for more than 20 minutes.`, window: "11 AM - 3 PM" };
       if (isWet) return { headline: "Rain keeps pollen low - a good day for outdoor walks", detail: `Rainfall washes pollen from the air. AQI is ${air.aqi}. Take advantage before skies clear and counts rise again.` };
       if (air.aqi <= 50 && isClear) return { headline: "Air quality excellent - safe to open windows", detail: `AQI ${air.aqi} and ${condition === "sunny" ? "clear skies" : "calm conditions"}. Great time for ventilation and outdoor activity.` };
       return { headline: `Pollen ${loc.pollen.level} today, AQI ${air.aqi}`, detail: `${air.aqi > 100 ? "Keep windows shut and prefer indoors." : "Moderate conditions - N95 advised if sensitive."} UV peaks around noon.` };
@@ -480,7 +480,7 @@ export function getDynamicInsight(
       if (isWet) return { headline: "Overcast and rainy - beach not ideal today", detail: `Visibility is reduced and seas may be choppy. If you go, stick to sheltered coves and avoid open water.` };
       if (highWind) return { headline: `${wind.speed} km/h ${wind.dir} wind - kite surfers' dream`, detail: "Strong offshore wind creates ideal kite and wind-surf conditions. Swimmers should stay close to shore." };
       if (isClear && !isHot) return { headline: "Perfect beach day - UV moderate before noon", detail: `${temp}°C with light wind and clear skies. Apply SPF before 10 AM as UV climbs to ${air.uv} by midday.`, window: morning ? "Now" : "Afternoon" };
-      if (isHot) return { headline: `Hot at ${temp}°C - stay in the shade between 11 AM–3 PM`, detail: "Sea breeze picks up after 3 PM making conditions more comfortable. Stay hydrated and reapply sunscreen every 90 min." };
+      if (isHot) return { headline: `Hot at ${temp}°C - stay in the shade between 11 AM and 3 PM`, detail: "Sea breeze picks up after 3 PM making conditions more comfortable. Stay hydrated and reapply sunscreen every 90 min." };
       return { headline: "Decent conditions at the coast today", detail: `${temp}°C, ${wind.speed} km/h ${wind.dir} breeze. Check local tide times before heading out.` };
     }
     case "traveler": {
@@ -493,7 +493,7 @@ export function getDynamicInsight(
     case "parent": {
       const commute = morning ? "morning school run" : "afternoon pickup";
       if (condition === "storm") return { headline: "Thunderstorm - keep kids indoors after school", detail: `Lightning risk during the ${evening ? "evening" : "afternoon"}. Postpone outdoor play until the storm passes.` };
-      if (isWet && morning) return { headline: "Rain during the school run - leave 10 min early", detail: `Showers are heaviest before 9 AM. Pack an umbrella and raincoat. Roads will be slower than usual.`, window: "7:30–9:00 AM" };
+      if (isWet && morning) return { headline: "Rain during the school run - leave 10 min early", detail: `Showers are heaviest before 9 AM. Pack an umbrella and raincoat. Roads will be slower than usual.`, window: "7:30 - 9:00 AM" };
       if (isWet) return { headline: "Wet roads for the afternoon pickup", detail: `${precip.chance}% rain chance. Allow extra travel time and ensure kids have waterproof footwear.` };
       if (isHot && afternoon) return { headline: `Hot ${feels}°C pickup - bring water for the kids`, detail: "Feels-like peaks between 1 and 4 PM. Keep children in the shade and ensure they're well-hydrated after school." };
       if (air.aqi >= 100) return { headline: `Air quality poor - skip outdoor play today`, detail: `AQI ${air.aqi}. Keep windows closed and stick to indoor activities. Sensitive children should avoid exertion.` };
@@ -502,7 +502,7 @@ export function getDynamicInsight(
     case "commuter": {
       if (condition === "fog") return { headline: "Dense fog - visibility under 400 m this morning", detail: "Leave 15 min early or take the metro. Use fog lamps and keep 3× following distance on highways.", window: "Before 9 AM" };
       if (condition === "storm") return { headline: "Storm warning - major delays expected", detail: `Winds up to ${wind.gust} km/h and heavy rain. Work from home if possible or leave well before rush hour.` };
-      if (isWet && morning) return { headline: "Wet commute ahead - roads will be slower", detail: `Rain eases after ${precip.next !== "No rain expected" ? precip.next : "mid-morning"}. Allow 15–20 extra minutes or take public transit.` };
+      if (isWet && morning) return { headline: "Wet commute ahead - roads will be slower", detail: `Rain eases after ${precip.next !== "No rain expected" ? precip.next : "mid-morning"}. Allow 15-20 extra minutes or take public transit.` };
       if (highWind) return { headline: `Gusty ${wind.speed} km/h winds affecting traffic`, detail: "Two-wheelers and high-sided vehicles should take extra care on flyovers and open roads." };
       if (isClear && morning) return { headline: "Clear roads - smooth commute expected", detail: `Good visibility, ${temp}°C. AQI ${air.aqi <= 50 ? "clean" : air.aqi}. No weather-related delays anticipated.` };
       return { headline: `${feels}°C and ${isWet ? "wet" : "dry"} - standard commute conditions`, detail: `${wind.speed} km/h ${wind.dir} wind. ${precip.chance > 20 ? "Carry an umbrella just in case." : "No rain expected on your route."}` };
@@ -512,7 +512,7 @@ export function getDynamicInsight(
       if (isWet) return { headline: `${precip.chance}% rain tonight - have a covered backup`, detail: "Set up a marquee or identify an indoor fallback. Light showers may pass but plan for wet ground." };
       if (isHot && afternoon) return { headline: `Hot ${temp}°C - schedule events after 5 PM`, detail: "Comfort improves significantly as the sun drops. Evening slot from 6 PM offers the best guest experience.", window: "After 6 PM" };
       if (isClear && evening) return { headline: "Perfect evening for an outdoor event tonight", detail: `${temp}°C, ${wind.speed < 15 ? "calm breeze" : `${wind.speed} km/h wind`} and clear skies. Comfort score is high through midnight.`, window: "Tonight" };
-      if (isClear) return { headline: "Good weather window for events today", detail: `${feels}°C feels-like with ${precip.chance < 20 ? "low rain risk" : `${precip.chance}% rain chance`}. Early evening is the prime comfort slot.`, window: "5–8 PM" };
+      if (isClear) return { headline: "Good weather window for events today", detail: `${feels}°C feels-like with ${precip.chance < 20 ? "low rain risk" : `${precip.chance}% rain chance`}. Early evening is the prime comfort slot.`, window: "5 - 8 PM" };
       return { headline: `${precip.chance}% rain - keep an eye on the forecast`, detail: `Conditions are borderline. Monitor updates hourly and have a wet-weather plan ready for outdoor setups.` };
     }
   }

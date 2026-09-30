@@ -43,7 +43,7 @@ export function getFallbackAnswer(interest: Interest, lang: string, wx?: Weather
       const aqiMsg = aqi < 50 ? (hi ? "हवा साफ है" : "air is clean") : aqi < 100 ? (hi ? "हवा मध्यम है" : "air quality is moderate") : (hi ? "AQI खराब है, बाहर कम जाएं" : "AQI is poor, limit outdoor exposure");
       return hi
         ? `अभी AQI ${aqi} (${aqiMsg}), UV ${uv} और आर्द्रता ${humidity}%। ${isHighUV ? "दोपहर 11 बजे से 3 बजे तक धूप से बचें।" : ""} ${!isGoodAir ? "N95 मास्क पहनें।" : "बाहर जाना सुरक्षित है।"}`
-        : `Current AQI is ${aqi} (${aqiMsg}), UV ${uv}, humidity ${humidity}%. ${isHighUV ? "Avoid direct sun 11 AM–3 PM." : ""} ${!isGoodAir ? "Wear an N95 mask outdoors." : "Safe to go outside."}`;
+        : `Current AQI is ${aqi} (${aqiMsg}), UV ${uv}, humidity ${humidity}%. ${isHighUV ? "Avoid direct sun between 11 AM and 3 PM." : ""} ${!isGoodAir ? "Wear an N95 mask outdoors." : "Safe to go outside."}`;
     }
 
     case "beach": {
@@ -94,7 +94,7 @@ export function getFallbackAnswer(interest: Interest, lang: string, wx?: Weather
       if (isRainy)
         return hi
           ? `${precipChance}% बारिश की संभावना - सड़कें गीली होंगी। यातायात में 15-30 मिनट की देरी हो सकती है। मेट्रो बेहतर विकल्प है।`
-          : `${precipChance}% rain chance - expect wet roads and 15–30 min delays. Metro or alternate route recommended. Temp ${temp}°C.`;
+          : `${precipChance}% rain chance - expect wet roads and 15-30 min delays. Metro or alternate route recommended. Temp ${temp}°C.`;
       return hi
         ? `${temp}°C और ${condition === "sunny" ? "साफ" : "ठीक"} मौसम के साथ यातायात सामान्य रहेगा। ${isHighUV ? "UV " + uv + " है, धूप का चश्मा रखें।" : ""}`
         : `${temp}°C with ${condition === "sunny" ? "clear" : "decent"} skies - normal commute conditions expected. ${isHighUV ? "UV " + uv + ", keep sunglasses handy." : ""}`;

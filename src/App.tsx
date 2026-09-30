@@ -60,6 +60,11 @@ export default function App() {
   const [usingLiveData, setUsingLiveData] = useState(false);
   const [chatInitialQ, setChatInitialQ] = useState<string | undefined>(undefined);
 
+  // Ensure browser title has no em dash
+  useEffect(() => {
+    document.title = "Mausam - Apple Weather Inspired Forecast";
+  }, []);
+
   // Sync UI state → profile
   useEffect(() => {
     updateProfile((p) => ({ ...p, language: lang, city: locationKey }));
