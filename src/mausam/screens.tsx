@@ -576,13 +576,13 @@ export function Alerts({ onClose, lang, accent, location }: { onClose: () => voi
                   <span className="grid h-7 w-7 place-items-center rounded-full text-black font-semibold text-xs" style={{ background: meta.color }}>
                     {critical ? "⚡" : "🔔"}
                   </span>
-                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: meta.color }}>{meta.label}</span>
+                  <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.14em]" style={{ color: meta.color }}>{t(meta.label)}</span>
                 </span>
-                <span className="font-mono text-[10px] text-[var(--color-ink-faint)]">{a.time}</span>
+                <span className="font-mono text-[10px] text-[var(--color-ink-faint)]">{t(a.time)}</span>
               </div>
               <div>
-                <h2 className="text-[15.5px] font-semibold text-[var(--color-ink)] leading-tight">{a.title}</h2>
-                <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-ink-soft)]">{a.body}</p>
+                <h2 className="text-[15.5px] font-semibold text-[var(--color-ink)] leading-tight">{t(a.title)}</h2>
+                <p className="mt-1.5 text-[13px] leading-relaxed text-[var(--color-ink-soft)]">{t(a.body)}</p>
               </div>
               <div className="flex items-center justify-between pt-1">
                 <span className="flex items-center gap-1.5 font-mono text-[11px] text-[var(--color-ink-faint)]">
@@ -698,8 +698,8 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
           <div className="flex justify-between font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)] pt-0.5">
             <span>0 {t("Good")}</span>
             <span>50 {t("Mod")}</span>
-            <span>100 Unhealthy</span>
-            <span>150+ Hazard</span>
+            <span>100 {t("Unhealthy")}</span>
+            <span>150+ {t("Hazard")}</span>
           </div>
         </div>
 
@@ -892,7 +892,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               {isSunsetNext ? sun.sunset : sun.sunrise}
             </h2>
             <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">
-              {isSunsetNext ? `${t("Sunset")} · ${countdownText}` : `${t("Sunrise")} · ${countdownText}`}
+              {isSunsetNext ? `${t("Sunset")} · ${t(countdownText)}` : `${t("Sunrise")} · ${t(countdownText)}`}
             </p>
           </div>
           <div className="text-right">
@@ -1047,10 +1047,10 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
                 </div>
                 <div>
                   <p className="text-[13px] font-semibold text-[var(--color-ink)] leading-tight">
-                    {item.label}
+                    {t(item.label)}
                   </p>
                   <p className="text-[10.5px] text-[var(--color-ink-faint)] leading-tight">
-                    {item.sub}
+                    {t(item.sub)}
                   </p>
                 </div>
               </div>
@@ -1070,7 +1070,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
           </p>
           {(isMorningGolden || isEveningGolden) && (
             <span className="rounded-full px-2 py-0.5 text-[9.5px] font-mono font-semibold uppercase bg-amber-400/20 text-amber-300 border border-amber-400/30">
-              Active Golden Hour
+              {t("Active Golden Hour")}
             </span>
           )}
         </div>
@@ -1088,7 +1088,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               {formatHoursToTime(morningGoldenStart)} – {formatHoursToTime(morningGoldenEnd)}
             </p>
             <p className="mt-1 text-[10px] text-[var(--color-ink-faint)] leading-tight">
-              Warm directional dawn light
+              {t("Warm directional dawn light")}
             </p>
           </div>
 
@@ -1104,7 +1104,7 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
               {formatHoursToTime(eveningGoldenStart)} – {formatHoursToTime(eveningGoldenEnd)}
             </p>
             <p className="mt-1 text-[10px] text-[var(--color-ink-faint)] leading-tight">
-              Soft gold & amber portrait window
+              {t("Soft gold & amber portrait window")}
             </p>
           </div>
         </div>
@@ -1112,13 +1112,13 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
         {/* Blue Hour Windows */}
         <div className="grid grid-cols-2 gap-2.5">
           <div className={`rounded-2xl p-2.5 border ${isMorningBlue ? "bg-sky-400/10 border-sky-400/40" : "bg-white/4 border-white/6"}`}>
-            <p className="text-[10px] text-[var(--color-ink-faint)]">Dawn Blue Hour</p>
+            <p className="text-[10px] text-[var(--color-ink-faint)]">{t("Dawn Blue Hour")}</p>
             <p className="mt-0.5 text-[12px] font-mono text-[var(--color-ink-soft)] font-medium">
               {formatHoursToTime(morningBlueStart)} – {formatHoursToTime(morningBlueEnd)}
             </p>
           </div>
           <div className={`rounded-2xl p-2.5 border ${isEveningBlue ? "bg-sky-400/10 border-sky-400/40" : "bg-white/4 border-white/6"}`}>
-            <p className="text-[10px] text-[var(--color-ink-faint)]">Dusk Blue Hour</p>
+            <p className="text-[10px] text-[var(--color-ink-faint)]">{t("Dusk Blue Hour")}</p>
             <p className="mt-0.5 text-[12px] font-mono text-[var(--color-ink-soft)] font-medium">
               {formatHoursToTime(eveningBlueStart)} – {formatHoursToTime(eveningBlueEnd)}
             </p>
@@ -1145,13 +1145,13 @@ function SunDetail({ location, accent, lang, currentHour }: { location: Location
 
         <div className="flex items-center justify-between pt-1">
           <div>
-            <p className="text-[10px] font-mono uppercase text-[var(--color-ink-faint)]">Total Daylight</p>
-            <p className="text-[14px] font-semibold text-[var(--color-ink)]">{sun.daylight}</p>
+            <p className="text-[10px] font-mono uppercase text-[var(--color-ink-faint)]">{t("Total Daylight")}</p>
+            <p className="text-[14px] font-semibold text-[var(--color-ink)]">{t(sun.daylight)}</p>
           </div>
           <div className="text-right">
-            <p className="text-[10px] font-mono uppercase text-[var(--color-ink-faint)]">Total Night</p>
+            <p className="text-[10px] font-mono uppercase text-[var(--color-ink-faint)]">{t("Total Night")}</p>
             <p className="text-[14px] font-semibold text-[var(--color-ink)]">
-              {Math.floor(nightHours)}h {Math.round((nightHours - Math.floor(nightHours)) * 60)}m
+              {t(`${Math.floor(nightHours)}h ${Math.round((nightHours - Math.floor(nightHours)) * 60)}m`)}
             </p>
           </div>
         </div>
@@ -1176,7 +1176,7 @@ function PrecipDetail({ location, accent, lang, onOpenRadar }: { location: Locat
             {p.chance}% {t("chance")}
           </span>
         </div>
-        <p className="text-[12.5px] text-[var(--color-ink-soft)] bg-white/6 p-3 rounded-2xl">{p.note}</p>
+        <p className="text-[12.5px] text-[var(--color-ink-soft)] bg-white/6 p-3 rounded-2xl">{t(p.note)}</p>
       </div>
 
       <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
@@ -1210,11 +1210,11 @@ function PollenDetail({ location, accent, lang }: { location: Location; accent: 
         <div className="flex justify-between items-center">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Pollen Allergen Count")}</p>
           <span className="rounded-full px-2.5 py-1 text-[11px] font-semibold bg-amber-500/20 text-amber-300">
-            {pol.level}
+            {t(pol.level)}
           </span>
         </div>
         <h2 className="text-[34px] font-semibold leading-none text-[var(--color-ink)]">{pol.count} <span className="text-xs font-normal text-[var(--color-ink-soft)]">grains/m³</span></h2>
-        <p className="text-[12px] text-[var(--color-ink-soft)]">{pol.trend}</p>
+        <p className="text-[12px] text-[var(--color-ink-soft)]">{t(pol.trend)}</p>
       </div>
 
       <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
@@ -1335,10 +1335,10 @@ function DewPointDetail({ location, accent, lang }: { location: Location; accent
             <span className="absolute -top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-[#0b111c] bg-white shadow-md" style={{ left: `${Math.min(Math.max(((d - 8) / 20) * 100, 0), 100)}%` }} />
           </div>
           <div className="flex justify-between font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)] pt-0.5">
-            <span>&lt;10° Dry</span>
-            <span>15° Ideal</span>
-            <span>20° Humid</span>
-            <span>25°+ Muggy</span>
+            <span>&lt;10° {t("Dry")}</span>
+            <span>15° {t("Ideal")}</span>
+            <span>20° {t("Humid")}</span>
+            <span>25°+ {t("Muggy")}</span>
           </div>
         </div>
       </div>
@@ -1676,7 +1676,7 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
           {t("Meteorological Assessment")}
         </p>
         <p className="text-[13px] leading-relaxed text-white/85">
-          {category.desc}
+          {t(category.desc)}
         </p>
         <div className="border-t border-white/8 pt-2">
           <p className="text-[11.5px] leading-relaxed text-[var(--color-ink-soft)]">
@@ -1699,15 +1699,16 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
 
   // Format header date string matching media_1790738039936.png: "Wednesday, Jun 7 at 4 PM"
   const dateHeader = useMemo(() => {
-    const weekday = selectedDate.toLocaleDateString("en-US", { weekday: "long" });
-    const month = selectedDate.toLocaleDateString("en-US", { month: "short" });
+    const locale = lang === "hi" ? "hi-IN" : lang === "te" ? "te-IN" : lang === "ta" ? "ta-IN" : lang === "ml" ? "ml-IN" : lang === "pa" ? "pa-IN" : "en-US";
+    const weekday = selectedDate.toLocaleDateString(locale, { weekday: "long" });
+    const month = selectedDate.toLocaleDateString(locale, { month: "short" });
     const day = selectedDate.getDate();
     let hours = selectedDate.getHours();
-    const ampm = hours >= 12 ? "PM" : "AM";
+    const ampm = hours >= 12 ? (lang === "en" ? "PM" : "अपराह्न") : (lang === "en" ? "AM" : "पूर्वाह्न");
     hours = hours % 12;
     hours = hours ? hours : 12;
-    return `${weekday}, ${month} ${day} at ${hours} ${ampm}`;
-  }, [selectedDate]);
+    return `${weekday}, ${day} ${month}, ${hours} ${ampm}`;
+  }, [selectedDate, lang]);
 
   return (
     <div className="space-y-4">
@@ -1831,7 +1832,7 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
       <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <div className="flex items-center justify-between">
           <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Upcoming Lunar Phases")}</p>
-          <span className="text-[10px] font-mono text-white/40">Next 30 Days</span>
+          <span className="text-[10px] font-mono text-white/40">{t("Next 30 Days")}</span>
         </div>
         <div className="grid grid-cols-4 gap-2">
           {upcoming.map((item) => {
@@ -1889,7 +1890,7 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
                     {item.date}
                   </span>
                   <span className="mt-1 font-mono text-[9.5px] text-white/50 leading-none whitespace-nowrap">
-                    in {item.daysAway}d
+                    {t(`in ${item.daysAway}d`)}
                   </span>
                 </div>
               </button>
@@ -1911,8 +1912,8 @@ function TravelDetail({ location, accent, lang }: { location: Location; accent: 
         <div className="grid grid-cols-2 gap-2.5">
           <div className="rounded-2xl bg-white/6 p-3">
             <p className="text-[11px] text-[var(--color-ink-faint)]">{t("Traffic Status")}</p>
-            <p className="mt-1 text-[17px] font-semibold text-amber-300">{tr.traffic}</p>
-            <p className="text-[11px] text-[var(--color-ink-soft)]">{tr.trafficNote}</p>
+            <p className="mt-1 text-[17px] font-semibold text-amber-300">{t(tr.traffic)}</p>
+            <p className="text-[11px] text-[var(--color-ink-soft)]">{t(tr.trafficNote)}</p>
           </div>
           <div className="rounded-2xl bg-white/6 p-3">
             <p className="text-[11px] text-[var(--color-ink-faint)]">{t("Road Visibility")}</p>

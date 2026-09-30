@@ -319,7 +319,7 @@ export function SunArc({
         </div>
         {countdownText && (
           <div className="rounded-full px-2.5 py-1 text-[11px] font-medium font-mono border border-white/10 bg-white/6 text-[var(--color-ink-soft)] whitespace-nowrap">
-            {countdownText}
+            {t(countdownText)}
           </div>
         )}
       </div>
@@ -467,7 +467,7 @@ export function SunArc({
             {t("Daylight")}
           </p>
           <p className="mt-1 text-[13px] font-semibold text-[var(--color-ink)] leading-tight whitespace-nowrap">
-            {s.daylight}
+            {t(s.daylight)}
           </p>
         </div>
         <div className="text-right">

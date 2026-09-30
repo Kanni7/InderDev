@@ -87,7 +87,7 @@ export default function Home({
   const t = makeT(lang);
   const insight = useMemo(
     () => getDynamicInsight(userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext),
-    [userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext],
+    [userType, location, currentHour, alertOverrides, profile.activitySignals, profile.moduleInteractions, profile.locationContext, lang],
   );
   const [unit, setUnit] = useState<TemperatureUnit>("C");
   const [citySearchQuery, setCitySearchQuery] = useState("");
@@ -411,7 +411,7 @@ export default function Home({
             <p className="mt-2 text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{t(insight.detail)}</p>
             <div className="mt-4 flex items-center gap-2">
               {insight.window && (
-                <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{insight.window}</span>
+                <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{t(insight.window)}</span>
               )}
               <button
                 onClick={() => onAskWhy ? onAskWhy(insight.headline) : onChat?.()}
