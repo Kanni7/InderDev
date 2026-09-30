@@ -1251,10 +1251,24 @@ function WindDetail({ location, accent, lang, onOpenRadar }: { location: Locatio
             {["N", "E", "S", "W"].map((d, i) => (
               <text key={d} x="50" y={i === 0 ? 16 : i === 2 ? 88 : 53} dx={i === 1 ? 38 : i === 3 ? -38 : 0} textAnchor="middle" fontSize="9" fill="rgba(255,255,255,0.45)">{d}</text>
             ))}
-            <g transform={`rotate(${deg} 50 50)`}>
-              <path d="M 50 18 L 56 50 L 50 45 L 44 50 Z" fill={accent} />
-            </g>
           </svg>
+
+          {/* Smoothly Rotating Needle Layer (Rotates around true 50% 50% HTML box center) */}
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `rotate(${deg}deg)`,
+              transformOrigin: "center center",
+              transition: "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            <svg viewBox="0 0 100 100" className="h-full w-full overflow-visible">
+              <path d="M 50 16 L 56 48 L 50 44 L 44 48 Z" fill={accent} />
+              <path d="M 50 50 L 53 60 L 50 58 L 47 60 Z" fill="rgba(255,255,255,0.25)" />
+              <circle cx="50" cy="50" r="4.2" fill="#0d1422" stroke="rgba(255,255,255,0.4)" strokeWidth="1" />
+              <circle cx="50" cy="50" r="2" fill={accent} />
+            </svg>
+          </div>
         </div>
         <h2 className="text-[32px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-sm font-normal text-[var(--color-ink-soft)]">km/h</span></h2>
         <p className="text-[12px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
@@ -1340,11 +1354,12 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
   const pr = location.pressure;
   const val = pr.value;
 
-  // Meteorological calibration: 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
-  const minP = 970;
-  const maxP = 1050;
+  // Meteorological calibration: standard 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
+  // Dynamically resilient so dial remains responsive even on extreme synoptic pressure readings
+  const minP = Math.min(940, Math.floor(val - 10));
+  const maxP = Math.max(1050, Math.ceil(val + 10));
   const clamped = Math.max(minP, Math.min(maxP, val));
-  const fraction = (clamped - minP) / (maxP - minP);
+  const fraction = Math.max(0.01, (clamped - minP) / (maxP - minP));
 
 
   // Trend classification (ensuring "Measured" is never shown)
@@ -1428,8 +1443,8 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
   }, [val, isFalling, isRising]);
 
   const pValues = historyData.map((d) => d.value);
-  const minHist = Math.min(...pValues, 1010);
-  const maxHist = Math.max(...pValues, 1016);
+  const minHist = Math.min(...pValues, Math.floor(val - 3));
+  const maxHist = Math.max(...pValues, Math.ceil(val + 3));
   const rangeHist = Math.max(maxHist - minHist, 4);
 
   // SVG chart path
@@ -1507,7 +1522,7 @@ function PressureDetail({ location, accent, lang }: { location: Location; accent
               />
 
               {/* Active Colored Progress Arc */}
-              {fraction > 0.02 && (
+              {fraction > 0.005 && (
                 <path
                   d={`M ${startX.toFixed(2)} ${startY.toFixed(2)} A ${r} ${r} 0 ${isLargeArc} 1 ${dotX.toFixed(2)} ${dotY.toFixed(2)}`}
                   fill="none"

@@ -871,35 +871,52 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
             <text x="40" y="72" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 180 ? accent : "rgba(255,255,255,0.4)"}>S</text>
             <text x="12" y="42.5" textAnchor="middle" fontSize="7.5" fontWeight="600" fill={deg === 270 ? accent : "rgba(255,255,255,0.4)"}>W</text>
 
-            {/* Direction Pointer Needle */}
-            <g
-              transform={`rotate(${deg} 40 40)`}
-              style={{
-                transition: "transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1)",
-                transformOrigin: "40px 40px",
-              }}
-            >
-              {/* Pointer Arrow with high contrast dual-tone */}
-              <path
-                d="M 40 14 L 43.5 35 L 40 32.5 L 36.5 35 Z"
-                fill="#ffffff"
-                filter="drop-shadow(0 1px 2px rgba(0,0,0,0.5))"
-              />
-              <path
-                d="M 40 14 L 42 24 L 40 22.5 L 38 24 Z"
-                fill={accent}
-              />
-              {/* Counter-weight Tail */}
-              <path
-                d="M 40 45 L 42 50 L 40 48.5 L 38 50 Z"
-                fill="rgba(255,255,255,0.22)"
-              />
-            </g>
-
-            {/* Center Pivot */}
-            <circle cx="40" cy="40" r="3.2" fill="#0d1422" stroke="rgba(255,255,255,0.3)" strokeWidth="0.8" />
-            <circle cx="40" cy="40" r="1.4" fill={accent} />
           </svg>
+
+          {/* Smoothly Rotating Needle Layer (Rotates around true 50% 50% HTML box center) */}
+          <div
+            className="pointer-events-none absolute inset-0 flex items-center justify-center"
+            style={{
+              transform: `rotate(${deg}deg)`,
+              transformOrigin: "center center",
+              transition: "transform 0.6s cubic-bezier(0.34, 1.56, 0.64, 1)",
+            }}
+          >
+            <svg viewBox="0 0 80 80" className="h-full w-full overflow-visible">
+              <defs>
+                <filter id="needleShadow" x="-20%" y="-20%" width="140%" height="140%">
+                  <feDropShadow dx="0" dy="1" stdDeviation="1.5" floodColor="#000000" floodOpacity="0.45" />
+                </filter>
+              </defs>
+
+              {/* Seamless, tapered compass needle anchored to center */}
+              <g filter="url(#needleShadow)">
+                {/* Needle North pointer body */}
+                <path
+                  d="M 40 13 L 36.5 38 L 40 36 Z"
+                  fill="#ffffff"
+                />
+                <path
+                  d="M 40 13 L 43.5 38 L 40 36 Z"
+                  fill="rgba(255,255,255,0.85)"
+                />
+                {/* Accent luminous tip */}
+                <path
+                  d="M 40 13 L 38 23 L 40 21.5 L 42 23 Z"
+                  fill={accent}
+                />
+                {/* Counter-weight tail */}
+                <path
+                  d="M 40 39 L 41.8 48 L 40 46.8 L 38.2 48 Z"
+                  fill="rgba(255,255,255,0.28)"
+                />
+              </g>
+
+              {/* Center Pivot Hub */}
+              <circle cx="40" cy="40" r="3.6" fill="#0d1422" stroke="rgba(255,255,255,0.4)" strokeWidth="0.8" />
+              <circle cx="40" cy="40" r="1.6" fill={accent} />
+            </svg>
+          </div>
         </div>
       </div>
     </div>
@@ -979,11 +996,12 @@ export function PressureCard({
   const pressure = pressureIn ?? { value: 1013, trend: "Steady" };
   const val = pressure.value;
 
-  // Meteorological calibration: 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
-  const minP = 970;
-  const maxP = 1050;
+  // Meteorological calibration: standard 970 hPa (Low) to 1050 hPa (High), Center = 1013.25 hPa
+  // Dynamically resilient so dial remains responsive even on extreme synoptic pressure readings
+  const minP = Math.min(940, Math.floor(val - 10));
+  const maxP = Math.max(1050, Math.ceil(val + 10));
   const clamped = Math.max(minP, Math.min(maxP, val));
-  const fraction = (clamped - minP) / (maxP - minP);
+  const fraction = Math.max(0.01, (clamped - minP) / (maxP - minP));
 
   // 240° arc spanning from 150° (bottom-left) to 30° / 390° (bottom-right)
   const startAngle = 150;
@@ -1081,7 +1099,7 @@ export function PressureCard({
             />
 
             {/* Active Colored Progress Arc */}
-            {fraction > 0.02 && (
+            {fraction > 0.005 && (
               <path
                 d={`M ${startX.toFixed(2)} ${startY.toFixed(2)} A ${r} ${r} 0 ${isLargeArc} 1 ${dotX.toFixed(2)} ${dotY.toFixed(2)}`}
                 fill="none"
