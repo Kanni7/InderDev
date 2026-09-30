@@ -749,23 +749,28 @@ function WindMapCanvas({
 
         // Highlight active selected location with prominent glowing beacon pin
         if (isSelected) {
+          ctx.save();
+          // Soft outer pulsing beacon halo
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y - 12, 16, 0, Math.PI * 2);
-          ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
+          ctx.arc(pt.x, pt.y, 16, 0, Math.PI * 2);
+          ctx.fillStyle = activeLayer === "temp" ? "rgba(245, 158, 11, 0.25)" : "rgba(14, 165, 233, 0.28)";
           ctx.fill();
 
+          // Inner solid core ring with white border
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y - 12, 7.5, 0, Math.PI * 2);
-          ctx.fillStyle = "#ef4444";
+          ctx.arc(pt.x, pt.y, 7, 0, Math.PI * 2);
+          ctx.fillStyle = activeLayer === "temp" ? "#f59e0b" : "#0284c7";
           ctx.fill();
-          ctx.lineWidth = 2.2;
+          ctx.lineWidth = 2;
           ctx.strokeStyle = "#ffffff";
           ctx.stroke();
 
+          // Central piercing white focal dot
           ctx.beginPath();
-          ctx.arc(pt.x, pt.y - 12, 2.5, 0, Math.PI * 2);
+          ctx.arc(pt.x, pt.y, 2.5, 0, Math.PI * 2);
           ctx.fillStyle = "#ffffff";
           ctx.fill();
+          ctx.restore();
         }
 
         if (activeLayer === "temp") {
@@ -830,23 +835,75 @@ function WindMapCanvas({
           const shouldShowWind = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
           if (!shouldShowWind) continue;
 
-          const metricY = isSelected ? pt.y + 4 : pt.y - 6;
-          const nameY = isSelected ? pt.y + 16 : pt.y + 6;
+          const pillText = `${displaySpeed} km/h`;
+          ctx.font = isSelected ? "bold 11.5px system-ui, -apple-system, sans-serif" : "600 10px system-ui, -apple-system, sans-serif";
+          const tw = ctx.measureText(pillText).width;
+          const pw = tw + 14;
+          const ph = 18;
+          const px = pt.x - pw / 2;
+          const py = pt.y - (isSelected ? 26 : 20);
 
-          ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
-          ctx.shadowBlur = 5;
-          ctx.shadowOffsetX = 0;
-          ctx.shadowOffsetY = 1;
+          ctx.save();
+          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
+          ctx.shadowBlur = 6;
+          ctx.shadowOffsetY = 1.5;
 
-          ctx.font = isSelected ? "bold 11px sans-serif" : "600 10.5px sans-serif";
-          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.95)";
-          ctx.fillText(`${displaySpeed} kph`, pt.x, metricY);
+          // Frosted pill capsule
+          ctx.fillStyle = isSelected ? "rgba(15, 23, 42, 0.95)" : "rgba(10, 16, 26, 0.88)";
+          ctx.beginPath();
+          ctx.roundRect(px, py, pw, ph, 9);
+          ctx.fill();
 
-          ctx.font = isSelected ? "bold 12px sans-serif" : "500 10.5px sans-serif";
-          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.90)";
-          ctx.fillText(city.name, pt.x, nameY);
+          // Sky blue border
+          ctx.lineWidth = isSelected ? 2 : 1.4;
+          ctx.strokeStyle = isSelected ? "#ffffff" : "rgba(56, 189, 248, 0.75)";
+          ctx.stroke();
 
+          // Downward pointer notch
+          ctx.beginPath();
+          ctx.moveTo(pt.x - 3, py + ph);
+          ctx.lineTo(pt.x + 3, py + ph);
+          ctx.lineTo(pt.x, py + ph + 3);
+          ctx.closePath();
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(56, 189, 248, 0.75)";
+          ctx.fill();
+
+          // Speed number
           ctx.shadowColor = "transparent";
+          ctx.fillStyle = isSelected ? "#ffffff" : "#38bdf8";
+          ctx.fillText(pillText, pt.x, py + ph / 2);
+
+          // City Name
+          ctx.shadowColor = "rgba(0,0,0,0.95)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 1;
+          ctx.font = isSelected ? "bold 11.5px sans-serif" : "600 10px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.92)";
+          ctx.fillText(city.name, pt.x, pt.y + 4);
+          ctx.restore();
+        } else {
+          // Rain / Satellite layers — Clean frosted city station pins
+          const shouldShowCity = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
+          if (!shouldShowCity) continue;
+
+          ctx.save();
+          // Anchor point
+          ctx.beginPath();
+          ctx.arc(pt.x, pt.y - 4, 3, 0, Math.PI * 2);
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.85)";
+          ctx.fill();
+          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = isSelected ? "#0284c7" : "rgba(0, 0, 0, 0.7)";
+          ctx.stroke();
+
+          // City Name
+          ctx.shadowColor = "rgba(0,0,0,0.95)";
+          ctx.shadowBlur = 4;
+          ctx.shadowOffsetY = 1;
+          ctx.font = isSelected ? "bold 11.5px sans-serif" : "600 10px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.92)";
+          ctx.fillText(city.name, pt.x, pt.y + 8);
+          ctx.restore();
         }
       }
 
@@ -1226,8 +1283,8 @@ export function FullScreenWindRadar({
             className="pointer-events-auto grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
             aria-label="Back"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 19l-7-7 7-7" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <polyline points="15 18 9 12 15 6" />
             </svg>
           </button>
 
@@ -1252,10 +1309,10 @@ export function FullScreenWindRadar({
               className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
               aria-label="Details"
             >
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2">
-                <circle cx="12" cy="12" r="10" />
-                <line x1="12" y1="16" x2="12" y2="12" />
-                <line x1="12" y1="8" x2="12.01" y2="8" />
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <circle cx="12" cy="12" r="9.5" />
+                <line x1="12" y1="8" x2="12" y2="8.01" strokeWidth="2.5" />
+                <line x1="12" y1="11.5" x2="12" y2="16.5" />
               </svg>
             </button>
           </div>
@@ -1269,32 +1326,37 @@ export function FullScreenWindRadar({
             className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg"
             title={t("My Location")}
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-400" fill="none" stroke="currentColor" strokeWidth="2">
-              <circle cx="12" cy="12" r="8" />
-              <line x1="12" y1="2" x2="12" y2="6" />
-              <line x1="12" y1="18" x2="12" y2="22" />
-              <line x1="2" y1="12" x2="6" y2="12" />
-              <line x1="18" y1="12" x2="22" y2="12" />
-              <circle cx="12" cy="12" r="2" fill="currentColor" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-400" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="7" />
+              <line x1="12" y1="2" x2="12" y2="5.5" />
+              <line x1="12" y1="18.5" x2="12" y2="22" />
+              <line x1="2" y1="12" x2="5.5" y2="12" />
+              <line x1="18.5" y1="12" x2="22" y2="12" />
+              <circle cx="12" cy="12" r="2.5" fill="currentColor" stroke="none" />
             </svg>
           </button>
 
           {/* Zoom In */}
           <button
             onClick={zoomIn}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition text-lg font-bold shadow-lg"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg"
             aria-label="Zoom in"
           >
-            +
+            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="12" y1="5" x2="12" y2="19" />
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
 
           {/* Zoom Out */}
           <button
             onClick={zoomOut}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition text-lg font-bold shadow-lg"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg"
             aria-label="Zoom out"
           >
-            −
+            <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12" />
+            </svg>
           </button>
         </div>
 
@@ -1310,8 +1372,10 @@ export function FullScreenWindRadar({
             }`}
             title="Temperature Layer"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4.5 4.5 0 1 0 4 0z" />
+              <line x1="12" y1="9" x2="12" y2="14" strokeWidth="2" stroke="currentColor" />
+              <circle cx="12" cy="16.5" r="2" fill="currentColor" stroke="none" />
             </svg>
           </button>
 
@@ -1325,12 +1389,15 @@ export function FullScreenWindRadar({
             }`}
             title="Rain / Precipitation Radar"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="currentColor">
-              <path d="M12 2c-4 5.5-6 9-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-3-2-6.5-6-12z" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.5 19H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="currentColor" fillOpacity="0.2" />
+              <line x1="8" y1="15" x2="7" y2="19" strokeWidth="2" />
+              <line x1="12" y1="15" x2="11" y2="19" strokeWidth="2" />
+              <line x1="16" y1="15" x2="15" y2="19" strokeWidth="2" />
             </svg>
           </button>
 
-          {/* Wind layer — Flag icon */}
+          {/* Wind layer — Streamlines icon */}
           <button
             onClick={() => switchLayer("wind")}
             className={`relative grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
@@ -1340,9 +1407,10 @@ export function FullScreenWindRadar({
             }`}
             title="Wind Streamlines Radar"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
-              <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="currentColor" fillOpacity="0.4" />
-              <line x1="4" y1="22" x2="4" y2="15" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M9.59 4.59A2 2 0 1 1 11 8H2" />
+              <path d="M12.59 19.41A2 2 0 1 0 14 16H2" />
+              <path d="M15.73 7.73A2.5 2.5 0 1 1 17.5 12H2" />
             </svg>
             {activeLayer === "wind" && (
               <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
@@ -1358,12 +1426,13 @@ export function FullScreenWindRadar({
             className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg"
             title="Thunderstorm Radar"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-yellow-400" fill="currentColor">
-              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-yellow-400" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M17.5 17H9a7 7 0 1 1 6.71-9h1.79a4.5 4.5 0 1 1 0 9Z" fill="currentColor" fillOpacity="0.15" />
+              <polygon points="13 11 9 17 12 17 11 22 15 15 12 15 13 11" fill="currentColor" stroke="none" />
             </svg>
           </button>
 
-          {/* Camera / Satellite */}
+          {/* Satellite Imagery (Orbital Satellite) */}
           <button
             onClick={() => switchLayer("satellite")}
             className={`grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
@@ -1373,9 +1442,12 @@ export function FullScreenWindRadar({
             }`}
             title="ESRI World Satellite Imagery"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
-              <circle cx="12" cy="13" r="4" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-emerald-300" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M13 7l5-5 4 4-5 5" />
+              <path d="M11 9L7 5 3 9l4 4" />
+              <path d="M15 13l4 4-4 4-4-4" />
+              <path d="m9 15-5 5" />
+              <path d="m14 10 2 2-6 6-2-2 6-6Z" fill="currentColor" fillOpacity="0.25" />
             </svg>
           </button>
         </div>
@@ -1608,13 +1680,13 @@ export function FullScreenWindRadar({
             aria-label={isPlaying ? "Pause" : "Play"}
           >
             {isPlaying ? (
-              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="currentColor">
                 <rect x="6" y="4" width="4" height="16" rx="1.5" />
                 <rect x="14" y="4" width="4" height="16" rx="1.5" />
               </svg>
             ) : (
-              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 translate-x-0.5" fill="currentColor">
-                <path d="M8 5v14l11-7z" />
+              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 translate-x-0.5 text-white" fill="currentColor">
+                <path d="M7 4.77v14.46a1 1 0 0 0 1.5.86l12.05-7.23a1 1 0 0 0 0-1.72L8.5 3.91A1 1 0 0 0 7 4.77Z" />
               </svg>
             )}
           </button>
@@ -1645,11 +1717,12 @@ export function FullScreenWindRadar({
           {/* Recenter icon */}
           <button
             onClick={resetToLocation}
-            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/10 text-white/70 hover:text-white hover:bg-white/15 transition"
+            className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/10 text-white/70 hover:text-white hover:bg-white/15 transition active:scale-95"
             title="Recenter Map"
           >
-            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
+            <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-white/80" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <path d="M12 2v3m0 14v3M2 12h3m14 0h3" />
             </svg>
           </button>
         </div>
