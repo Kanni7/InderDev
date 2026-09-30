@@ -326,6 +326,7 @@ export interface LiveRadarCityWind {
   dir: string;
   deg: number;
   gust: number;
+  temp?: number;
 }
 
 export interface WindTimelineFrame {
@@ -335,11 +336,56 @@ export interface WindTimelineFrame {
   speed: number;
   dir: string;
   gust: number;
+  temp?: number;
+}
+
+export interface RainViewerFrame {
+  time: number;
+  path: string;
+  timeStr: string;
+}
+
+export interface RainViewerData {
+  host: string;
+  frames: RainViewerFrame[];
+}
+
+let RAINVIEWER_CACHE: { data: RainViewerData; ts: number } | null = null;
+
+/** Fetch real live Doppler precipitation radar tile metadata from RainViewer API */
+export async function fetchRainViewerFrames(): Promise<RainViewerData | null> {
+  if (RAINVIEWER_CACHE && Date.now() - RAINVIEWER_CACHE.ts < 5 * 60 * 1000) {
+    return RAINVIEWER_CACHE.data;
+  }
+  try {
+    const res = await fetch("https://api.rainviewer.com/public/weather-maps.json");
+    if (!res.ok) return null;
+    const json = await res.json();
+    const host: string = json.host || "https://tilecache.rainviewer.com";
+    const past: { time: number; path: string }[] = json.radar?.past || [];
+    const nowcast: { time: number; path: string }[] = json.radar?.nowcast || [];
+    const all = [...past, ...nowcast];
+    const frames: RainViewerFrame[] = all.map((f) => {
+      const d = new Date(f.time * 1000);
+      const h = d.getHours();
+      const m = String(d.getMinutes()).padStart(2, "0");
+      return {
+        time: f.time,
+        path: f.path,
+        timeStr: `${h}:${m}`,
+      };
+    });
+    const result = { host, frames };
+    RAINVIEWER_CACHE = { data: result, ts: Date.now() };
+    return result;
+  } catch {
+    return null;
+  }
 }
 
 const RADAR_WIND_CACHE = new Map<string, { data: Record<string, LiveRadarCityWind>; ts: number }>();
 
-/** Fetch real live wind readings for multiple Indian cities from Open-Meteo in a single batch call. */
+/** Fetch real live wind & temperature readings for multiple Indian cities from Open-Meteo in a single batch call. */
 export async function fetchRadarCitiesWind(
   cities: { name: string; lat: number; lng: number }[]
 ): Promise<Record<string, LiveRadarCityWind>> {
@@ -352,7 +398,7 @@ export async function fetchRadarCitiesWind(
   try {
     const lats = cities.map((c) => c.lat.toFixed(2)).join(",");
     const lons = cities.map((c) => c.lng.toFixed(2)).join(",");
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m`;
     const res = await fetch(url);
     if (!res.ok) return {};
     const raw = await res.json();
@@ -366,6 +412,7 @@ export async function fetchRadarCitiesWind(
           dir: windDirLabel(cur.wind_direction_10m),
           deg: Math.round(cur.wind_direction_10m),
           gust: Math.round(cur.wind_gusts_10m),
+          temp: cur.temperature_2m !== undefined ? Math.round(cur.temperature_2m) : undefined,
         };
       }
     }
@@ -376,17 +423,19 @@ export async function fetchRadarCitiesWind(
   }
 }
 
-/** Fetch real 7-day wind forecast timeline for the selected location from Open-Meteo. */
+/** Fetch real 7-day wind & temperature forecast timeline for the selected location from Open-Meteo. */
 export async function fetchWindTimeline(
   lat: number,
   lon: number,
-  currentWind: Wind
+  currentWind: Wind,
+  currentTemp?: number
 ): Promise<WindTimelineFrame[]> {
   const now = new Date();
   const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const baseTemp = currentTemp ?? 30;
 
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&daily=wind_speed_10m_max,wind_direction_10m_dominant,wind_gusts_10m_max&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=7`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&daily=wind_speed_10m_max,wind_direction_10m_dominant,wind_gusts_10m_max,temperature_2m_max&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m&timezone=auto&forecast_days=7`;
     const res = await fetch(url);
     if (!res.ok) throw new Error("fetch failed");
     const json = await res.json();
@@ -407,6 +456,7 @@ export async function fetchWindTimeline(
         speed: Math.max(2, Math.round(currentWind.speed * 0.9)),
         dir: currentWind.dir,
         gust: Math.round(currentWind.gust * 0.9),
+        temp: Math.round(baseTemp - 1),
       },
       {
         id: "now",
@@ -415,6 +465,7 @@ export async function fetchWindTimeline(
         speed: Math.round(currentWind.speed),
         dir: currentWind.dir,
         gust: Math.round(currentWind.gust),
+        temp: Math.round(baseTemp),
       },
       {
         id: "today",
@@ -423,6 +474,7 @@ export async function fetchWindTimeline(
         speed: Math.round(hourly?.wind_speed_10m?.[todayAftIdx] ?? currentWind.speed),
         dir: windDirLabel(hourly?.wind_direction_10m?.[todayAftIdx] ?? 270),
         gust: Math.round(hourly?.wind_gusts_10m?.[todayAftIdx] ?? currentWind.gust),
+        temp: Math.round(hourly?.temperature_2m?.[todayAftIdx] ?? baseTemp),
       },
       {
         id: "tomorrow",
@@ -431,6 +483,7 @@ export async function fetchWindTimeline(
         speed: Math.round(daily?.wind_speed_10m_max?.[1] ?? currentWind.speed),
         dir: windDirLabel(daily?.wind_direction_10m_dominant?.[1] ?? 270),
         gust: Math.round(daily?.wind_gusts_10m_max?.[1] ?? currentWind.gust),
+        temp: Math.round(daily?.temperature_2m_max?.[1] ?? baseTemp),
       },
       {
         id: "day2",
@@ -439,6 +492,7 @@ export async function fetchWindTimeline(
         speed: Math.round(daily?.wind_speed_10m_max?.[2] ?? currentWind.speed),
         dir: windDirLabel(daily?.wind_direction_10m_dominant?.[2] ?? 270),
         gust: Math.round(daily?.wind_gusts_10m_max?.[2] ?? currentWind.gust),
+        temp: Math.round(daily?.temperature_2m_max?.[2] ?? baseTemp),
       },
       {
         id: "day3",
@@ -447,16 +501,17 @@ export async function fetchWindTimeline(
         speed: Math.round(daily?.wind_speed_10m_max?.[3] ?? currentWind.speed),
         dir: windDirLabel(daily?.wind_direction_10m_dominant?.[3] ?? 270),
         gust: Math.round(daily?.wind_gusts_10m_max?.[3] ?? currentWind.gust),
+        temp: Math.round(daily?.temperature_2m_max?.[3] ?? baseTemp),
       },
     ];
   } catch {
     return [
-      { id: "-24h", label: "- 24 h", timeStr: "Yesterday 10:00", speed: Math.max(2, Math.round(currentWind.speed * 0.9)), dir: currentWind.dir, gust: currentWind.gust },
-      { id: "now", label: "now", timeStr: `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`, speed: currentWind.speed, dir: currentWind.dir, gust: currentWind.gust },
-      { id: "today", label: "today", timeStr: "Today 16:00", speed: Math.round(currentWind.speed * 1.1), dir: currentWind.dir, gust: currentWind.gust },
-      { id: "tomorrow", label: "tomorrow", timeStr: "Tomorrow 12:00", speed: Math.round(currentWind.speed * 0.95), dir: currentWind.dir, gust: currentWind.gust },
-      { id: "fri", label: "Fri", timeStr: "Friday 14:00", speed: Math.round(currentWind.speed * 1.05), dir: currentWind.dir, gust: currentWind.gust },
-      { id: "sat", label: "Sat", timeStr: "Saturday 11:00", speed: Math.round(currentWind.speed * 0.85), dir: currentWind.dir, gust: currentWind.gust },
+      { id: "-24h", label: "- 24 h", timeStr: "Yesterday 10:00", speed: Math.max(2, Math.round(currentWind.speed * 0.9)), dir: currentWind.dir, gust: currentWind.gust, temp: Math.round(baseTemp - 1) },
+      { id: "now", label: "now", timeStr: `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`, speed: currentWind.speed, dir: currentWind.dir, gust: currentWind.gust, temp: Math.round(baseTemp) },
+      { id: "today", label: "today", timeStr: "Today 16:00", speed: Math.round(currentWind.speed * 1.1), dir: currentWind.dir, gust: currentWind.gust, temp: Math.round(baseTemp + 2) },
+      { id: "tomorrow", label: "tomorrow", timeStr: "Tomorrow 12:00", speed: Math.round(currentWind.speed * 0.95), dir: currentWind.dir, gust: currentWind.gust, temp: Math.round(baseTemp) },
+      { id: "fri", label: "Fri", timeStr: "Friday 14:00", speed: Math.round(currentWind.speed * 1.05), dir: currentWind.dir, gust: currentWind.gust, temp: Math.round(baseTemp - 1) },
+      { id: "sat", label: "Sat", timeStr: "Saturday 11:00", speed: Math.round(currentWind.speed * 0.85), dir: currentWind.dir, gust: currentWind.gust, temp: Math.round(baseTemp) },
     ];
   }
 }

@@ -7,7 +7,7 @@ import {
 } from "./data";
 import { getWeatherTheme, type Condition } from "./theme";
 import { PhotoHero, SunArc, PrecipCard, PollenCard, TravelCard, PackingCard, WindCard, HumidityCard, DewPointCard, PressureCard, MoonCard, HourlyInteractiveGraph } from "./ui";
-import { RainMapWidget, FullScreenRadar } from "./RainRadar";
+import { RainMapWidget } from "./RainRadar";
 import FullScreenWindRadar from "./WindRadar";
 import { WidgetDetailModal, type DetailType } from "./screens";
 import { makeT, type Lang } from "./i18n";
@@ -89,7 +89,7 @@ export default function Home({
   const [citySearchQuery, setCitySearchQuery] = useState("");
   const [showLocations, setShowLocations] = useState(false);
   const [showRadar, setShowRadar] = useState(false);
-  const [radarLayer, setRadarLayer] = useState<"rain" | "wind">("wind");
+  const [radarLayer, setRadarLayer] = useState<"rain" | "wind" | "temp" | "satellite">("wind");
   const [activeDetail, setActiveDetail] = useState<DetailType | null>(null);
 
   const filteredLocations = locations.filter((l) =>
@@ -240,31 +240,16 @@ export default function Home({
 
   return (
     <div className="relative z-10 h-full">
-      {/* Full-screen radar overlay */}
-      {showRadar && radarLayer === "wind" && (
+      {/* Full-screen weather & radar overlay with real GIS basemaps and live data */}
+      {showRadar && (
         <FullScreenWindRadar
           location={location}
           accent={accent}
           lang={lang}
+          initialLayer={radarLayer}
           onClose={() => setShowRadar(false)}
           onSwitchLayer={(layer) => {
-            if (layer === "rain") setRadarLayer("rain");
-          }}
-        />
-      )}
-      {showRadar && radarLayer === "rain" && (
-        <FullScreenRadar
-          condition={location.condition}
-          chance={location.precip.chance}
-          accent={accent}
-          city={location.city}
-          lang={lang}
-          locationKey={location.key}
-          wind={location.wind}
-          temp={location.temp}
-          onClose={() => setShowRadar(false)}
-          onSwitchLayer={(layer) => {
-            if (layer === "wind") setRadarLayer("wind");
+            setRadarLayer(layer);
           }}
         />
       )}

@@ -117,9 +117,20 @@ export default function DemoPanel({
       if (day.vehicleCommuteMin !== undefined) signals.vehicleCommuteMin += day.vehicleCommuteMin;
       if (day.vehicleLongTripMin !== undefined) signals.vehicleLongTripMin += day.vehicleLongTripMin;
       if (day.schoolRunWalks !== undefined) signals.schoolRunWalks += day.schoolRunWalks;
+      const moduleInteractions = { ...p.moduleInteractions };
+      for (const [mod, n] of Object.entries(day.taps ?? {})) {
+        const cur = moduleInteractions[mod] ?? { taps: 0, scrollPasts: 0 };
+        moduleInteractions[mod] = { ...cur, taps: cur.taps + n };
+      }
+      const askWhyTopics = { ...p.askWhyTopics };
+      for (const [topic, n] of Object.entries(day.askWhy ?? {})) {
+        askWhyTopics[topic] = (askWhyTopics[topic] ?? 0) + (n ?? 0);
+      }
       return {
         ...p,
         activitySignals: signals,
+        moduleInteractions,
+        askWhyTopics,
         locationContext: day.locationContext ?? p.locationContext,
       };
     });

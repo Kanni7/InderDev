@@ -1,14 +1,26 @@
 import { useState, useRef, useEffect, useCallback, useMemo } from "react";
 import { makeT, type Lang } from "./i18n";
 import type { Wind, Location } from "./data";
-import { fetchRadarCitiesWind, fetchWindTimeline, type LiveRadarCityWind, type WindTimelineFrame } from "../data/openMeteo";
+import {
+  fetchRadarCitiesWind,
+  fetchWindTimeline,
+  fetchRainViewerFrames,
+  type LiveRadarCityWind,
+  type WindTimelineFrame,
+  type RainViewerData,
+} from "../data/openMeteo";
 import * as I from "./icons";
 
 /* ─────────────────── CONFIGURATION ─────────────────── */
 
-// Reliable public tile mirror (OpenStreetMap German mirror with full CORS and no API keys)
-export const TILE_URL_PRIMARY = "https://tile.openstreetmap.de/{z}/{x}/{y}.png";
-export const TILE_URL_FALLBACK = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png";
+// Authentic GIS Basemaps (CartoDB Dark Matter & ESRI World Imagery)
+export const TILE_URL_CARTO_DARK = "https://a.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
+export const TILE_URL_CARTO_DARK_FALLBACK = "https://b.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}.png";
+export const TILE_URL_PRIMARY = TILE_URL_CARTO_DARK;
+export const TILE_URL_FALLBACK = TILE_URL_CARTO_DARK_FALLBACK;
+
+export const TILE_URL_ESRI_SATELLITE = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
+export const TILE_URL_ESRI_REFERENCE = "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
 
 // Coordinates for core cities supported by the app
 export const APP_CITY_COORDS: Record<string, { lat: number; lng: number }> = {
@@ -224,7 +236,10 @@ function useTilePositions(
   center: { lat: number; lng: number },
   zoom: number,
   w: number,
-  h: number
+  h: number,
+  layer: "wind" | "rain" | "temp" | "satellite" = "wind",
+  rainViewerData?: RainViewerData | null,
+  rainFrameIndex: number = 0
 ) {
   return useMemo(() => {
     // Strictly integer zoom for standard web slippy tiles
@@ -234,16 +249,59 @@ function useTilePositions(
     const nx = Math.ceil(w / 256) + 2;
     const ny = Math.ceil(h / 256) + 2;
     const max = Math.pow(2, z) - 1;
-    const out: { url: string; dx: number; dy: number; key: string; z: number; wx: number; ty: number }[] = [];
+    const out: {
+      key: string;
+      dx: number;
+      dy: number;
+      baseTileUrl: string;
+      fallbackUrl: string;
+      overlayUrl?: string;
+      rainTileUrl?: string;
+      z: number;
+      wx: number;
+      ty: number;
+    }[] = [];
+
+    const rainFrame =
+      rainViewerData?.frames && rainViewerData.frames.length > 0
+        ? rainViewerData.frames[Math.min(rainFrameIndex, rainViewerData.frames.length - 1)]
+        : undefined;
+
     for (let tx = Math.floor(cx - nx / 2); tx <= Math.ceil(cx + nx / 2); tx++) {
       for (let ty = Math.floor(cy - ny / 2); ty <= Math.ceil(cy + ny / 2); ty++) {
         if (ty < 0 || ty > max) continue;
         const wx = ((tx % (max + 1)) + max + 1) % (max + 1);
+        const dx = (tx - cx) * 256 + w / 2;
+        const dy = (ty - cy) * 256 + h / 2;
+
+        let baseTileUrl: string;
+        let fallbackUrl: string;
+        let overlayUrl: string | undefined;
+
+        if (layer === "satellite") {
+          // ESRI slippy tiles use {z}/{y}/{x}
+          baseTileUrl = TILE_URL_ESRI_SATELLITE.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx));
+          fallbackUrl = baseTileUrl;
+          overlayUrl = TILE_URL_ESRI_REFERENCE.replace("{z}", String(z)).replace("{y}", String(ty)).replace("{x}", String(wx));
+        } else {
+          // CartoDB Dark Matter slippy tiles {z}/{x}/{y}
+          baseTileUrl = TILE_URL_CARTO_DARK.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty));
+          fallbackUrl = TILE_URL_CARTO_DARK_FALLBACK.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty));
+        }
+
+        let rainTileUrl: string | undefined;
+        if (layer === "rain" && rainViewerData && rainFrame) {
+          rainTileUrl = `${rainViewerData.host}${rainFrame.path}/256/${z}/${wx}/${ty}/2/1_1.png`;
+        }
+
         out.push({
-          url: TILE_URL_PRIMARY.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty)),
-          dx: (tx - cx) * 256 + w / 2,
-          dy: (ty - cy) * 256 + h / 2,
           key: `${z}/${wx}/${ty}`,
+          dx,
+          dy,
+          baseTileUrl,
+          fallbackUrl,
+          overlayUrl,
+          rainTileUrl,
           z,
           wx,
           ty,
@@ -251,7 +309,7 @@ function useTilePositions(
       }
     }
     return out;
-  }, [center.lat, center.lng, zoom, w, h]);
+  }, [center.lat, center.lng, zoom, w, h, layer, rainViewerData, rainFrameIndex]);
 }
 
 /* ─────────────────── METEOROLOGICAL FLOW VECTORS ─────────────────── */
@@ -306,12 +364,18 @@ function WindMapCanvas({
   wind,
   selectedCityName,
   liveCitiesWind,
+  activeLayer = "wind",
+  rainViewerData,
+  rainFrameIndex = 0,
 }: {
   center: { lat: number; lng: number };
   zoom: number;
   wind: Wind;
   selectedCityName: string;
   liveCitiesWind: Record<string, LiveRadarCityWind>;
+  activeLayer?: "wind" | "rain" | "temp" | "satellite";
+  rainViewerData?: RainViewerData | null;
+  rainFrameIndex?: number;
 }) {
   const containerRef = useRef<HTMLDivElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -335,14 +399,14 @@ function WindMapCanvas({
   }, []);
 
   const { w, h } = size;
-  const tiles = useTilePositions(center, zoom, w, h);
+  const tiles = useTilePositions(center, zoom, w, h, activeLayer, rainViewerData, rainFrameIndex);
 
   // Initialize particles with calm, realistic velocity
   useEffect(() => {
     const count = Math.min(160, Math.floor((w * h) / 2400));
     const parts: WindParticle[] = [];
 
-    // Realistic calm wind speed in px/frame (approx 0.25 to 0.55 px per frame at 60 FPS)
+    // Realistic calm wind speed in px/frame (approx 0.22 to 0.55 px per frame at 60 FPS)
     const normSpeed = Math.max(3, Math.min(50, wind.speed));
     const basePxSpeed = 0.22 + (normSpeed / 50) * 0.32;
 
@@ -380,174 +444,141 @@ function WindMapCanvas({
 
       ctx.clearRect(0, 0, w, h);
 
-      // ── 1. DRAW ATMOSPHERIC TINT & COASTLINES / STATE BOUNDARIES ──
-      // Soft translucent emerald green tint allows dark map tiles & land boundaries to shine through
-      const gradBg = ctx.createLinearGradient(0, 0, w, h);
-      gradBg.addColorStop(0, "rgba(20, 83, 45, 0.22)");
-      gradBg.addColorStop(0.5, "rgba(22, 101, 52, 0.18)");
-      gradBg.addColorStop(1, "rgba(21, 128, 61, 0.24)");
-      ctx.fillStyle = gradBg;
-      ctx.fillRect(0, 0, w, h);
+      // ── 1. ACTIVE LAYER SPECIFIC ATMOSPHERE & HALOS ──
+      if (activeLayer === "wind") {
+        // Soft translucent atmospheric emerald tint
+        const gradBg = ctx.createLinearGradient(0, 0, w, h);
+        gradBg.addColorStop(0, "rgba(6, 78, 59, 0.12)");
+        gradBg.addColorStop(0.5, "rgba(4, 120, 87, 0.08)");
+        gradBg.addColorStop(1, "rgba(6, 78, 59, 0.14)");
+        ctx.fillStyle = gradBg;
+        ctx.fillRect(0, 0, w, h);
 
-      // Helper to draw projected geographic boundary polylines with dual-layer glow
-      const drawBorderPolyline = (
-        coords: [number, number][],
-        glowColor: string,
-        lineColor: string,
-        width = 1.8
-      ) => {
-        if (coords.length < 2) return;
-        ctx.beginPath();
-        let started = false;
-        for (let i = 0; i < coords.length; i++) {
-          const pt = geoToPixel(coords[i][0], coords[i][1], center, zoom, w, h);
-          if (!started) {
-            ctx.moveTo(pt.x, pt.y);
-            started = true;
-          } else {
-            ctx.lineTo(pt.x, pt.y);
+        // Render soft heat halos around real cities based on their live wind speeds
+        for (const city of WIND_CITIES) {
+          const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
+          const live = liveCitiesWind[city.name.toLowerCase()];
+          const speed = isSelected ? wind.speed : (live?.speed ?? city.baseSpeed);
+
+          if (speed > 13) {
+            const pt = geoToPixel(city.lat, city.lng, center, zoom, w, h);
+            if (pt.x < -80 || pt.x > w + 80 || pt.y < -80 || pt.y > h + 80) continue;
+
+            const rad = (Math.min(speed, 40) / 25) * 65 * Math.pow(1.15, zoom - 6);
+            const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rad);
+
+            if (speed >= 28) {
+              g.addColorStop(0, "rgba(245, 158, 11, 0.38)");
+              g.addColorStop(0.6, "rgba(234, 179, 8, 0.14)");
+              g.addColorStop(1, "rgba(34, 197, 94, 0)");
+            } else if (speed >= 18) {
+              g.addColorStop(0, "rgba(163, 230, 53, 0.28)");
+              g.addColorStop(0.6, "rgba(132, 204, 22, 0.12)");
+              g.addColorStop(1, "rgba(34, 197, 94, 0)");
+            } else {
+              g.addColorStop(0, "rgba(74, 222, 128, 0.20)");
+              g.addColorStop(1, "rgba(34, 197, 94, 0)");
+            }
+
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2);
+            ctx.fill();
           }
         }
-        ctx.save();
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        // Pass 1: soft outer glow
-        ctx.strokeStyle = glowColor;
-        ctx.lineWidth = width + 2.5;
-        ctx.stroke();
-        // Pass 2: sharp high-contrast boundary
-        ctx.strokeStyle = lineColor;
-        ctx.lineWidth = width;
-        ctx.stroke();
-        ctx.restore();
-      };
 
-      // Helper to draw dashed state boundaries
-      const drawDashedBorder = (
-        coords: [number, number][],
-        color = "rgba(255, 255, 255, 0.52)",
-        width = 1.2
-      ) => {
-        if (coords.length < 2) return;
-        ctx.beginPath();
-        let started = false;
-        for (let i = 0; i < coords.length; i++) {
-          const pt = geoToPixel(coords[i][0], coords[i][1], center, zoom, w, h);
-          if (!started) {
-            ctx.moveTo(pt.x, pt.y);
-            started = true;
-          } else {
-            ctx.lineTo(pt.x, pt.y);
+        // Draw flowing meteorological particles & streamlines
+        const parts = particlesRef.current;
+        for (let i = 0; i < parts.length; i++) {
+          const p = parts[i];
+          p.age++;
+
+          const vec = getWindFlowVector(wind.dir, p.x, p.y, w, h);
+          p.x += vec.vx * p.speed;
+          p.y += vec.vy * p.speed;
+
+          p.trail.push({ x: p.x, y: p.y });
+          if (p.trail.length > 4) p.trail.shift();
+
+          if (p.age > p.maxAge || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) {
+            p.x = Math.random() * w;
+            p.y = Math.random() * h;
+            p.age = 0;
+            p.maxAge = 60 + Math.floor(Math.random() * 50);
+            p.trail = [{ x: p.x, y: p.y }];
+          }
+
+          if (p.trail.length >= 2) {
+            const progress = p.age / p.maxAge;
+            const alpha = Math.sin(progress * Math.PI) * 0.65;
+            ctx.beginPath();
+            ctx.moveTo(p.trail[0].x, p.trail[0].y);
+            for (let t = 1; t < p.trail.length; t++) {
+              ctx.lineTo(p.trail[t].x, p.trail[t].y);
+            }
+            ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0.08, alpha)})`;
+            ctx.lineWidth = 1.4;
+            ctx.lineCap = "round";
+            ctx.stroke();
+
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, 1.1, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
+            ctx.fill();
           }
         }
-        ctx.save();
-        ctx.strokeStyle = color;
-        ctx.lineWidth = width;
-        ctx.lineCap = "round";
-        ctx.lineJoin = "round";
-        ctx.setLineDash([5, 4]);
-        ctx.stroke();
-        ctx.restore();
-      };
+      } else if (activeLayer === "temp") {
+        // Soft atmospheric thermal tint
+        const gradBg = ctx.createLinearGradient(0, 0, w, h);
+        gradBg.addColorStop(0, "rgba(180, 83, 9, 0.08)");
+        gradBg.addColorStop(0.5, "rgba(217, 119, 6, 0.06)");
+        gradBg.addColorStop(1, "rgba(180, 83, 9, 0.10)");
+        ctx.fillStyle = gradBg;
+        ctx.fillRect(0, 0, w, h);
 
-      // Explicit vector coastlines & national borders (glowing emerald mint lines)
-      const GLOW = "rgba(52, 211, 153, 0.38)";
-      const LINE = "rgba(167, 243, 208, 0.90)";
-      drawBorderPolyline(COASTLINE_WEST, GLOW, LINE, 1.8);
-      drawBorderPolyline(COASTLINE_EAST, GLOW, LINE, 1.8);
-      drawBorderPolyline(NORTH_WEST_BORDER, GLOW, LINE, 1.8);
-      drawBorderPolyline(NORTHERN_HIMALAYAN_BORDER, GLOW, LINE, 1.8);
-      drawBorderPolyline(NORTHEAST_BORDER, GLOW, LINE, 1.8);
-      drawBorderPolyline(BANGLADESH_BORDER, GLOW, LINE, 1.8);
-      drawBorderPolyline(SRI_LANKA_COAST, GLOW, LINE, 1.8);
-
-      // State boundaries across India (crisp dashed lines)
-      for (const border of STATE_BORDERS) {
-        drawDashedBorder(border, "rgba(255, 255, 255, 0.52)", 1.2);
-      }
-
-      // Render soft heat halos around real cities based on their live wind speeds
-      for (const city of WIND_CITIES) {
-        const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
-        const live = liveCitiesWind[city.name.toLowerCase()];
-        const speed = isSelected ? wind.speed : (live?.speed ?? city.baseSpeed);
-
-        // Only draw warm halos for cities with notable breeze (>14 km/h)
-        if (speed > 13) {
+        // Thermal halos around Indian cities based on real temperature
+        for (const city of WIND_CITIES) {
+          const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
+          const live = liveCitiesWind[city.name.toLowerCase()];
+          const temp = isSelected ? (live?.temp ?? 29) : (live?.temp ?? 28);
           const pt = geoToPixel(city.lat, city.lng, center, zoom, w, h);
           if (pt.x < -80 || pt.x > w + 80 || pt.y < -80 || pt.y > h + 80) continue;
 
-          const rad = (Math.min(speed, 40) / 25) * 80 * Math.pow(1.2, zoom - 6);
+          const rad = 50 * Math.pow(1.15, zoom - 6);
           const g = ctx.createRadialGradient(pt.x, pt.y, 0, pt.x, pt.y, rad);
-
-          if (speed >= 28) {
-            // High wind: warm amber
-            g.addColorStop(0, "rgba(245, 158, 11, 0.48)");
-            g.addColorStop(0.5, "rgba(234, 179, 8, 0.22)");
-            g.addColorStop(1, "rgba(34, 197, 94, 0)");
-          } else if (speed >= 18) {
-            // Moderate breeze: yellow-lime
-            g.addColorStop(0, "rgba(163, 230, 53, 0.38)");
-            g.addColorStop(0.5, "rgba(132, 204, 22, 0.18)");
+          if (temp >= 35) {
+            g.addColorStop(0, "rgba(239, 68, 68, 0.40)");
+            g.addColorStop(0.6, "rgba(249, 115, 22, 0.16)");
+            g.addColorStop(1, "rgba(239, 68, 68, 0)");
+          } else if (temp >= 30) {
+            g.addColorStop(0, "rgba(245, 158, 11, 0.35)");
+            g.addColorStop(0.6, "rgba(234, 179, 8, 0.14)");
+            g.addColorStop(1, "rgba(245, 158, 11, 0)");
+          } else if (temp >= 24) {
+            g.addColorStop(0, "rgba(34, 197, 94, 0.28)");
+            g.addColorStop(0.6, "rgba(16, 185, 129, 0.12)");
             g.addColorStop(1, "rgba(34, 197, 94, 0)");
           } else {
-            // Gentle breeze: lime-green
-            g.addColorStop(0, "rgba(74, 222, 128, 0.28)");
-            g.addColorStop(1, "rgba(34, 197, 94, 0)");
+            g.addColorStop(0, "rgba(56, 189, 248, 0.32)");
+            g.addColorStop(0.6, "rgba(14, 165, 233, 0.12)");
+            g.addColorStop(1, "rgba(56, 189, 248, 0)");
           }
-
           ctx.fillStyle = g;
           ctx.beginPath();
           ctx.arc(pt.x, pt.y, rad, 0, Math.PI * 2);
           ctx.fill();
         }
+      } else if (activeLayer === "rain") {
+        // Atmospheric cool rain tint
+        const gradBg = ctx.createLinearGradient(0, 0, w, h);
+        gradBg.addColorStop(0, "rgba(14, 165, 233, 0.08)");
+        gradBg.addColorStop(0.5, "rgba(2, 132, 199, 0.05)");
+        gradBg.addColorStop(1, "rgba(14, 165, 233, 0.10)");
+        ctx.fillStyle = gradBg;
+        ctx.fillRect(0, 0, w, h);
       }
 
-      // ── 2. DRAW FLOWING PARTICLES & STREAMLINES ──
-      const parts = particlesRef.current;
-      for (let i = 0; i < parts.length; i++) {
-        const p = parts[i];
-        p.age++;
-
-        const vec = getWindFlowVector(wind.dir, p.x, p.y, w, h);
-        p.x += vec.vx * p.speed;
-        p.y += vec.vy * p.speed;
-
-        p.trail.push({ x: p.x, y: p.y });
-        if (p.trail.length > 4) p.trail.shift();
-
-        // Respawn when exceeding max age or bounds
-        if (p.age > p.maxAge || p.x < -20 || p.x > w + 20 || p.y < -20 || p.y > h + 20) {
-          p.x = Math.random() * w;
-          p.y = Math.random() * h;
-          p.age = 0;
-          p.maxAge = 60 + Math.floor(Math.random() * 50);
-          p.trail = [{ x: p.x, y: p.y }];
-        }
-
-        // Draw smooth, delicate streamline with gentle alpha
-        if (p.trail.length >= 2) {
-          const progress = p.age / p.maxAge;
-          const alpha = Math.sin(progress * Math.PI) * 0.65;
-          ctx.beginPath();
-          ctx.moveTo(p.trail[0].x, p.trail[0].y);
-          for (let t = 1; t < p.trail.length; t++) {
-            ctx.lineTo(p.trail[t].x, p.trail[t].y);
-          }
-          ctx.strokeStyle = `rgba(255, 255, 255, ${Math.max(0.08, alpha)})`;
-          ctx.lineWidth = 1.4;
-          ctx.lineCap = "round";
-          ctx.stroke();
-
-          // Soft leading dot
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 1.1, 0, Math.PI * 2);
-          ctx.fillStyle = `rgba(255, 255, 255, ${alpha * 0.85})`;
-          ctx.fill();
-        }
-      }
-
-      // ── 3. DRAW CITIES & REAL WIND READINGS ──
+      // ── 2. DRAW CITIES & REAL METRIC READINGS ──
       ctx.textAlign = "center";
       ctx.textBaseline = "middle";
 
@@ -558,16 +589,15 @@ function WindMapCanvas({
         const isSelected = city.name.toLowerCase() === selectedCityName.toLowerCase();
         const live = liveCitiesWind[city.name.toLowerCase()];
         const displaySpeed = isSelected ? wind.speed : (live?.speed ?? city.baseSpeed);
+        const displayTemp = isSelected ? (live?.temp ?? 29) : (live?.temp ?? 28);
 
         // Highlight active selected location with red location pin
         if (isSelected) {
-          // Subtle pulse ring
           ctx.beginPath();
           ctx.arc(pt.x, pt.y - 12, 14, 0, Math.PI * 2);
           ctx.fillStyle = "rgba(239, 68, 68, 0.25)";
           ctx.fill();
 
-          // Red location pin
           ctx.beginPath();
           ctx.arc(pt.x, pt.y - 12, 7, 0, Math.PI * 2);
           ctx.fillStyle = "#ef4444";
@@ -576,29 +606,34 @@ function WindMapCanvas({
           ctx.strokeStyle = "#ffffff";
           ctx.stroke();
 
-          // Inner white core
           ctx.beginPath();
           ctx.arc(pt.x, pt.y - 12, 2.5, 0, Math.PI * 2);
           ctx.fillStyle = "#ffffff";
           ctx.fill();
         }
 
-        // Draw Speed Label: e.g. "9 kph"
-        const speedY = isSelected ? pt.y + 4 : pt.y - 6;
+        // Draw primary metric label according to active layer
+        const metricY = isSelected ? pt.y + 4 : pt.y - 6;
         const nameY = isSelected ? pt.y + 16 : pt.y + 6;
 
-        ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-        ctx.shadowBlur = 4;
+        ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
+        ctx.shadowBlur = 5;
         ctx.shadowOffsetX = 0;
         ctx.shadowOffsetY = 1;
 
-        ctx.font = isSelected ? "bold 11px sans-serif" : "600 10.5px sans-serif";
-        ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.95)";
-        ctx.fillText(`${displaySpeed} kph`, pt.x, speedY);
+        if (activeLayer === "temp") {
+          ctx.font = isSelected ? "bold 13px sans-serif" : "bold 11.5px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 240, 200, 0.95)";
+          ctx.fillText(`${displayTemp}°`, pt.x, metricY);
+        } else if (activeLayer === "wind") {
+          ctx.font = isSelected ? "bold 11px sans-serif" : "600 10.5px sans-serif";
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.95)";
+          ctx.fillText(`${displaySpeed} kph`, pt.x, metricY);
+        }
 
         // Draw City Name: e.g. "Pune"
         ctx.font = isSelected ? "bold 12px sans-serif" : "500 10.5px sans-serif";
-        ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.88)";
+        ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.90)";
         ctx.fillText(city.name, pt.x, nameY);
 
         ctx.shadowColor = "transparent";
@@ -613,51 +648,98 @@ function WindMapCanvas({
       running = false;
       if (animRef.current) cancelAnimationFrame(animRef.current);
     };
-  }, [w, h, center, zoom, wind.dir, wind.speed, selectedCityName, liveCitiesWind]);
+  }, [w, h, center, zoom, wind.dir, wind.speed, selectedCityName, liveCitiesWind, activeLayer]);
 
   return (
     <div
       ref={containerRef}
       className="relative h-full w-full select-none overflow-hidden"
-      style={{ background: "#0c1814" }}
+      style={{ background: activeLayer === "satellite" ? "#060a0f" : "#0c151c" }}
     >
-      {/* Layer 1: Dark Radar Basemap tiles showing geographical land, roads & coastlines */}
-      <div
-        className="pointer-events-none absolute inset-0"
-        style={{
-          filter: "invert(1) hue-rotate(185deg) brightness(0.78) contrast(1.25) saturate(0.35)",
-        }}
-      >
+      {/* Layer 1: Real GIS Basemap Tiles (CartoDB Dark Matter or ESRI World Imagery) */}
+      <div className="pointer-events-none absolute inset-0">
         {tiles.map((t) => (
-          <img
+          <div
             key={t.key}
-            src={t.url}
-            alt=""
-            draggable={false}
-            loading="lazy"
-            crossOrigin="anonymous"
-            onError={(e) => {
-              const img = e.target as HTMLImageElement;
-              if (!img.dataset.retried) {
-                img.dataset.retried = "1";
-                img.src = TILE_URL_FALLBACK.replace("{z}", String(t.z)).replace("{x}", String(t.wx)).replace("{y}", String(t.ty));
-              } else {
-                img.style.visibility = "hidden";
-              }
-            }}
             style={{
               position: "absolute",
               left: t.dx,
               top: t.dy,
               width: 256,
               height: 256,
-              display: "block",
             }}
-          />
+          >
+            {/* Basemap tile: CartoDB Dark Matter or ESRI Satellite */}
+            <img
+              src={t.baseTileUrl}
+              alt=""
+              draggable={false}
+              loading="lazy"
+              crossOrigin="anonymous"
+              onError={(e) => {
+                const img = e.target as HTMLImageElement;
+                if (!img.dataset.retried && t.fallbackUrl) {
+                  img.dataset.retried = "1";
+                  img.src = t.fallbackUrl;
+                } else {
+                  img.style.visibility = "hidden";
+                }
+              }}
+              style={{
+                position: "absolute",
+                inset: 0,
+                width: 256,
+                height: 256,
+                display: "block",
+              }}
+            />
+
+            {/* Satellite ESRI Boundaries & Place Names overlay */}
+            {t.overlayUrl && (
+              <img
+                src={t.overlayUrl}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                crossOrigin="anonymous"
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: 256,
+                  height: 256,
+                  display: "block",
+                  opacity: 0.9,
+                }}
+              />
+            )}
+
+            {/* Live RainViewer Radar Doppler Precipitation tile overlay */}
+            {t.rainTileUrl && (
+              <img
+                src={t.rainTileUrl}
+                alt=""
+                draggable={false}
+                loading="lazy"
+                crossOrigin="anonymous"
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = "none";
+                }}
+                style={{
+                  position: "absolute",
+                  inset: 0,
+                  width: 256,
+                  height: 256,
+                  display: "block",
+                  opacity: 0.85,
+                  mixBlendMode: "screen",
+                }}
+              />
+            )}
+          </div>
         ))}
       </div>
 
-      {/* Layer 2: Real-time wind streamlines and city readings */}
+      {/* Layer 2: Dynamic Meteorological Overlays */}
       <canvas
         ref={canvasRef}
         className="pointer-events-none absolute inset-0 h-full w-full"
@@ -674,14 +756,16 @@ export function FullScreenWindRadar({
   location,
   accent,
   lang,
+  initialLayer = "wind",
   onClose,
   onSwitchLayer,
 }: {
   location: Location;
   accent: string;
   lang: Lang;
+  initialLayer?: "rain" | "wind" | "temp" | "satellite";
   onClose: () => void;
-  onSwitchLayer?: (layer: "rain" | "wind" | "temp") => void;
+  onSwitchLayer?: (layer: "rain" | "wind" | "temp" | "satellite") => void;
 }) {
   const t = makeT(lang);
 
@@ -704,15 +788,22 @@ export function FullScreenWindRadar({
     setCenter(selectedCityCenter);
   }, [selectedCityCenter]);
 
-  // Real live wind data state
+  // Real live data states
+  const [activeLayer, setActiveLayer] = useState<"rain" | "wind" | "temp" | "satellite">(initialLayer);
   const [liveCitiesWind, setLiveCitiesWind] = useState<Record<string, LiveRadarCityWind>>({});
   const [timelineFrames, setTimelineFrames] = useState<WindTimelineFrame[]>([]);
+  const [rainViewerData, setRainViewerData] = useState<RainViewerData | null>(null);
+  const [rainFrameIndex, setRainFrameIndex] = useState(0);
   const [timeIndex, setTimeIndex] = useState(1); // 1 = "now"
-  const [isPlaying, setIsPlaying] = useState(false); // Paused at "now" by default
+  const [isPlaying, setIsPlaying] = useState(false); // Paused by default
   const [showInfo, setShowInfo] = useState(false);
-  const [activeLayer, setActiveLayer] = useState<"rain" | "wind" | "temp">("wind");
 
-  // Fetch real live wind data for cities across India
+  // Sync activeLayer when initialLayer prop changes
+  useEffect(() => {
+    setActiveLayer(initialLayer);
+  }, [initialLayer]);
+
+  // Fetch real live wind & temp data for cities across India
   useEffect(() => {
     let mounted = true;
     fetchRadarCitiesWind(WIND_CITIES).then((data) => {
@@ -723,10 +814,27 @@ export function FullScreenWindRadar({
     };
   }, []);
 
+  // Fetch RainViewer Doppler precipitation radar metadata
+  useEffect(() => {
+    let mounted = true;
+    fetchRainViewerFrames().then((data) => {
+      if (mounted && data) {
+        setRainViewerData(data);
+        if (data.frames.length > 0) {
+          // Default to latest frame (or nowcast)
+          setRainFrameIndex(Math.max(0, data.frames.length - 1));
+        }
+      }
+    });
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
   // Fetch real timeline forecast for selected location
   useEffect(() => {
     let mounted = true;
-    fetchWindTimeline(selectedCityCenter.lat, selectedCityCenter.lng, location.wind).then((frames) => {
+    fetchWindTimeline(selectedCityCenter.lat, selectedCityCenter.lng, location.wind, location.temp).then((frames) => {
       if (mounted && frames.length > 0) {
         setTimelineFrames(frames);
       }
@@ -734,7 +842,7 @@ export function FullScreenWindRadar({
     return () => {
       mounted = false;
     };
-  }, [selectedCityCenter.lat, selectedCityCenter.lng, location.wind]);
+  }, [selectedCityCenter.lat, selectedCityCenter.lng, location.wind, location.temp]);
 
   // Current active wind reading based on timeline selection
   const activeFrame = timelineFrames[timeIndex];
@@ -749,27 +857,51 @@ export function FullScreenWindRadar({
     return location.wind;
   }, [activeFrame, timeIndex, location.wind]);
 
+  const activeTemp: number = useMemo(() => {
+    if (activeFrame && activeFrame.temp !== undefined && timeIndex !== 1) {
+      return activeFrame.temp;
+    }
+    return location.temp;
+  }, [activeFrame, timeIndex, location.temp]);
+
   // Fallback timeline labels if frames haven't loaded yet
   const displayTimeLabels = useMemo(() => {
     if (timelineFrames.length > 0) return timelineFrames;
     return [
-      { id: "-24h", label: "- 24 h", timeStr: "Yesterday 10:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust },
-      { id: "now", label: "now", timeStr: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2, "0")}`, speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust },
-      { id: "today", label: "today", timeStr: "Today 16:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust },
-      { id: "tomorrow", label: "tomorrow", timeStr: "Tomorrow 12:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust },
-      { id: "day2", label: "Fri", timeStr: "Friday 12:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust },
-      { id: "day3", label: "Sat", timeStr: "Saturday 12:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust },
+      { id: "-24h", label: "- 24 h", timeStr: "Yesterday 10:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust, temp: location.temp - 1 },
+      { id: "now", label: "now", timeStr: `${new Date().getHours()}:${String(new Date().getMinutes()).padStart(2, "0")}`, speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust, temp: location.temp },
+      { id: "today", label: "today", timeStr: "Today 16:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust, temp: location.temp + 1 },
+      { id: "tomorrow", label: "tomorrow", timeStr: "Tomorrow 12:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust, temp: location.temp },
+      { id: "day2", label: "Fri", timeStr: "Friday 12:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust, temp: location.temp },
+      { id: "day3", label: "Sat", timeStr: "Saturday 12:00", speed: location.wind.speed, dir: location.wind.dir, gust: location.wind.gust, temp: location.temp },
     ];
-  }, [timelineFrames, location.wind]);
+  }, [timelineFrames, location.wind, location.temp]);
+
+  const isRain = activeLayer === "rain";
+  const rainFrames = rainViewerData?.frames || [];
+
+  const currentTimeLabel = useMemo(() => {
+    if (isRain && rainFrames.length > 0) {
+      return rainFrames[rainFrameIndex]?.timeStr ?? "Now";
+    }
+    return displayTimeLabels[timeIndex]?.timeStr ?? "Now";
+  }, [isRain, rainFrames, rainFrameIndex, displayTimeLabels, timeIndex]);
 
   // Timelapse auto-play
   useEffect(() => {
     if (!isPlaying) return;
-    const interval = setInterval(() => {
-      setTimeIndex((prev) => (prev + 1) % displayTimeLabels.length);
-    }, 2400);
-    return () => clearInterval(interval);
-  }, [isPlaying, displayTimeLabels.length]);
+    if (isRain && rainFrames.length > 0) {
+      const interval = setInterval(() => {
+        setRainFrameIndex((prev) => (prev + 1) % rainFrames.length);
+      }, 1000);
+      return () => clearInterval(interval);
+    } else {
+      const interval = setInterval(() => {
+        setTimeIndex((prev) => (prev + 1) % displayTimeLabels.length);
+      }, 2200);
+      return () => clearInterval(interval);
+    }
+  }, [isPlaying, isRain, rainFrames.length, displayTimeLabels.length]);
 
   // Dragging / Panning support
   const isDraggingRef = useRef(false);
@@ -805,11 +937,14 @@ export function FullScreenWindRadar({
   const zoomOut = () => setZoom((z) => Math.max(5, z - 1));
   const resetToLocation = () => setCenter(selectedCityCenter);
 
-  const currentTimeLabel = displayTimeLabels[timeIndex]?.timeStr ?? "Now";
+  const switchLayer = (l: "rain" | "wind" | "temp" | "satellite") => {
+    setActiveLayer(l);
+    onSwitchLayer?.(l);
+  };
 
   return (
     <div
-      className="absolute inset-0 z-50 flex flex-col overflow-hidden bg-[#0c1814] text-white select-none animate-in fade-in duration-200"
+      className="absolute inset-0 z-50 flex flex-col overflow-hidden bg-[#0c151c] text-white select-none animate-in fade-in duration-200"
       onPointerDown={handlePointerDown}
       onPointerMove={handlePointerMove}
       onPointerUp={handlePointerUp}
@@ -823,6 +958,9 @@ export function FullScreenWindRadar({
           wind={activeWind}
           selectedCityName={location.city}
           liveCitiesWind={liveCitiesWind}
+          activeLayer={activeLayer}
+          rainViewerData={rainViewerData}
+          rainFrameIndex={rainFrameIndex}
         />
 
         {/* ── TOP BAR (Back + Header Brand + Share/Info) ── */}
@@ -830,7 +968,7 @@ export function FullScreenWindRadar({
           {/* Back button */}
           <button
             onClick={onClose}
-            className="pointer-events-auto grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/10 active:scale-95 transition"
+            className="pointer-events-auto grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
             aria-label="Back"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
@@ -839,13 +977,16 @@ export function FullScreenWindRadar({
           </button>
 
           {/* Central Logo Pill: weather & radar + Selected City Info */}
-          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/55 px-3.5 py-1.5 backdrop-blur-md border border-white/15 shadow-lg">
+          <div className="pointer-events-auto flex items-center gap-2 rounded-full bg-black/60 px-3.5 py-1.5 backdrop-blur-md border border-white/15 shadow-xl">
             <span className="text-[13px] font-bold tracking-tight text-white">weather</span>
             <span className="text-[13px] font-bold text-amber-400">&</span>
             <span className="text-[13px] font-bold tracking-tight text-sky-400">radar</span>
             <span className="h-3 w-px bg-white/20" />
             <span className="text-[12px] font-semibold text-emerald-300">
-              {location.city} {activeWind.speed} km/h
+              {activeLayer === "wind" && `${location.city} ${activeWind.speed} km/h`}
+              {activeLayer === "temp" && `${location.city} ${activeTemp}°C`}
+              {activeLayer === "rain" && `${location.city} Rain Radar`}
+              {activeLayer === "satellite" && `${location.city} Satellite`}
             </span>
           </div>
 
@@ -854,10 +995,10 @@ export function FullScreenWindRadar({
             <button
               onClick={() => {
                 if (navigator.share) {
-                  navigator.share({ title: `Wind Radar - ${location.city}`, url: window.location.href }).catch(() => {});
+                  navigator.share({ title: `Weather & Radar - ${location.city}`, url: window.location.href }).catch(() => {});
                 }
               }}
-              className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/10 active:scale-95 transition"
+              className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
               aria-label="Share"
             >
               <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2">
@@ -866,7 +1007,7 @@ export function FullScreenWindRadar({
             </button>
             <button
               onClick={() => setShowInfo((s) => !s)}
-              className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/10 active:scale-95 transition"
+              className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 transition shadow-lg"
               aria-label="Details"
             >
               <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2">
@@ -883,7 +1024,7 @@ export function FullScreenWindRadar({
           {/* Target / My Location button */}
           <button
             onClick={resetToLocation}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition shadow-lg"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg"
             title={t("My Location")}
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-400" fill="none" stroke="currentColor" strokeWidth="2">
@@ -899,7 +1040,7 @@ export function FullScreenWindRadar({
           {/* Zoom In */}
           <button
             onClick={zoomIn}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition text-lg font-bold shadow-lg"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition text-lg font-bold shadow-lg"
             aria-label="Zoom in"
           >
             +
@@ -908,7 +1049,7 @@ export function FullScreenWindRadar({
           {/* Zoom Out */}
           <button
             onClick={zoomOut}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition text-lg font-bold shadow-lg"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition text-lg font-bold shadow-lg"
             aria-label="Zoom out"
           >
             −
@@ -917,66 +1058,63 @@ export function FullScreenWindRadar({
 
         {/* ── RIGHT VERTICAL WEATHER LAYER SELECTOR ── */}
         <div className="absolute right-4 top-28 z-30 flex flex-col gap-2 pointer-events-auto">
-          {/* Cloud / Weather */}
+          {/* Temperature layer (Thermometer) */}
           <button
-            onClick={() => setActiveLayer("temp")}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition shadow-lg"
-            title="Weather / Clouds"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white/80" fill="currentColor">
-              <path d="M19.35 10.04C18.67 6.59 15.64 4 12 4 9.11 4 6.6 5.64 5.35 8.04 2.34 8.36 0 10.91 0 14c0 3.31 2.69 6 6 6h13c2.76 0 5-2.24 5-5 0-2.64-2.05-4.78-4.65-4.96z" />
-            </svg>
-          </button>
-
-          {/* Rain / Precip layer */}
-          <button
-            onClick={() => {
-              setActiveLayer("rain");
-              onSwitchLayer?.("rain");
-            }}
+            onClick={() => switchLayer("temp")}
             className={`grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
-              activeLayer === "rain"
-                ? "bg-sky-500/80 border-sky-400 text-white"
-                : "bg-black/50 border-white/15 text-white/80 hover:bg-black/60"
+              activeLayer === "temp"
+                ? "bg-amber-500/85 border-amber-300 text-white shadow-[0_0_15px_rgba(245,158,11,0.65)]"
+                : "bg-black/55 border-white/15 text-white/80 hover:bg-black/70"
             }`}
-            title="Rain Radar"
-          >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="currentColor">
-              <path d="M12 2c-4 5.5-6 9-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-3-2-6.5-6-12z" />
-            </svg>
-          </button>
-
-          {/* Temperature layer */}
-          <button
-            onClick={() => setActiveLayer("temp")}
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition shadow-lg"
-            title="Temperature"
+            title="Temperature Layer"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M14 14.76V3.5a2.5 2.5 0 0 0-5 0v11.26a4.5 4.5 0 1 0 5 0z" />
             </svg>
           </button>
 
-          {/* Wind layer — ACTIVE (Flag icon highlighted with blue glow) */}
+          {/* Rain / Precip layer (Doppler radar) */}
           <button
-            onClick={() => setActiveLayer("wind")}
-            className="relative grid h-10 w-10 place-items-center rounded-xl bg-blue-600 border border-blue-300 text-white shadow-[0_0_15px_rgba(37,99,235,0.7)] active:scale-95 transition"
-            title="Wind Radar (Active)"
+            onClick={() => switchLayer("rain")}
+            className={`grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
+              activeLayer === "rain"
+                ? "bg-sky-500/85 border-sky-300 text-white shadow-[0_0_15px_rgba(14,165,233,0.7)]"
+                : "bg-black/55 border-white/15 text-white/80 hover:bg-black/70"
+            }`}
+            title="Rain / Precipitation Radar"
+          >
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-300" fill="currentColor">
+              <path d="M12 2c-4 5.5-6 9-6 12 0 3.31 2.69 6 6 6s6-2.69 6-6c0-3-2-6.5-6-12z" />
+            </svg>
+          </button>
+
+          {/* Wind layer — Flag icon */}
+          <button
+            onClick={() => switchLayer("wind")}
+            className={`relative grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
+              activeLayer === "wind"
+                ? "bg-blue-600 border-blue-300 text-white shadow-[0_0_15px_rgba(37,99,235,0.75)]"
+                : "bg-black/55 border-white/15 text-white/80 hover:bg-black/70"
+            }`}
+            title="Wind Streamlines Radar"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
               <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="currentColor" fillOpacity="0.4" />
               <line x1="4" y1="22" x2="4" y2="15" />
             </svg>
-            <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-300 opacity-75" />
-              <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-400" />
-            </span>
+            {activeLayer === "wind" && (
+              <span className="absolute -top-1 -right-1 flex h-2.5 w-2.5">
+                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-sky-300 opacity-75" />
+                <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-sky-400" />
+              </span>
+            )}
           </button>
 
-          {/* Lightning / Thunder */}
+          {/* Thunderstorm / Lightning */}
           <button
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition shadow-lg"
-            title="Thunderstorm / Lightning"
+            onClick={() => switchLayer("rain")}
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 text-white hover:bg-black/70 active:scale-95 transition shadow-lg"
+            title="Thunderstorm Radar"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-yellow-400" fill="currentColor">
               <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
@@ -985,22 +1123,30 @@ export function FullScreenWindRadar({
 
           {/* Camera / Satellite */}
           <button
-            className="grid h-10 w-10 place-items-center rounded-xl bg-black/50 backdrop-blur-md border border-white/15 text-white hover:bg-black/60 active:scale-95 transition shadow-lg"
-            title="Satellite"
+            onClick={() => switchLayer("satellite")}
+            className={`grid h-10 w-10 place-items-center rounded-xl backdrop-blur-md border active:scale-95 transition shadow-lg ${
+              activeLayer === "satellite"
+                ? "bg-emerald-600/90 border-emerald-300 text-white shadow-[0_0_15px_rgba(16,185,129,0.7)]"
+                : "bg-black/55 border-white/15 text-white/80 hover:bg-black/70"
+            }`}
+            title="ESRI World Satellite Imagery"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white/80" fill="none" stroke="currentColor" strokeWidth="2">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z" />
               <circle cx="12" cy="13" r="4" />
             </svg>
           </button>
         </div>
 
-        {/* ── INFO POPUP (Wind metrics & Beaufort details) ── */}
+        {/* ── INFO POPUP (Wind metrics / Beaufort / Radar Scale) ── */}
         {showInfo && (
           <div className="absolute left-4 top-28 z-40 w-64 rounded-2xl bg-[rgba(15,23,42,0.95)] p-4 border border-white/15 shadow-2xl backdrop-blur-xl animate-in fade-in zoom-in-95 duration-150">
             <div className="flex items-center justify-between pb-2 border-b border-white/10 mb-3">
               <span className="font-semibold text-xs tracking-wider uppercase text-sky-400">
-                💨 {location.city} {t("Wind")}
+                {activeLayer === "wind" && `💨 ${location.city} ${t("Wind")}`}
+                {activeLayer === "temp" && `🌡️ ${location.city} ${t("Temperature")}`}
+                {activeLayer === "rain" && `🌧️ ${location.city} ${t("Rain Radar")}`}
+                {activeLayer === "satellite" && `🛰️ ${location.city} Satellite`}
               </span>
               <button
                 onClick={() => setShowInfo(false)}
@@ -1009,41 +1155,109 @@ export function FullScreenWindRadar({
                 ✕
               </button>
             </div>
-            <div className="space-y-2 text-xs">
-              <div className="flex justify-between">
-                <span className="text-white/70">{t("Speed")}</span>
-                <span className="font-bold text-white">{activeWind.speed} km/h</span>
+
+            {activeLayer === "wind" && (
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-white/70">{t("Speed")}</span>
+                  <span className="font-bold text-white">{activeWind.speed} km/h</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/70">{t("Gusts")}</span>
+                  <span className="font-bold text-amber-300">{activeWind.gust} km/h</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/70">{t("Direction")}</span>
+                  <span className="font-bold text-white">{activeWind.dir}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/70">{t("Beaufort Scale")}</span>
+                  <span className="font-bold text-emerald-400">
+                    Level {Math.min(12, Math.max(1, Math.round(activeWind.speed / 5)))} · {t("Gentle Breeze")}
+                  </span>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-white/10">
+                  <span className="text-[10px] text-white/50 block mb-1.5 uppercase tracking-wider">{t("Wind Speed Scale")}</span>
+                  <div className="h-2 w-full rounded-full overflow-hidden flex">
+                    <span className="h-full flex-1 bg-emerald-500" title="10-18 km/h" />
+                    <span className="h-full flex-1 bg-lime-400" title="18-25 km/h" />
+                    <span className="h-full flex-1 bg-amber-400" title="25-35 km/h" />
+                    <span className="h-full flex-1 bg-orange-500" title="35-45 km/h" />
+                    <span className="h-full flex-1 bg-red-600" title="45+ km/h" />
+                  </div>
+                  <div className="flex justify-between text-[9px] text-white/60 mt-1">
+                    <span>10</span>
+                    <span>20</span>
+                    <span>30</span>
+                    <span>40+ km/h</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/70">{t("Gusts")}</span>
-                <span className="font-bold text-amber-300">{activeWind.gust} km/h</span>
+            )}
+
+            {activeLayer === "temp" && (
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-white/70">Current Temp</span>
+                  <span className="font-bold text-amber-300">{activeTemp}°C</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/70">Feels Like</span>
+                  <span className="font-bold text-white">{activeTemp + 2}°C</span>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-white/10">
+                  <span className="text-[10px] text-white/50 block mb-1.5 uppercase tracking-wider">Thermal Band</span>
+                  <div className="h-2 w-full rounded-full overflow-hidden flex">
+                    <span className="h-full flex-1 bg-sky-500" title="< 23°C" />
+                    <span className="h-full flex-1 bg-emerald-500" title="24-29°C" />
+                    <span className="h-full flex-1 bg-amber-400" title="30-34°C" />
+                    <span className="h-full flex-1 bg-red-500" title="35°C+" />
+                  </div>
+                  <div className="flex justify-between text-[9px] text-white/60 mt-1">
+                    <span>20°</span>
+                    <span>25°</span>
+                    <span>30°</span>
+                    <span>35°+</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/70">{t("Direction")}</span>
-                <span className="font-bold text-white">{activeWind.dir}</span>
+            )}
+
+            {activeLayer === "rain" && (
+              <div className="space-y-2 text-xs">
+                <div className="flex justify-between">
+                  <span className="text-white/70">Precipitation Radar</span>
+                  <span className="font-bold text-sky-400">Live RainViewer</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-white/70">Precip Chance</span>
+                  <span className="font-bold text-white">{location.precip.chance}%</span>
+                </div>
+                <div className="mt-3 pt-2.5 border-t border-white/10">
+                  <span className="text-[10px] text-white/50 block mb-1.5 uppercase tracking-wider">Doppler Intensity</span>
+                  <div className="h-2 w-full rounded-full overflow-hidden flex">
+                    <span className="h-full flex-1 bg-sky-400" title="Light" />
+                    <span className="h-full flex-1 bg-purple-500" title="Moderate" />
+                    <span className="h-full flex-1 bg-yellow-400" title="Heavy" />
+                    <span className="h-full flex-1 bg-red-500" title="Extreme" />
+                  </div>
+                  <div className="flex justify-between text-[9px] text-white/60 mt-1">
+                    <span>Light</span>
+                    <span>Moderate</span>
+                    <span>Heavy</span>
+                    <span>Extreme</span>
+                  </div>
+                </div>
               </div>
-              <div className="flex justify-between">
-                <span className="text-white/70">{t("Beaufort Scale")}</span>
-                <span className="font-bold text-emerald-400">Level {Math.min(12, Math.max(1, Math.round(activeWind.speed / 5)))} · {t("Gentle Breeze")}</span>
+            )}
+
+            {activeLayer === "satellite" && (
+              <div className="space-y-2 text-xs">
+                <p className="text-white/80 leading-relaxed">
+                  Real GIS high-resolution satellite imagery provided by ESRI World Imagery with boundary & place labels.
+                </p>
               </div>
-            </div>
-            {/* Speed Legend */}
-            <div className="mt-3 pt-2.5 border-t border-white/10">
-              <span className="text-[10px] text-white/50 block mb-1.5 uppercase tracking-wider">{t("Wind Speed Scale")}</span>
-              <div className="h-2 w-full rounded-full overflow-hidden flex">
-                <span className="h-full flex-1 bg-emerald-500" title="10-18 km/h" />
-                <span className="h-full flex-1 bg-lime-400" title="18-25 km/h" />
-                <span className="h-full flex-1 bg-amber-400" title="25-35 km/h" />
-                <span className="h-full flex-1 bg-orange-500" title="35-45 km/h" />
-                <span className="h-full flex-1 bg-red-600" title="45+ km/h" />
-              </div>
-              <div className="flex justify-between text-[9px] text-white/60 mt-1">
-                <span>10</span>
-                <span>20</span>
-                <span>30</span>
-                <span>40+ km/h</span>
-              </div>
-            </div>
+            )}
           </div>
         )}
       </div>
@@ -1052,32 +1266,37 @@ export function FullScreenWindRadar({
       <div
         className="relative z-30 px-4 pt-3 pb-7 pointer-events-auto"
         style={{
-          background: "linear-gradient(to top, rgba(10, 20, 16, 0.98) 75%, rgba(10, 20, 16, 0.85) 90%, transparent)",
+          background: "linear-gradient(to top, rgba(10, 20, 28, 0.98) 75%, rgba(10, 20, 28, 0.85) 90%, transparent)",
         }}
       >
         {/* Scrubber Time Bar + Play/Pause Button */}
         <div className="flex items-center gap-3">
           {/* Time display box */}
-          <div className="flex items-center justify-center rounded-xl bg-black/50 border border-white/10 px-3 py-1.5 min-w-[70px]">
+          <div className="flex items-center justify-center rounded-xl bg-black/60 border border-white/15 px-3 py-1.5 min-w-[70px] shadow-md">
             <span className="font-mono text-[13px] font-bold tracking-tight text-white">
               {currentTimeLabel.includes(" ") ? currentTimeLabel.split(" ")[1] : currentTimeLabel}
             </span>
           </div>
 
-          {/* Slider track with orange filled progress */}
+          {/* Slider track with colored progress */}
           <div className="relative flex-1 py-2">
             <input
               type="range"
               min="0"
-              max={displayTimeLabels.length - 1}
-              value={timeIndex}
+              max={isRain && rainFrames.length > 0 ? rainFrames.length - 1 : displayTimeLabels.length - 1}
+              value={isRain && rainFrames.length > 0 ? rainFrameIndex : timeIndex}
               onChange={(e) => {
-                setTimeIndex(Number(e.target.value));
+                const val = Number(e.target.value);
+                if (isRain && rainFrames.length > 0) {
+                  setRainFrameIndex(val);
+                } else {
+                  setTimeIndex(val);
+                }
                 setIsPlaying(false);
               }}
               className="w-full accent-amber-400 h-1.5 rounded-full cursor-pointer bg-white/20"
               style={{
-                accentColor: "#f59e0b",
+                accentColor: isRain ? "#38bdf8" : activeLayer === "temp" ? "#f59e0b" : "#3b82f6",
               }}
             />
           </div>
@@ -1101,10 +1320,10 @@ export function FullScreenWindRadar({
           </button>
         </div>
 
-        {/* Quick Time Jump Tabs: [- 24 h] [now] [today] [tomorrow] [Fri] [Sat] */}
+        {/* Quick Time Jump Tabs */}
         <div className="mt-2.5 flex items-center justify-between gap-1">
           {displayTimeLabels.map((item, idx) => {
-            const active = timeIndex === idx;
+            const active = (!isRain || rainFrames.length === 0) && timeIndex === idx;
             return (
               <button
                 key={item.id}
@@ -1123,11 +1342,11 @@ export function FullScreenWindRadar({
             );
           })}
 
-          {/* Fullscreen icon */}
+          {/* Recenter icon */}
           <button
             onClick={resetToLocation}
             className="grid h-7 w-7 shrink-0 place-items-center rounded-lg bg-white/10 text-white/70 hover:text-white hover:bg-white/15 transition"
-            title="Recenter"
+            title="Recenter Map"
           >
             <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="none" stroke="currentColor" strokeWidth="2">
               <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3" />
