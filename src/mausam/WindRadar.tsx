@@ -116,18 +116,14 @@ export const WIND_CITIES: RadarCity[] = [
   { name: "Mahabaleshwar", lat: 17.92, lng: 73.66, baseSpeed: 12, baseTemp: 20, tier: 3 },
   { name: "Panaji", lat: 15.49, lng: 73.82, baseSpeed: 14, baseTemp: 31, tier: 1 },
 
-  // ── South India ──
-  { name: "Hyderabad", lat: 17.38, lng: 78.48, baseSpeed: 10, baseTemp: 32, tier: 1 },
-  { name: "Warangal", lat: 17.96, lng: 79.59, baseSpeed: 9, baseTemp: 33, tier: 2 },
-  { name: "Vijayawada", lat: 16.50, lng: 80.64, baseSpeed: 13, baseTemp: 33, tier: 2 },
-  { name: "Visakhapatnam", lat: 17.68, lng: 83.21, baseSpeed: 14, baseTemp: 31, tier: 2 },
-  { name: "Tirupati", lat: 13.63, lng: 79.42, baseSpeed: 12, baseTemp: 33, tier: 3 },
+  // ── South India (Tamil Nadu, Karnataka, Kerala) ──
+  { name: "Chennai", lat: 13.08, lng: 80.27, baseSpeed: 15, baseTemp: 33, tier: 1 },
   { name: "Bengaluru", lat: 12.97, lng: 77.59, baseSpeed: 12, baseTemp: 27, tier: 1 },
+  { name: "Hyderabad", lat: 17.38, lng: 78.48, baseSpeed: 10, baseTemp: 32, tier: 1 },
   { name: "Mysuru", lat: 12.29, lng: 76.63, baseSpeed: 11, baseTemp: 28, tier: 2 },
   { name: "Hubballi", lat: 15.36, lng: 75.12, baseSpeed: 15, baseTemp: 30, tier: 2 },
   { name: "Mangaluru", lat: 12.91, lng: 74.85, baseSpeed: 13, baseTemp: 30, tier: 2 },
   { name: "Belagavi", lat: 15.85, lng: 74.50, baseSpeed: 12, baseTemp: 28, tier: 3 },
-  { name: "Chennai", lat: 13.08, lng: 80.27, baseSpeed: 15, baseTemp: 33, tier: 1 },
   { name: "Coimbatore", lat: 11.01, lng: 76.95, baseSpeed: 14, baseTemp: 29, tier: 2 },
   { name: "Madurai", lat: 9.92, lng: 78.11, baseSpeed: 12, baseTemp: 34, tier: 2 },
   { name: "Tiruchirappalli", lat: 10.79, lng: 78.70, baseSpeed: 12, baseTemp: 34, tier: 2 },
@@ -140,6 +136,35 @@ export const WIND_CITIES: RadarCity[] = [
   { name: "Kanyakumari", lat: 8.08, lng: 77.55, baseSpeed: 17, baseTemp: 30, tier: 2 },
   { name: "Rameswaram", lat: 9.28, lng: 79.31, baseSpeed: 18, baseTemp: 32, tier: 2 },
   { name: "Trincomalee", lat: 8.58, lng: 81.23, baseSpeed: 18, baseTemp: 31, tier: 2 },
+
+  // ── Andhra Pradesh & Telangana (East Coast & Inland Towns) ──
+  { name: "Visakhapatnam", lat: 17.68, lng: 83.21, baseSpeed: 14, baseTemp: 31, tier: 1 },
+  { name: "Vijayawada", lat: 16.50, lng: 80.64, baseSpeed: 13, baseTemp: 33, tier: 1 },
+  { name: "Vizianagaram", lat: 18.11, lng: 83.41, baseSpeed: 12, baseTemp: 31, tier: 2 },
+  { name: "Bobbili", lat: 18.57, lng: 83.36, baseSpeed: 10, baseTemp: 30, tier: 3 },
+  { name: "Tuni", lat: 17.35, lng: 82.55, baseSpeed: 11, baseTemp: 31, tier: 3 },
+  { name: "Rajamahendravaram", lat: 16.98, lng: 81.78, baseSpeed: 11, baseTemp: 32, tier: 2 },
+  { name: "Kakinada", lat: 16.98, lng: 82.24, baseSpeed: 13, baseTemp: 32, tier: 2 },
+  { name: "Eluru", lat: 16.71, lng: 81.10, baseSpeed: 10, baseTemp: 32, tier: 2 },
+  { name: "Guntur", lat: 16.30, lng: 80.44, baseSpeed: 12, baseTemp: 33, tier: 2 },
+  { name: "Palakollu", lat: 16.52, lng: 81.73, baseSpeed: 12, baseTemp: 31, tier: 3 },
+  { name: "Machilipatnam", lat: 16.18, lng: 81.13, baseSpeed: 14, baseTemp: 32, tier: 2 },
+  { name: "Prathipadu", lat: 17.23, lng: 82.20, baseSpeed: 10, baseTemp: 31, tier: 3 },
+  { name: "Chirala", lat: 15.82, lng: 80.35, baseSpeed: 13, baseTemp: 32, tier: 3 },
+  { name: "Nellore", lat: 14.44, lng: 79.98, baseSpeed: 13, baseTemp: 33, tier: 2 },
+  { name: "Tirupati", lat: 13.63, lng: 79.42, baseSpeed: 12, baseTemp: 33, tier: 2 },
+  { name: "Kurnool", lat: 15.83, lng: 78.03, baseSpeed: 12, baseTemp: 34, tier: 2 },
+  { name: "Kadapa", lat: 14.47, lng: 78.82, baseSpeed: 11, baseTemp: 34, tier: 2 },
+  { name: "Anantapur", lat: 14.68, lng: 77.60, baseSpeed: 13, baseTemp: 33, tier: 2 },
+  { name: "Cherla", lat: 18.08, lng: 80.82, baseSpeed: 8, baseTemp: 33, tier: 3 },
+  { name: "Kothagudem", lat: 17.55, lng: 80.62, baseSpeed: 9, baseTemp: 33, tier: 3 },
+  { name: "Khammam", lat: 17.25, lng: 80.15, baseSpeed: 10, baseTemp: 33, tier: 2 },
+  { name: "Madhira", lat: 16.92, lng: 80.37, baseSpeed: 9, baseTemp: 33, tier: 3 },
+  { name: "Warangal", lat: 17.96, lng: 79.59, baseSpeed: 9, baseTemp: 33, tier: 2 },
+  { name: "Nizamabad", lat: 18.67, lng: 78.09, baseSpeed: 10, baseTemp: 33, tier: 2 },
+  { name: "Karimnagar", lat: 18.44, lng: 79.13, baseSpeed: 10, baseTemp: 33, tier: 2 },
+  { name: "Nalgonda", lat: 17.05, lng: 79.27, baseSpeed: 10, baseTemp: 33, tier: 3 },
+  { name: "Suryapet", lat: 17.14, lng: 79.62, baseSpeed: 10, baseTemp: 33, tier: 3 },
 
   // ── East & Northeast ──
   { name: "Kolkata", lat: 22.57, lng: 88.36, baseSpeed: 10, baseTemp: 32, tier: 1 },
@@ -525,11 +550,11 @@ function WindMapCanvas({
       typeof window !== "undefined" && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     const count = prefersReducedMotion
-      ? Math.min(280, Math.floor((w * h) / 2500))
-      : Math.min(1050, Math.max(500, Math.floor((w * h) / 720)));
+      ? Math.min(320, Math.floor((w * h) / 2400))
+      : Math.min(1350, Math.max(700, Math.floor((w * h) / 520)));
 
-    const tl = pixelToGeo(-40, -40, center, zoom, w, h);
-    const br = pixelToGeo(w + 40, h + 40, center, zoom, w, h);
+    const tl = pixelToGeo(-50, -50, center, zoom, w, h);
+    const br = pixelToGeo(w + 50, h + 50, center, zoom, w, h);
     const minLat = Math.min(tl.lat, br.lat);
     const maxLat = Math.max(tl.lat, br.lat);
     const minLng = Math.min(tl.lng, br.lng);
@@ -539,13 +564,13 @@ function WindMapCanvas({
     for (let i = 0; i < count; i++) {
       const lat = minLat + Math.random() * (maxLat - minLat);
       const lng = minLng + Math.random() * (maxLng - minLng);
-      const maxAge = 50 + Math.floor(Math.random() * 55);
+      const maxAge = 40 + Math.floor(Math.random() * 50);
       parts.push({
         lat,
         lng,
         age: Math.floor(Math.random() * maxAge),
         maxAge,
-        speedMultiplier: 0.85 + Math.random() * 0.3,
+        speedMultiplier: 0.88 + Math.random() * 0.25,
         trail: [{ lat, lng }],
       });
     }
@@ -578,9 +603,9 @@ function WindMapCanvas({
       if (activeLayer === "wind") {
         // Subtle dark meteorological ocean-atmosphere tint
         const gradBg = ctx.createLinearGradient(0, 0, w, h);
-        gradBg.addColorStop(0, "rgba(8, 28, 44, 0.16)");
-        gradBg.addColorStop(0.5, "rgba(6, 36, 48, 0.10)");
-        gradBg.addColorStop(1, "rgba(8, 28, 44, 0.18)");
+        gradBg.addColorStop(0, "rgba(25, 27, 58, 0.44)");
+        gradBg.addColorStop(0.5, "rgba(20, 32, 70, 0.36)");
+        gradBg.addColorStop(1, "rgba(26, 22, 60, 0.46)");
         ctx.fillStyle = gradBg;
         ctx.fillRect(0, 0, w, h);
 
@@ -620,37 +645,37 @@ function WindMapCanvas({
 
               // Restrained meteorological intensity gradient (satellite basemap remains clearly visible)
               if (spd < 6) {
-                // Calm: transparent
-                data[idx] = 14;
-                data[idx + 1] = 116;
-                data[idx + 2] = 144;
-                data[idx + 3] = 0;
+                // Calm: subtle translucent deep violet
+                data[idx] = 45;
+                data[idx + 1] = 35;
+                data[idx + 2] = 80;
+                data[idx + 3] = 40;
               } else if (spd < 16) {
-                // Gentle breeze: subtle teal/cyan
+                // Gentle breeze: deep oceanic blue-violet
                 const f = (spd - 6) / 10;
-                data[idx] = 6;
-                data[idx + 1] = Math.round(182 * f);
-                data[idx + 2] = 212;
-                data[idx + 3] = Math.round(35 + 30 * f);
+                data[idx] = Math.round(45 + (30 - 45) * f);
+                data[idx + 1] = Math.round(35 + (58 - 35) * f);
+                data[idx + 2] = Math.round(80 + (120 - 80) * f);
+                data[idx + 3] = Math.round(40 + 35 * f);
               } else if (spd < 26) {
-                // Moderate wind: clean teal-emerald
+                // Moderate wind: clean teal-marine
                 const f = (spd - 16) / 10;
-                data[idx] = Math.round(6 + (16 - 6) * f);
-                data[idx + 1] = Math.round(182 + (185 - 182) * f);
-                data[idx + 2] = Math.round(212 + (129 - 212) * f);
-                data[idx + 3] = Math.round(65 + 35 * f);
+                data[idx] = Math.round(30 + (20 - 30) * f);
+                data[idx + 1] = Math.round(58 + (95 - 58) * f);
+                data[idx + 2] = Math.round(120 + (150 - 120) * f);
+                data[idx + 3] = Math.round(75 + 30 * f);
               } else if (spd < 38) {
-                // Fresh / Strong: soft warm amber
+                // Fresh / Strong: soft emerald-teal
                 const f = (spd - 26) / 12;
-                data[idx] = Math.round(16 + (245 - 16) * f);
-                data[idx + 1] = Math.round(185 + (158 - 185) * f);
-                data[idx + 2] = Math.round(129 + (11 - 129) * f);
-                data[idx + 3] = Math.round(100 + 40 * f);
+                data[idx] = Math.round(20 + (16 - 20) * f);
+                data[idx + 1] = Math.round(95 + (125 - 95) * f);
+                data[idx + 2] = Math.round(150 + (128 - 150) * f);
+                data[idx + 3] = Math.round(105 + 35 * f);
               } else {
                 // Gale / High: soft coral
-                data[idx] = 239;
-                data[idx + 1] = 68;
-                data[idx + 2] = 68;
+                data[idx] = 235;
+                data[idx + 1] = 90;
+                data[idx + 2] = 70;
                 data[idx + 3] = 145;
               }
             }
@@ -658,23 +683,23 @@ function WindMapCanvas({
           sCtx.putImageData(imgData, 0, 0);
 
           ctx.save();
-          ctx.globalAlpha = 0.22;
+          ctx.globalAlpha = 0.28;
           ctx.imageSmoothingEnabled = true;
           ctx.imageSmoothingQuality = "high";
           ctx.drawImage(sCanvas, 0, 0, w, h);
           ctx.restore();
         }
 
-        // ── GEOGRAPHIC PARTICLES & VECTOR STREAMLINES ──
-        const tl = pixelToGeo(-35, -35, center, zoom, w, h);
-        const br = pixelToGeo(w + 35, h + 35, center, zoom, w, h);
+        // ── GEOGRAPHIC PARTICLES & VECTOR SMALL ARROWS ──
+        const tl = pixelToGeo(-45, -45, center, zoom, w, h);
+        const br = pixelToGeo(w + 45, h + 45, center, zoom, w, h);
         const viewMinLat = Math.min(tl.lat, br.lat);
         const viewMaxLat = Math.max(tl.lat, br.lat);
         const viewMinLng = Math.min(tl.lng, br.lng);
         const viewMaxLng = Math.max(tl.lng, br.lng);
 
         const parts = particlesRef.current;
-        const timeScale = prefersReducedMotion ? 0.008 : 0.034;
+        const timeScale = prefersReducedMotion ? 0.010 : 0.038;
         const dt = 0.016;
 
         for (let i = 0; i < parts.length; i++) {
@@ -695,9 +720,6 @@ function WindMapCanvas({
           p.lat += dLat;
           p.lng += dLng;
 
-          p.trail.push({ lat: p.lat, lng: p.lng });
-          if (p.trail.length > 8) p.trail.shift();
-
           // Out-of-bounds or lifespan expired -> respawn naturally
           if (
             p.age > p.maxAge ||
@@ -709,71 +731,77 @@ function WindMapCanvas({
             p.lat = viewMinLat + Math.random() * (viewMaxLat - viewMinLat);
             p.lng = viewMinLng + Math.random() * (viewMaxLng - viewMinLng);
             p.age = 0;
-            p.maxAge = 45 + Math.floor(Math.random() * 50);
-            p.trail = [{ lat: p.lat, lng: p.lng }];
+            p.maxAge = 40 + Math.floor(Math.random() * 45);
             continue;
           }
 
-          if (p.trail.length >= 2) {
-            const progress = p.age / p.maxAge;
-            const envelope = Math.sin(progress * Math.PI);
-            const baseAlpha = envelope * Math.min(0.85, 0.35 + (vec.speed / 35) * 0.45);
+          const head = geoToPixel(p.lat, p.lng, center, zoom, w, h);
 
-            // Convert geographic trail to screen coordinates
-            const screenTrail = p.trail.map((pt) =>
-              geoToPixel(pt.lat, pt.lng, center, zoom, w, h)
-            );
+          // Skip if off screen
+          if (head.x < -25 || head.x > w + 25 || head.y < -25 || head.y > h + 25) {
+            continue;
+          }
 
-            // Draw streamline segment
+          const progress = p.age / p.maxAge;
+          const envelope = Math.sin(progress * Math.PI); // smooth fade in & fade out
+          const baseAlpha = envelope * Math.min(0.96, 0.40 + (vec.speed / 28) * 0.55);
+
+          // Vector angle in screen radians:
+          // In screen space: east (+u) -> +x, north (+v) -> -y
+          const angle = Math.atan2(-vec.v, vec.u);
+
+          if (vec.speed < 1.0) {
+            // Calm wind: subtle luminous dot
             ctx.beginPath();
-            ctx.moveTo(screenTrail[0].x, screenTrail[0].y);
-            for (let t = 1; t < screenTrail.length; t++) {
-              ctx.lineTo(screenTrail[t].x, screenTrail[t].y);
-            }
+            ctx.arc(head.x, head.y, 1.2, 0, Math.PI * 2);
+            ctx.fillStyle = `rgba(224, 242, 254, ${baseAlpha * 0.6})`;
+            ctx.fill();
+          } else {
+            // Dynamic Small Arrow (matching Apple Weather reference)
+            const arrowLen = Math.min(6.2, Math.max(3.8, 3.4 + (vec.speed / 25) * 2.2));
+            const arrowWingSpan = 0.44; // ~25 deg wing angle
+            const notchIndent = arrowLen * 0.58;
 
-            if (vec.speed >= 28) {
-              ctx.strokeStyle = `rgba(224, 242, 254, ${baseAlpha})`;
-              ctx.lineWidth = 1.45;
-            } else if (vec.speed >= 14) {
-              ctx.strokeStyle = `rgba(125, 211, 252, ${baseAlpha * 0.88})`;
-              ctx.lineWidth = 1.3;
-            } else {
-              ctx.strokeStyle = `rgba(186, 230, 253, ${baseAlpha * 0.72})`;
-              ctx.lineWidth = 1.15;
-            }
+            // 1. Tapered trailing tail (shooting arrow / comet shaft)
+            const tailLen = Math.min(15, Math.max(6, 5 + (vec.speed / 20) * 8));
+            const tailX = head.x - tailLen * Math.cos(angle);
+            const tailY = head.y - tailLen * Math.sin(angle);
+
+            const tailGrad = ctx.createLinearGradient(tailX, tailY, head.x, head.y);
+            tailGrad.addColorStop(0, "rgba(224, 242, 254, 0)");
+            tailGrad.addColorStop(0.5, `rgba(224, 242, 254, ${baseAlpha * 0.35})`);
+            tailGrad.addColorStop(1, `rgba(240, 250, 255, ${baseAlpha * 0.95})`);
+
+            ctx.beginPath();
+            ctx.moveTo(tailX, tailY);
+            ctx.lineTo(
+              head.x - notchIndent * Math.cos(angle),
+              head.y - notchIndent * Math.sin(angle)
+            );
+            ctx.strokeStyle = tailGrad;
+            ctx.lineWidth = Math.min(1.8, Math.max(1.1, 1.0 + (vec.speed / 30) * 0.7));
             ctx.lineCap = "round";
             ctx.stroke();
 
-            // Real directional arrowhead at the tip of each streamline
-            const head = screenTrail[screenTrail.length - 1];
-            const prev = screenTrail[screenTrail.length - 2] ?? screenTrail[0];
-            const dx = head.x - prev.x;
-            const dy = head.y - prev.y;
-            const len = Math.hypot(dx, dy);
+            // 2. Solid Luminous Arrowhead (chevron / dart)
+            ctx.beginPath();
+            ctx.moveTo(head.x, head.y);
+            ctx.lineTo(
+              head.x - arrowLen * Math.cos(angle - arrowWingSpan),
+              head.y - arrowLen * Math.sin(angle - arrowWingSpan)
+            );
+            ctx.lineTo(
+              head.x - notchIndent * Math.cos(angle),
+              head.y - notchIndent * Math.sin(angle)
+            );
+            ctx.lineTo(
+              head.x - arrowLen * Math.cos(angle + arrowWingSpan),
+              head.y - arrowLen * Math.sin(angle + arrowWingSpan)
+            );
+            ctx.closePath();
 
-            if (len > 0.8) {
-              const angle = Math.atan2(dy, dx);
-              const arrowSize = Math.min(6.0, Math.max(3.0, 2.5 + (vec.speed / 20) * 2.5));
-              ctx.beginPath();
-              ctx.moveTo(head.x, head.y);
-              ctx.lineTo(
-                head.x - arrowSize * Math.cos(angle - 0.45),
-                head.y - arrowSize * Math.sin(angle - 0.45)
-              );
-              ctx.moveTo(head.x, head.y);
-              ctx.lineTo(
-                head.x - arrowSize * Math.cos(angle + 0.45),
-                head.y - arrowSize * Math.sin(angle + 0.45)
-              );
-              ctx.lineWidth = 1.35;
-              ctx.strokeStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
-              ctx.stroke();
-            } else {
-              ctx.beginPath();
-              ctx.arc(head.x, head.y, 1.0, 0, Math.PI * 2);
-              ctx.fillStyle = `rgba(255, 255, 255, ${baseAlpha * 0.95})`;
-              ctx.fill();
-            }
+            ctx.fillStyle = `rgba(240, 250, 255, ${baseAlpha * 0.95})`;
+            ctx.fill();
           }
         }
       } else if (activeLayer === "temp") {
@@ -951,61 +979,54 @@ function WindMapCanvas({
           ctx.fillText(city.name, pt.x, pt.y + 4);
           ctx.restore();
         } else if (activeLayer === "wind") {
-          // Dynamic density by zoom level (LOD):
-          // Wind flow is primary; city labels are secondary, compact, and translucent
+          // Dynamic density by zoom level (LOD)
           const shouldShowWind = isSelected || (zoom <= 5 ? city.tier === 1 : zoom === 6 ? city.tier <= 2 : true);
           if (!shouldShowWind) continue;
 
-          // Sample wind vector from the active field for this city
+          // Sample wind vector from active field / live station data for this city
+          const live = liveCitiesWind[city.name.toLowerCase()];
           const cityVec = getWindVector(currentField, city.lat, city.lng);
-          const speedVal = Math.round(cityVec.speed);
-          const motionArrow = getMotionArrow(cityVec.deg);
-          const pillText = `${speedVal} km/h ${motionArrow}`;
-
-          ctx.font = isSelected ? "bold 10.5px system-ui, -apple-system, sans-serif" : "600 9.5px system-ui, -apple-system, sans-serif";
-          const tw = ctx.measureText(pillText).width;
-          const pw = tw + 12;
-          const ph = 16;
-          const px = pt.x - pw / 2;
-          const py = pt.y - (isSelected ? 24 : 18);
+          const speedVal = live ? live.speed : Math.round(cityVec.speed);
+          const degVal = live ? live.deg : cityVec.deg;
+          const motionArrow = getMotionArrow(degVal);
 
           ctx.save();
-          ctx.shadowColor = "rgba(0, 0, 0, 0.85)";
-          ctx.shadowBlur = 5;
-          ctx.shadowOffsetY = 1;
+          ctx.textAlign = "center";
+          ctx.textBaseline = "middle";
 
-          // Frosted compact translucent badge (secondary visual weight)
-          ctx.fillStyle = isSelected ? "rgba(12, 22, 34, 0.92)" : "rgba(8, 14, 22, 0.78)";
-          ctx.beginPath();
-          ctx.roundRect(px, py, pw, ph, 8);
-          ctx.fill();
-
-          // Restrained border
-          ctx.lineWidth = isSelected ? 1.8 : 1.0;
-          ctx.strokeStyle = isSelected ? "rgba(56, 189, 248, 0.9)" : "rgba(255, 255, 255, 0.20)";
-          ctx.stroke();
-
-          // Small downward notch
-          ctx.beginPath();
-          ctx.moveTo(pt.x - 2.5, py + ph);
-          ctx.lineTo(pt.x + 2.5, py + ph);
-          ctx.lineTo(pt.x, py + ph + 2.5);
-          ctx.closePath();
-          ctx.fillStyle = isSelected ? "rgba(56, 189, 248, 0.9)" : "rgba(255, 255, 255, 0.20)";
-          ctx.fill();
-
-          // Speed and motion direction arrow
-          ctx.shadowColor = "transparent";
-          ctx.fillStyle = isSelected ? "#ffffff" : "#bae6fd";
-          ctx.fillText(pillText, pt.x, py + ph / 2);
-
-          // City Name
-          ctx.shadowColor = "rgba(0,0,0,0.95)";
+          // 1. City Name on top with soft drop shadow (Apple Weather style)
+          ctx.font = isSelected ? "bold 11px system-ui, -apple-system, sans-serif" : "600 9.5px system-ui, -apple-system, sans-serif";
+          ctx.shadowColor = "rgba(0, 0, 0, 0.95)";
           ctx.shadowBlur = 4;
           ctx.shadowOffsetY = 1;
-          ctx.font = isSelected ? "bold 10.5px sans-serif" : "600 9px sans-serif";
-          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.80)";
-          ctx.fillText(city.name, pt.x, pt.y + 4);
+          ctx.fillStyle = isSelected ? "#ffffff" : "rgba(255, 255, 255, 0.94)";
+          ctx.fillText(city.name, pt.x, pt.y - 10);
+
+          // 2. Small lavender/indigo pill below city name: e.g. "4 ↗" or "0"
+          const pillText = speedVal === 0 ? "0" : `${speedVal} ${motionArrow}`;
+          ctx.font = "bold 9.5px system-ui, -apple-system, sans-serif";
+          const tw = ctx.measureText(pillText).width;
+          const pw = tw + 10;
+          const ph = 14;
+          const px = pt.x - pw / 2;
+          const py = pt.y - 1;
+
+          ctx.shadowBlur = 3;
+          ctx.shadowColor = "rgba(0, 0, 0, 0.6)";
+          ctx.beginPath();
+          ctx.roundRect(px, py, pw, ph, 7);
+          ctx.fillStyle = isSelected ? "rgba(79, 70, 229, 0.95)" : "rgba(118, 106, 184, 0.84)";
+          ctx.fill();
+
+          if (isSelected) {
+            ctx.lineWidth = 1.5;
+            ctx.strokeStyle = "#ffffff";
+            ctx.stroke();
+          }
+
+          ctx.shadowColor = "transparent";
+          ctx.fillStyle = "#ffffff";
+          ctx.fillText(pillText, pt.x, py + ph / 2);
           ctx.restore();
         } else {
           // Rain / Satellite layers: Clean frosted city station pins
@@ -1239,6 +1260,15 @@ export function FullScreenWindRadar({
   const [isPlaying, setIsPlaying] = useState(false); // Paused by default
   const [showInfo, setShowInfo] = useState(false);
   const [tempProbe, setTempProbe] = useState<{ lat: number; lng: number; temp: number; x: number; y: number } | null>(null);
+  const [windProbe, setWindProbe] = useState<{
+    lat: number;
+    lng: number;
+    speed: number;
+    dir: string;
+    deg: number;
+    x: number;
+    y: number;
+  } | null>(null);
   const pointerStartPosRef = useRef({ x: 0, y: 0 });
 
   // Sync activeLayer when initialLayer prop changes
@@ -1431,53 +1461,72 @@ export function FullScreenWindRadar({
   const handlePointerUp = (e: React.PointerEvent) => {
     isDraggingRef.current = false;
     const dist = Math.hypot(e.clientX - pointerStartPosRef.current.x, e.clientY - pointerStartPosRef.current.y);
-    if (dist < 6 && activeLayer === "temp") {
+    if (dist < 6) {
       const rect = e.currentTarget.getBoundingClientRect();
       const px = e.clientX - rect.left;
       const py = e.clientY - rect.top;
       const coords = pixelToGeo(px, py, center, zoom, rect.width, rect.height);
 
-      // Interpolate temperature at tapped coordinate using IDW from nearby stations
-      let num = 0;
-      let den = 0;
-      for (let i = 0; i < WIND_CITIES.length; i++) {
-        const city = WIND_CITIES[i];
-        const live = liveCitiesWind[city.name.toLowerCase()];
-        const t = live?.temp ?? city.baseTemp;
-        const dLat = coords.lat - city.lat;
-        const dLng = coords.lng - city.lng;
-        const d2 = dLat * dLat + dLng * dLng;
-        const w = 1 / (d2 + 0.15);
-        num += t * w;
-        den += w;
+      if (activeLayer === "wind") {
+        const vec = getWindVector(activeWindField, coords.lat, coords.lng);
+        setWindProbe({
+          lat: coords.lat,
+          lng: coords.lng,
+          speed: Math.round(vec.speed),
+          dir: vec.direction,
+          deg: vec.deg,
+          x: px,
+          y: py,
+        });
+        setTempProbe(null);
+      } else if (activeLayer === "temp") {
+        // Interpolate temperature at tapped coordinate using IDW from nearby stations
+        let num = 0;
+        let den = 0;
+        for (let i = 0; i < WIND_CITIES.length; i++) {
+          const city = WIND_CITIES[i];
+          const live = liveCitiesWind[city.name.toLowerCase()];
+          const t = live?.temp ?? city.baseTemp;
+          const dLat = coords.lat - city.lat;
+          const dLng = coords.lng - city.lng;
+          const d2 = dLat * dLat + dLng * dLng;
+          const w = 1 / (d2 + 0.15);
+          num += t * w;
+          den += w;
+        }
+        const probeTemp = den > 0 ? num / den : 28;
+        setTempProbe({
+          lat: coords.lat,
+          lng: coords.lng,
+          temp: probeTemp,
+          x: px,
+          y: py,
+        });
+        setWindProbe(null);
       }
-      const probeTemp = den > 0 ? num / den : 28;
-      setTempProbe({
-        lat: coords.lat,
-        lng: coords.lng,
-        temp: probeTemp,
-        x: px,
-        y: py,
-      });
     }
   };
 
   const zoomIn = () => {
     setZoom((z) => Math.min(8, z + 1));
     setTempProbe(null);
+    setWindProbe(null);
   };
   const zoomOut = () => {
     setZoom((z) => Math.max(5, z - 1));
     setTempProbe(null);
+    setWindProbe(null);
   };
   const resetToLocation = () => {
     setCenter(selectedCityCenter);
     setTempProbe(null);
+    setWindProbe(null);
   };
 
   const switchLayer = (l: "rain" | "wind" | "temp" | "satellite") => {
     setActiveLayer(l);
     setTempProbe(null);
+    setWindProbe(null);
     onSwitchLayer?.(l);
   };
 
@@ -1852,6 +1901,53 @@ export function FullScreenWindRadar({
                 <span>35°</span>
                 <span>40°+</span>
               </div>
+            </div>
+          </div>
+        )}
+
+        {/* ── INTERACTIVE WIND PROBE BADGE (Apple Weather / Reference Image Style) ── */}
+        {windProbe && activeLayer === "wind" && (
+          <div
+            className="absolute z-40 -translate-x-1/2 -translate-y-full pointer-events-auto animate-in zoom-in-95 fade-in duration-150"
+            style={{ left: windProbe.x, top: Math.max(70, windProbe.y - 12) }}
+          >
+            <div className="relative flex items-center gap-2.5 rounded-xl bg-[#171b26]/95 border border-white/20 px-3.5 py-1.5 shadow-[0_12px_32px_rgba(0,0,0,0.85)] backdrop-blur-xl">
+              <span className="font-bold text-white text-[13px] tracking-tight whitespace-nowrap">
+                {windProbe.speed} km/h
+              </span>
+              {/* Circular arrow container matching reference screenshot */}
+              <div className="grid h-5 w-5 place-items-center rounded-full bg-white/15 border border-white/25">
+                <svg
+                  viewBox="0 0 24 24"
+                  className="h-3.5 w-3.5 text-white"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2.5"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  style={{
+                    transform: `rotate(${windProbe.deg + 180}deg)`,
+                  }}
+                >
+                  <line x1="12" y1="19" x2="12" y2="5" />
+                  <polyline points="5 12 12 5 19 12" />
+                </svg>
+              </div>
+              <span className="font-bold text-white text-[13px] tracking-wide font-mono">
+                {windProbe.dir}
+              </span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setWindProbe(null);
+                }}
+                className="ml-1 grid h-4 w-4 place-items-center rounded-full bg-white/10 text-white/60 hover:text-white text-[10px] font-bold"
+                aria-label="Close probe"
+              >
+                ✕
+              </button>
+              {/* Downward triangle notch pointing to tap coordinate */}
+              <div className="absolute left-1/2 -bottom-2 -translate-x-1/2 w-0 h-0 border-x-[6px] border-x-transparent border-t-[8px] border-t-[#171b26]/95" />
             </div>
           </div>
         )}

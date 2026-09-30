@@ -34,6 +34,17 @@ describe("Wind Radar Configuration & Data", () => {
     expect(cityNames).toContain("Pune");
     expect(cityNames).toContain("Rameswaram");
     expect(cityNames).toContain("Trincomalee");
+    // Reference image East Coast towns
+    expect(cityNames).toContain("Visakhapatnam");
+    expect(cityNames).toContain("Vijayawada");
+    expect(cityNames).toContain("Tuni");
+    expect(cityNames).toContain("Bobbili");
+    expect(cityNames).toContain("Vizianagaram");
+    expect(cityNames).toContain("Rajamahendravaram");
+    expect(cityNames).toContain("Eluru");
+    expect(cityNames).toContain("Palakollu");
+    expect(cityNames).toContain("Machilipatnam");
+    expect(cityNames).toContain("Khammam");
   });
 
   it("has valid geographic coastlines and borders within India bounding box", () => {
@@ -102,6 +113,15 @@ describe("Wind Radar Configuration & Data", () => {
     expect(typeof getMotionArrow).toBe("function");
     // Meteorological East wind (air moving West) gives left arrow
     expect(getMotionArrow(90)).toBe("←");
+    // Meteorological North wind (air moving South) gives down arrow
+    expect(getMotionArrow(0)).toBe("↓");
+    // Meteorological South-West wind (air moving North-East) gives up-right arrow
+    expect(getMotionArrow(225)).toBe("↗");
+  });
+
+  it("exports fetchRadarCitiesWind function capable of batch fetching", async () => {
+    const { fetchRadarCitiesWind } = await import("../../data/openMeteo");
+    expect(typeof fetchRadarCitiesWind).toBe("function");
   });
 });
 

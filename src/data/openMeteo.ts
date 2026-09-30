@@ -406,27 +406,33 @@ export async function fetchRadarCitiesWind(
   }
 
   try {
-    const lats = cities.map((c) => c.lat.toFixed(2)).join(",");
-    const lons = cities.map((c) => c.lng.toFixed(2)).join(",");
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m`;
-    const res = await fetch(url);
-    if (!res.ok) return {};
-    const raw = await res.json();
-    const list = Array.isArray(raw) ? raw : [raw];
+    const CHUNK_SIZE = 45;
     const result: Record<string, LiveRadarCityWind> = {};
-    for (let i = 0; i < cities.length && i < list.length; i++) {
-      const cur = list[i]?.current;
-      if (cur) {
-        result[cities[i].name.toLowerCase()] = {
-          speed: Math.round(cur.wind_speed_10m),
-          dir: windDirLabel(cur.wind_direction_10m),
-          deg: Math.round(cur.wind_direction_10m),
-          gust: Math.round(cur.wind_gusts_10m),
-          temp: cur.temperature_2m !== undefined ? Math.round(cur.temperature_2m) : undefined,
-        };
+    for (let i = 0; i < cities.length; i += CHUNK_SIZE) {
+      const chunk = cities.slice(i, i + CHUNK_SIZE);
+      const lats = chunk.map((c) => c.lat.toFixed(2)).join(",");
+      const lons = chunk.map((c) => c.lng.toFixed(2)).join(",");
+      const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m,temperature_2m`;
+      const res = await fetch(url);
+      if (!res.ok) continue;
+      const raw = await res.json();
+      const list = Array.isArray(raw) ? raw : [raw];
+      for (let j = 0; j < chunk.length && j < list.length; j++) {
+        const cur = list[j]?.current;
+        if (cur) {
+          result[chunk[j].name.toLowerCase()] = {
+            speed: Math.round(cur.wind_speed_10m),
+            dir: windDirLabel(cur.wind_direction_10m),
+            deg: Math.round(cur.wind_direction_10m),
+            gust: Math.round(cur.wind_gusts_10m),
+            temp: cur.temperature_2m !== undefined ? Math.round(cur.temperature_2m) : undefined,
+          };
+        }
       }
     }
-    RADAR_WIND_CACHE.set(cacheKey, { data: result, ts: Date.now() });
+    if (Object.keys(result).length > 0) {
+      RADAR_WIND_CACHE.set(cacheKey, { data: result, ts: Date.now() });
+    }
     return result;
   } catch {
     return {};
