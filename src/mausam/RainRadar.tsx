@@ -3,12 +3,13 @@ import { makeT, type Lang } from "./i18n";
 import type { Condition } from "./theme";
 import type { Wind } from "./data";
 import * as I from "./icons";
+import { COASTLINE_WEST, COASTLINE_EAST, STATE_BORDERS } from "./WindRadar";
 
 /* ─────────────────── CONFIGURATION ─────────────────── */
 
-// Free OpenStreetMap tiles — no API key needed.
-// Dark look via CSS filter on the tile layer.
-const TILE_URL = "https://tile.openstreetmap.org/{z}/{x}/{y}.png";
+// Free, reliable OpenStreetMap German mirror with full CORS and no API keys required
+const TILE_URL = "https://tile.openstreetmap.de/{z}/{x}/{y}.png";
+const TILE_URL_FALLBACK = "https://a.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png";
 
 const DEFAULT_CENTER = { lat: 13.5, lng: 79.5 };
 const FULLSCREEN_ZOOM = 6;
@@ -149,6 +150,39 @@ function drawPrecipitation(
 ) {
   const mpp = (156543.03392 * Math.cos((center.lat * Math.PI) / 180)) / Math.pow(2, zoom);
 
+  // ── Draw Coastlines & State Boundaries ──
+  const drawLine = (coords: [number, number][], stroke: string, width: number, dashed = false) => {
+    if (coords.length < 2) return;
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < coords.length; i++) {
+      const pt = geoToPixel(coords[i][0], coords[i][1], center, zoom, w, h);
+      if (!started) {
+        ctx.moveTo(pt.x, pt.y);
+        started = true;
+      } else {
+        ctx.lineTo(pt.x, pt.y);
+      }
+    }
+    ctx.save();
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = width;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+    if (dashed) ctx.setLineDash([4, 4]);
+    ctx.stroke();
+    ctx.restore();
+  };
+
+  // Coastlines
+  drawLine(COASTLINE_WEST, "rgba(56, 189, 248, 0.60)", 1.6);
+  drawLine(COASTLINE_EAST, "rgba(56, 189, 248, 0.60)", 1.6);
+
+  // State borders
+  for (const border of STATE_BORDERS) {
+    drawLine(border, "rgba(255, 255, 255, 0.35)", 1.0, true);
+  }
+
   // Sort cells by intensity ascending so light ambient clouds render first,
   // and vibrant heavy/extreme cores render cleanly on top without color distortion.
   const sorted = [...cells].sort((a, b) => a.intensity - b.intensity);
@@ -201,21 +235,25 @@ function useTilePositions(
   zoom: number, w: number, h: number
 ) {
   return useMemo(() => {
-    const cx = lngToTileX(center.lng, zoom);
-    const cy = latToTileY(center.lat, zoom);
+    const z = Math.max(4, Math.min(9, Math.round(zoom)));
+    const cx = lngToTileX(center.lng, z);
+    const cy = latToTileY(center.lat, z);
     const nx = Math.ceil(w / 256) + 2;
     const ny = Math.ceil(h / 256) + 2;
-    const max = Math.pow(2, zoom) - 1;
-    const out: { url: string; dx: number; dy: number; key: string }[] = [];
+    const max = Math.pow(2, z) - 1;
+    const out: { url: string; dx: number; dy: number; key: string; z: number; wx: number; ty: number }[] = [];
     for (let tx = Math.floor(cx - nx / 2); tx <= Math.ceil(cx + nx / 2); tx++) {
       for (let ty = Math.floor(cy - ny / 2); ty <= Math.ceil(cy + ny / 2); ty++) {
         if (ty < 0 || ty > max) continue;
         const wx = ((tx % (max + 1)) + max + 1) % (max + 1);
         out.push({
-          url: TILE_URL.replace("{z}", String(zoom)).replace("{x}", String(wx)).replace("{y}", String(ty)),
+          url: TILE_URL.replace("{z}", String(z)).replace("{x}", String(wx)).replace("{y}", String(ty)),
           dx: (tx - cx) * 256 + w / 2,
           dy: (ty - cy) * 256 + h / 2,
-          key: `${zoom}/${wx}/${ty}`,
+          key: `${z}/${wx}/${ty}`,
+          z,
+          wx,
+          ty,
         });
       }
     }
@@ -287,6 +325,16 @@ function TileMap({
             key={t.key}
             src={t.url}
             alt=""
+            crossOrigin="anonymous"
+            onError={(e) => {
+              const img = e.target as HTMLImageElement;
+              if (!img.dataset.retried) {
+                img.dataset.retried = "1";
+                img.src = TILE_URL_FALLBACK.replace("{z}", String(t.z)).replace("{x}", String(t.wx)).replace("{y}", String(t.ty));
+              } else {
+                img.style.visibility = "hidden";
+              }
+            }}
             style={{
               position: "absolute",
               left: t.dx,
@@ -397,11 +445,12 @@ export function RainMapWidget({
    ══════════════════════════════════════════════════════ */
 
 export function FullScreenRadar({
-  condition, chance, accent, city, lang, locationKey, wind, temp, onClose,
+  condition, chance, accent, city, lang, locationKey, wind, temp, onClose, onSwitchLayer,
 }: {
   condition: Condition; chance: number; accent: string; city: string;
   lang: Lang; locationKey: string; wind: Wind; temp?: number;
   onClose: () => void;
+  onSwitchLayer?: (layer: "rain" | "wind") => void;
 }) {
   const t = makeT(lang);
   const [playing, setPlaying] = useState(false);
@@ -458,29 +507,38 @@ export function FullScreenRadar({
           <I.Close className="h-5 w-5 text-white" />
         </button>
 
-        {/* Right-side buttons (layers, navigate, list) */}
+        {/* Right-side buttons (layers, wind switch, navigate) */}
         <div className="absolute right-4 top-12 z-20 flex flex-col gap-2.5">
           {/* Layers */}
           <button
             onClick={() => setShowLegend((s) => !s)}
             className="grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur-md active:scale-95"
             aria-label="Layers"
+            title="Toggle Legend"
           >
             <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
               <path d="M12 4L3 9l9 5 9-5-9-5z" />
               <path d="M3 14l9 5 9-5" />
             </svg>
           </button>
+          {/* Switch to Wind Radar */}
+          {onSwitchLayer && (
+            <button
+              onClick={() => onSwitchLayer("wind")}
+              className="grid h-9 w-9 place-items-center rounded-full bg-blue-600/80 hover:bg-blue-600 backdrop-blur-md border border-blue-400 active:scale-95 transition shadow-lg"
+              aria-label="Switch to Wind Radar"
+              title="Switch to Wind Radar"
+            >
+              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
+                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="currentColor" fillOpacity="0.4" />
+                <line x1="4" y1="22" x2="4" y2="15" />
+              </svg>
+            </button>
+          )}
           {/* Navigate */}
           <button className="grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur-md active:scale-95" aria-label="Navigate">
             <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="#4dabf7" strokeWidth="2">
               <path d="M3 11l19-9-9 19-2-8-8-2z" />
-            </svg>
-          </button>
-          {/* List */}
-          <button className="grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur-md active:scale-95" aria-label="Details">
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <line x1="4" y1="6" x2="20" y2="6" /><line x1="4" y1="12" x2="20" y2="12" /><line x1="4" y1="18" x2="20" y2="18" />
             </svg>
           </button>
         </div>

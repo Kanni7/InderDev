@@ -477,17 +477,23 @@ export function PackingCard({ condition, accent, lang }: { condition: Condition;
   );
 }
 
-/** Wind — direction compass + speed and gust */
+/** Wind — direction compass + speed, gust, and Wind Radar trigger */
 export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const w = wind ?? { speed: 0, dir: "N", gust: 0 };
   const angles: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
   const deg = angles[w.dir] ?? 0;
   return (
-    <div className="flex h-full flex-col rounded-3xl p-4 mausam-glass">
-      <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind")}</p>
-      <div className="mt-3 flex items-center gap-4">
-        <div className="relative grid h-[76px] w-[76px] shrink-0 place-items-center">
+    <div className="group relative flex h-full flex-col justify-between rounded-3xl p-4 mausam-glass overflow-hidden transition hover:border-white/20">
+      <div className="flex items-center justify-between">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Wind")}</p>
+        <span className="flex items-center gap-1 rounded-full bg-emerald-500/15 border border-emerald-400/30 px-2 py-0.5 text-[9.5px] font-semibold text-emerald-300 tracking-tight transition group-hover:bg-emerald-500/25">
+          <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+          {t("Wind Radar")} ↗
+        </span>
+      </div>
+      <div className="mt-2.5 flex items-center gap-3.5">
+        <div className="relative grid h-[72px] w-[72px] shrink-0 place-items-center">
           <svg viewBox="0 0 76 76" className="h-full w-full">
             <circle cx="38" cy="38" r="34" fill="none" stroke="rgba(255,255,255,0.12)" strokeWidth="1.4" />
             {["N", "E", "S", "W"].map((d, i) => (
@@ -501,7 +507,10 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
         </div>
         <div>
           <p className="text-[26px] font-semibold leading-none text-[var(--color-ink)]">{w.speed} <span className="text-[13px] font-normal text-[var(--color-ink-soft)]">km/h</span></p>
-          <p className="mt-1 text-[12px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
+          <p className="mt-1 text-[11.5px] text-[var(--color-ink-soft)]">{t("From")} {w.dir} · {t("gusts")} {w.gust} km/h</p>
+          <span className="mt-1 inline-flex items-center gap-1 text-[10px] text-emerald-400/90 font-medium">
+            <span>🚩</span> {t("Tap to open live radar")}
+          </span>
         </div>
       </div>
     </div>

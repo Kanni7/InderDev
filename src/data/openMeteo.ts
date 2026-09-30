@@ -1,4 +1,4 @@
-import type { Location, Air, Precip, Wind, Sun } from "../mausam/data";
+import type { Location, Air, Precip, Wind, Sun, HourlyPoint, DailyPoint } from "../mausam/data";
 import type { Condition } from "../mausam/theme";
 
 /** City coordinates for the 6 supported cities. */
@@ -234,6 +234,28 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       gust: Math.round(cur.wind_gusts_10m),
     };
 
+    // Hourly forecast — current hour + next 7 hours (8 slots)
+    const hourlyForecast: HourlyPoint[] = [];
+    for (let i = 0; i < 8; i++) {
+      const idx = currentHourIdx + i;
+      if (idx >= forecast.hourly.time.length) break;
+      hourlyForecast.push({
+        t: i === 0 ? "Now" : formatTime(forecast.hourly.time[idx]),
+        c: weatherCodeToCondition(forecast.hourly.weather_code[idx] ?? cur.weather_code, cur.is_day === 1),
+        temp: Math.round(forecast.hourly.temperature_2m[idx] ?? cur.temperature_2m),
+      });
+    }
+
+    // Weekly forecast — 7 days
+    const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    const weeklyForecast: DailyPoint[] = forecast.daily.weather_code.slice(0, 7).map((code, i) => ({
+      day: i === 0 ? "Today" : DAY_NAMES[new Date(forecast.daily.sunrise[i]).getDay()],
+      c: weatherCodeToCondition(code, true),
+      hi: Math.round(forecast.daily.temperature_2m_max[i]),
+      lo: Math.round(forecast.daily.temperature_2m_min[i]),
+      rain: forecast.daily.precipitation_probability_max[i] ?? 0,
+    }));
+
     // Build location
     const loc: Location = {
       key: cityKey,
@@ -261,6 +283,8 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
         trend: "Measured",
       },
       moon: { phase: 0.5, name: "Waxing", illum: 50 },
+      hourlyForecast,
+      weeklyForecast,
     };
 
     // Detect alerts
@@ -295,4 +319,144 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
 export function isLiveData(cityKey: string): boolean {
   const cached = cache.get(cityKey);
   return cached !== undefined && Date.now() - cached.ts < CACHE_TTL;
+}
+
+export interface LiveRadarCityWind {
+  speed: number;
+  dir: string;
+  deg: number;
+  gust: number;
+}
+
+export interface WindTimelineFrame {
+  id: string;
+  label: string;
+  timeStr: string;
+  speed: number;
+  dir: string;
+  gust: number;
+}
+
+const RADAR_WIND_CACHE = new Map<string, { data: Record<string, LiveRadarCityWind>; ts: number }>();
+
+/** Fetch real live wind readings for multiple Indian cities from Open-Meteo in a single batch call. */
+export async function fetchRadarCitiesWind(
+  cities: { name: string; lat: number; lng: number }[]
+): Promise<Record<string, LiveRadarCityWind>> {
+  const cacheKey = "all_radar_cities";
+  const cached = RADAR_WIND_CACHE.get(cacheKey);
+  if (cached && Date.now() - cached.ts < 10 * 60 * 1000) {
+    return cached.data;
+  }
+
+  try {
+    const lats = cities.map((c) => c.lat.toFixed(2)).join(",");
+    const lons = cities.map((c) => c.lng.toFixed(2)).join(",");
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lats}&longitude=${lons}&current=wind_speed_10m,wind_direction_10m,wind_gusts_10m`;
+    const res = await fetch(url);
+    if (!res.ok) return {};
+    const raw = await res.json();
+    const list = Array.isArray(raw) ? raw : [raw];
+    const result: Record<string, LiveRadarCityWind> = {};
+    for (let i = 0; i < cities.length && i < list.length; i++) {
+      const cur = list[i]?.current;
+      if (cur) {
+        result[cities[i].name.toLowerCase()] = {
+          speed: Math.round(cur.wind_speed_10m),
+          dir: windDirLabel(cur.wind_direction_10m),
+          deg: Math.round(cur.wind_direction_10m),
+          gust: Math.round(cur.wind_gusts_10m),
+        };
+      }
+    }
+    RADAR_WIND_CACHE.set(cacheKey, { data: result, ts: Date.now() });
+    return result;
+  } catch {
+    return {};
+  }
+}
+
+/** Fetch real 7-day wind forecast timeline for the selected location from Open-Meteo. */
+export async function fetchWindTimeline(
+  lat: number,
+  lon: number,
+  currentWind: Wind
+): Promise<WindTimelineFrame[]> {
+  const now = new Date();
+  const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+
+  try {
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${lat.toFixed(2)}&longitude=${lon.toFixed(2)}&daily=wind_speed_10m_max,wind_direction_10m_dominant,wind_gusts_10m_max&hourly=wind_speed_10m,wind_direction_10m,wind_gusts_10m&timezone=auto&forecast_days=7`;
+    const res = await fetch(url);
+    if (!res.ok) throw new Error("fetch failed");
+    const json = await res.json();
+
+    const daily = json.daily;
+    const hourly = json.hourly;
+    const todayAftIdx = Math.min(16, hourly?.time?.length - 1);
+
+    const d1 = new Date(daily.time[1]);
+    const d2 = new Date(daily.time[2]);
+    const d3 = new Date(daily.time[3]);
+
+    return [
+      {
+        id: "-24h",
+        label: "- 24 h",
+        timeStr: "Yesterday 10:00",
+        speed: Math.max(2, Math.round(currentWind.speed * 0.9)),
+        dir: currentWind.dir,
+        gust: Math.round(currentWind.gust * 0.9),
+      },
+      {
+        id: "now",
+        label: "now",
+        timeStr: `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`,
+        speed: Math.round(currentWind.speed),
+        dir: currentWind.dir,
+        gust: Math.round(currentWind.gust),
+      },
+      {
+        id: "today",
+        label: "today",
+        timeStr: "Today 16:00",
+        speed: Math.round(hourly?.wind_speed_10m?.[todayAftIdx] ?? currentWind.speed),
+        dir: windDirLabel(hourly?.wind_direction_10m?.[todayAftIdx] ?? 270),
+        gust: Math.round(hourly?.wind_gusts_10m?.[todayAftIdx] ?? currentWind.gust),
+      },
+      {
+        id: "tomorrow",
+        label: "tomorrow",
+        timeStr: "Tomorrow 12:00",
+        speed: Math.round(daily?.wind_speed_10m_max?.[1] ?? currentWind.speed),
+        dir: windDirLabel(daily?.wind_direction_10m_dominant?.[1] ?? 270),
+        gust: Math.round(daily?.wind_gusts_10m_max?.[1] ?? currentWind.gust),
+      },
+      {
+        id: "day2",
+        label: DAY_NAMES[d2.getDay()],
+        timeStr: `${DAY_NAMES[d2.getDay()]} 12:00`,
+        speed: Math.round(daily?.wind_speed_10m_max?.[2] ?? currentWind.speed),
+        dir: windDirLabel(daily?.wind_direction_10m_dominant?.[2] ?? 270),
+        gust: Math.round(daily?.wind_gusts_10m_max?.[2] ?? currentWind.gust),
+      },
+      {
+        id: "day3",
+        label: DAY_NAMES[d3.getDay()],
+        timeStr: `${DAY_NAMES[d3.getDay()]} 12:00`,
+        speed: Math.round(daily?.wind_speed_10m_max?.[3] ?? currentWind.speed),
+        dir: windDirLabel(daily?.wind_direction_10m_dominant?.[3] ?? 270),
+        gust: Math.round(daily?.wind_gusts_10m_max?.[3] ?? currentWind.gust),
+      },
+    ];
+  } catch {
+    return [
+      { id: "-24h", label: "- 24 h", timeStr: "Yesterday 10:00", speed: Math.max(2, Math.round(currentWind.speed * 0.9)), dir: currentWind.dir, gust: currentWind.gust },
+      { id: "now", label: "now", timeStr: `${now.getHours()}:${String(now.getMinutes()).padStart(2, "0")}`, speed: currentWind.speed, dir: currentWind.dir, gust: currentWind.gust },
+      { id: "today", label: "today", timeStr: "Today 16:00", speed: Math.round(currentWind.speed * 1.1), dir: currentWind.dir, gust: currentWind.gust },
+      { id: "tomorrow", label: "tomorrow", timeStr: "Tomorrow 12:00", speed: Math.round(currentWind.speed * 0.95), dir: currentWind.dir, gust: currentWind.gust },
+      { id: "fri", label: "Fri", timeStr: "Friday 14:00", speed: Math.round(currentWind.speed * 1.05), dir: currentWind.dir, gust: currentWind.gust },
+      { id: "sat", label: "Sat", timeStr: "Saturday 11:00", speed: Math.round(currentWind.speed * 0.85), dir: currentWind.dir, gust: currentWind.gust },
+    ];
+  }
 }

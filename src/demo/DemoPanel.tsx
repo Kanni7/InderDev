@@ -124,7 +124,7 @@ export default function DemoPanel({
       };
     });
     if (day.alert) {
-      onSetAlertOverrides([{ moduleId: day.alert.moduleId, tier: day.alert.tier as "warning" | "critical" }]);
+      onSetAlertOverrides([{ moduleId: day.alert.moduleId as import("../mausam/data").Block, tier: day.alert.tier as "warning" | "critical" }]);
     } else {
       onSetAlertOverrides([]);
     }

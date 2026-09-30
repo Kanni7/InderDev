@@ -31,6 +31,7 @@ export default function App() {
 
   const [liveLocation, setLiveLocation] = useState<Location | null>(null);
   const [usingLiveData, setUsingLiveData] = useState(false);
+  const [chatInitialQ, setChatInitialQ] = useState<string | undefined>(undefined);
 
   // Sync UI state → profile
   useEffect(() => {
@@ -203,7 +204,8 @@ export default function App() {
               lang={lang}
               currentHour={currentHour}
               onMenu={() => setScreen("menu")}
-              onChat={() => setScreen("chat")}
+              onChat={() => { setChatInitialQ(undefined); setScreen("chat"); }}
+              onAskWhy={(q) => { setChatInitialQ(q); setScreen("chat"); }}
               onAlerts={() => setScreen("alerts")}
               onSelectLocation={setLocationKey}
               alertOverrides={alertOverrides}
@@ -250,7 +252,13 @@ export default function App() {
 
             {screen === "chat" && (
               <div className="absolute inset-0 z-40">
-                <Chat lang={lang} accent={accent} location={location} onClose={() => setScreen("home")} />
+                <Chat
+                  lang={lang}
+                  accent={accent}
+                  location={location}
+                  initialQ={chatInitialQ}
+                  onClose={() => setScreen("home")}
+                />
               </div>
             )}
 

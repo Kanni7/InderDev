@@ -1,17 +1,36 @@
 import { useState, useMemo } from "react";
 import {
-  vocations, weekly, hourly, tierMeta, locations,
+  vocations, tierMeta, locations,
   aqiColor, uvColor, chatChips, formatTemp, type TemperatureUnit,
   type UserTypeKey, type Location, type Block,
+  type HourlyPoint, type DailyPoint,
 } from "./data";
 import { getWeatherTheme, type Condition } from "./theme";
 import { PhotoHero, SunArc, PrecipCard, PollenCard, TravelCard, PackingCard, WindCard, HumidityCard, DewPointCard, PressureCard, MoonCard, HourlyInteractiveGraph } from "./ui";
 import { RainMapWidget, FullScreenRadar } from "./RainRadar";
+import FullScreenWindRadar from "./WindRadar";
 import { WidgetDetailModal, type DetailType } from "./screens";
 import { makeT, type Lang } from "./i18n";
 import * as I from "./icons";
 import { useProfile } from "../engine/profile";
 import { rankModules, type AlertOverride } from "../engine/ranking";
+
+/** Minimal static fallbacks used only if live data hasn't loaded yet. */
+const STATIC_HOURLY: HourlyPoint[] = [
+  { t: "Now", c: "sunny", temp: 29 }, { t: "10 AM", c: "sunny", temp: 31 },
+  { t: "11 AM", c: "cloudy", temp: 32 }, { t: "12 PM", c: "cloudy", temp: 33 },
+  { t: "1 PM", c: "sunny", temp: 34 }, { t: "2 PM", c: "cloudy", temp: 33 },
+  { t: "3 PM", c: "rainy", temp: 30 }, { t: "4 PM", c: "rainy", temp: 28 },
+];
+const STATIC_WEEKLY: DailyPoint[] = [
+  { day: "Today", c: "sunny", hi: 34, lo: 24, rain: 10 },
+  { day: "Mon", c: "cloudy", hi: 33, lo: 24, rain: 30 },
+  { day: "Tue", c: "rainy", hi: 30, lo: 23, rain: 70 },
+  { day: "Wed", c: "storm", hi: 28, lo: 22, rain: 85 },
+  { day: "Thu", c: "rainy", hi: 29, lo: 22, rain: 60 },
+  { day: "Fri", c: "cloudy", hi: 31, lo: 23, rain: 25 },
+  { day: "Sat", c: "sunny", hi: 33, lo: 24, rain: 15 },
+];
 
 /** Blocks that render as small gauges — these pair up two-across in the grid,
  * everything else spans the full width. */
@@ -40,7 +59,7 @@ function CondIcon({ c, className, style }: { c: Condition; className?: string; s
 }
 
 export default function Home({
-  userType, location, accent, lang, currentHour, onMenu, onChat, onAlerts, onSelectLocation,
+  userType, location, accent, lang, currentHour, onMenu, onChat, onAskWhy, onAlerts, onSelectLocation,
   alertOverrides = [],
 }: {
   userType: UserTypeKey;
@@ -50,6 +69,7 @@ export default function Home({
   currentHour?: number;
   onMenu?: () => void;
   onChat?: () => void;
+  onAskWhy?: (question: string) => void;
   onAlerts?: () => void;
   onSelectLocation?: (key: string) => void;
   alertOverrides?: AlertOverride[];
@@ -69,6 +89,7 @@ export default function Home({
   const [citySearchQuery, setCitySearchQuery] = useState("");
   const [showLocations, setShowLocations] = useState(false);
   const [showRadar, setShowRadar] = useState(false);
+  const [radarLayer, setRadarLayer] = useState<"rain" | "wind">("wind");
   const [activeDetail, setActiveDetail] = useState<DetailType | null>(null);
 
   const filteredLocations = locations.filter((l) =>
@@ -99,7 +120,20 @@ export default function Home({
     ),
     rainmap: (
       <div key="rainmap">
-        <RainMapWidget condition={location.condition} chance={location.precip.chance} accent={accent} city={location.city} lang={lang} locationKey={location.key} wind={location.wind} temp={location.temp} onExpand={() => setShowRadar(true)} />
+        <RainMapWidget
+          condition={location.condition}
+          chance={location.precip.chance}
+          accent={accent}
+          city={location.city}
+          lang={lang}
+          locationKey={location.key}
+          wind={location.wind}
+          temp={location.temp}
+          onExpand={() => {
+            setRadarLayer("rain");
+            setShowRadar(true);
+          }}
+        />
       </div>
     ),
     travel: (
@@ -113,7 +147,15 @@ export default function Home({
       </div>
     ),
     wind: (
-      <div key="wind" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("wind"); setActiveDetail("wind"); }}>
+      <div
+        key="wind"
+        className="h-full cursor-pointer transition active:scale-[0.98]"
+        onClick={() => {
+          trackTap("wind");
+          setRadarLayer("wind");
+          setShowRadar(true);
+        }}
+      >
         <WindCard wind={location.wind} accent={accent} lang={lang} />
       </div>
     ),
@@ -170,15 +212,15 @@ export default function Home({
     ),
     hourly: (
       <div key="hourly">
-        <HourlyInteractiveGraph hourlyData={hourly} unit={unit} accent={accent} lang={lang} />
+        <HourlyInteractiveGraph hourlyData={location.hourlyForecast ?? STATIC_HOURLY} unit={unit} accent={accent} lang={lang} />
       </div>
     ),
     weekly: (
       <div key="weekly">
         <BlockTitle>{t("7-day forecast")}</BlockTitle>
         <div className="overflow-hidden rounded-2xl border border-white/8 mausam-glass">
-          {weekly.map((d, i) => (
-            <div key={d.day} className={`flex items-center gap-3 px-4 py-3 ${i !== weekly.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}>
+          {(location.weeklyForecast ?? STATIC_WEEKLY).map((d, i, arr) => (
+            <div key={d.day} className={`flex items-center gap-3 px-4 py-3 ${i !== arr.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}>
               <span className="w-12 text-[13px] font-medium text-[var(--color-ink)]">{t(d.day)}</span>
               <CondIcon c={d.c} className="h-5 w-5 text-[var(--color-ink-soft)]" />
               <span className="w-10 text-[11px] text-[var(--color-tier-info)]">{d.rain}%</span>
@@ -199,7 +241,18 @@ export default function Home({
   return (
     <div className="relative z-10 h-full">
       {/* Full-screen radar overlay */}
-      {showRadar && (
+      {showRadar && radarLayer === "wind" && (
+        <FullScreenWindRadar
+          location={location}
+          accent={accent}
+          lang={lang}
+          onClose={() => setShowRadar(false)}
+          onSwitchLayer={(layer) => {
+            if (layer === "rain") setRadarLayer("rain");
+          }}
+        />
+      )}
+      {showRadar && radarLayer === "rain" && (
         <FullScreenRadar
           condition={location.condition}
           chance={location.precip.chance}
@@ -210,6 +263,9 @@ export default function Home({
           wind={location.wind}
           temp={location.temp}
           onClose={() => setShowRadar(false)}
+          onSwitchLayer={(layer) => {
+            if (layer === "wind") setRadarLayer("wind");
+          }}
         />
       )}
       {/* Location dropdown — rendered outside the scroll container so overflow-y-auto never clips it */}
@@ -365,7 +421,10 @@ export default function Home({
               {voc.insight.window && (
                 <span className="rounded-xl bg-[#6ea8d8] px-4 py-2 text-sm font-semibold text-[#06111f] shadow-sm">{voc.insight.window}</span>
               )}
-              <button onClick={onChat} className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition active:scale-95 hover:bg-white/20">
+              <button
+                onClick={() => onAskWhy ? onAskWhy(voc.insight.headline) : onChat?.()}
+                className="rounded-xl border border-white/20 bg-white/10 px-4 py-2 text-sm font-medium text-white backdrop-blur-md transition active:scale-95 hover:bg-white/20"
+              >
                 {t("Ask why")}
               </button>
             </div>
@@ -410,8 +469,9 @@ export default function Home({
           lang={lang}
           currentHour={currentHour}
           onClose={() => setActiveDetail(null)}
-          onOpenRadar={() => {
+          onOpenRadar={(layer = "rain") => {
             setActiveDetail(null);
+            setRadarLayer(layer);
             setShowRadar(true);
           }}
         />

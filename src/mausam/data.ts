@@ -156,6 +156,9 @@ export interface Moon { phase: number; name: string; illum: number; }
 
 export interface LocationAlert { tier: Tier; title: string; body: string; }
 
+export interface HourlyPoint { t: string; c: Condition; temp: number; }
+export interface DailyPoint { day: string; c: Condition; hi: number; lo: number; rain: number; }
+
 export interface Location {
   key: string;
   city: string;
@@ -175,6 +178,8 @@ export interface Location {
   dewPoint: number;
   pressure: Pressure;
   moon: Moon;
+  hourlyForecast?: HourlyPoint[];
+  weeklyForecast?: DailyPoint[];
 }
 
 export const locations: Location[] = [

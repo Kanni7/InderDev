@@ -1,4 +1,4 @@
-import { useState, type SVGProps, type ReactElement, type CSSProperties } from "react";
+import { useState, useEffect, type SVGProps, type ReactElement, type CSSProperties } from "react";
 import { userTypes, chatChips, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
 import { getWeatherTheme } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
@@ -259,15 +259,57 @@ export function Menu({
 }
 
 /* ───────────── 3. Mausam AI Assistant Chat Screen ───────────── */
-export function Chat({ onClose, lang, accent, location }: { onClose: () => void; lang: Lang; accent: string; location?: Location }) {
+export function Chat({
+  onClose, lang, accent, location, initialQ,
+}: {
+  onClose: () => void;
+  lang: Lang;
+  accent: string;
+  location?: Location;
+  initialQ?: string;
+}) {
   const t = makeT(lang);
   const { updateProfile } = useProfile();
-  const [thread, setThread] = useState<{ role: "user" | "ai"; text?: string; isOffline?: boolean }[]>([
-    { role: "user", text: t("Should I go for a run at noon?") },
-    { role: "ai" },
-  ]);
-  const [typing, setTyping] = useState(false);
+  const INITIAL_Q = initialQ ?? t("Should I go for a run at noon?");
+  const [thread, setThread] = useState<{
+    role: "user" | "ai";
+    text?: string;
+    isOffline?: boolean;
+    errorReason?: string;
+    source?: string;
+    confidence?: string;
+  }[]>([{ role: "user", text: INITIAL_Q }]);
+  const [typing, setTyping] = useState(true);
   const [inputVal, setInputVal] = useState("");
+
+  useEffect(() => {
+    if (!location) {
+      setTyping(false);
+      return;
+    }
+    askWhy(INITIAL_Q, location.city, location, lang).then((res) => {
+      setTyping(false);
+      setThread((th) => [
+        ...th,
+        {
+          role: "ai",
+          text: res.text,
+          isOffline: res.isOffline,
+          errorReason: res.errorReason,
+          source: res.source,
+          confidence: res.confidence,
+        },
+      ]);
+      updateProfile((p) => ({
+        ...p,
+        askWhyTopics: {
+          ...p.askWhyTopics,
+          [res.interest]: (p.askWhyTopics[res.interest] ?? 0) + 1,
+        },
+      }));
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   function ask(q: string) {
     setThread((th) => [...th, { role: "user", text: q }]);
@@ -276,8 +318,17 @@ export function Chat({ onClose, lang, accent, location }: { onClose: () => void;
     if (location) {
       askWhy(q, location.city, location, lang).then((res) => {
         setTyping(false);
-        setThread((th) => [...th, { role: "ai", text: res.text, isOffline: res.isOffline }]);
-        // Increment askWhyTopics for this interest
+        setThread((th) => [
+          ...th,
+          {
+            role: "ai",
+            text: res.text,
+            isOffline: res.isOffline,
+            errorReason: res.errorReason,
+            source: res.source,
+            confidence: res.confidence,
+          },
+        ]);
         updateProfile((p) => ({
           ...p,
           askWhyTopics: {
@@ -287,7 +338,7 @@ export function Chat({ onClose, lang, accent, location }: { onClose: () => void;
         }));
       });
     } else {
-      setTimeout(() => { setTyping(false); setThread((th) => [...th, { role: "ai" }]); }, 1000);
+      setTimeout(() => { setTyping(false); setThread((th) => [...th, { role: "ai", text: t("Weather data unavailable.") }]); }, 500);
     }
   }
 
@@ -324,16 +375,20 @@ export function Chat({ onClose, lang, accent, location }: { onClose: () => void;
           ) : m.text ? (
             <div key={i} className="max-w-[90%] space-y-2 rounded-3xl rounded-bl-md p-4.5 mausam-glass">
               <p className="text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">{m.text}</p>
-              {m.isOffline && (
-                <span className="inline-block rounded-full bg-yellow-600/20 px-2 py-0.5 text-[9px] font-mono text-yellow-300">{t("offline answer")}</span>
-              )}
-              <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">
-                {t("Prototype uses Open-Meteo in place of IMD/CPCB feeds.")}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                {m.source && m.confidence && (
+                  <span className="font-mono text-[9px] uppercase tracking-wider text-[var(--color-ink-faint)]">
+                    {m.source} · {m.confidence}
+                  </span>
+                )}
+                {m.isOffline && (
+                  <span className="rounded-full bg-yellow-600/20 px-2 py-0.5 text-[9px] font-mono text-yellow-300">
+                    {m.errorReason ?? t("offline answer")}
+                  </span>
+                )}
+              </div>
             </div>
-          ) : (
-            <StructuredAnswer key={i} lang={lang} accent={accent} />
-          )
+          ) : null
         )}
         {typing && (
           <div className="flex items-center gap-2 text-[var(--color-ink-faint)]">
@@ -367,34 +422,6 @@ export function Chat({ onClose, lang, accent, location }: { onClose: () => void;
   );
 }
 
-function StructuredAnswer({ lang, accent }: { lang: Lang; accent: string }) {
-  const t = makeT(lang);
-  return (
-    <div className="max-w-[90%] space-y-3 rounded-3xl rounded-bl-md p-4.5 mausam-glass">
-      <span className="inline-flex items-center gap-1.5 rounded-full bg-[rgba(229,72,77,0.16)] px-2.5 py-1 text-[11px] font-semibold text-[var(--color-tier-critical)]">
-        ⚠ {t("Not recommended for noon")}
-      </span>
-      <Row label={t("Weather")}>{t("Temp hits 35°C with UV index 9 and 68% humidity at noon.")}</Row>
-      <Row label={t("Reasoning")}>{t("Combined heat, UV and humidity push the feels-like to 39°C (Heat Exhaustion risk).")}</Row>
-      <Row label={t("Recommendation")}>
-        <span className="font-semibold text-[var(--color-ink)]">{t("Run 6:15 to 8:00 AM instead")}</span>. {t("Cooler air and clean AQI.")}
-      </Row>
-      <button className="mt-1 w-full rounded-2xl py-3 text-[13.5px] font-semibold text-black transition active:scale-[0.98]" style={{ background: accent }}>
-        {t("Set 6:15 AM run reminder")}
-      </button>
-      <p className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Based on 3-hour forecast · IMD Pune")}</p>
-    </div>
-  );
-}
-
-function Row({ label, children }: { label: string; children: React.ReactNode }) {
-  return (
-    <p className="text-[13.5px] leading-relaxed text-[var(--color-ink-soft)]">
-      <span className="font-mono text-[10px] uppercase tracking-wider text-[var(--color-ink-faint)]">{label} · </span>
-      {children}
-    </p>
-  );
-}
 
 /* ───────────── 4. Emergency Alerts Control Screen ───────────── */
 export function Alerts({ onClose, lang, accent, location }: { onClose: () => void; lang: Lang; accent: string; location: Location }) {
@@ -469,7 +496,7 @@ export function WidgetDetailModal({
   lang: Lang;
   currentHour?: number;
   onClose: () => void;
-  onOpenRadar?: () => void;
+  onOpenRadar?: (layer?: "rain" | "wind") => void;
 }) {
   const t = makeT(lang);
 
@@ -519,9 +546,9 @@ export function WidgetDetailModal({
       <div className="scroll-hide relative z-10 flex-1 space-y-3.5 overflow-y-auto px-5 py-5">
         {type === "air" && <AirDetail location={location} accent={accent} lang={lang} />}
         {type === "sun" && <SunDetail location={location} accent={accent} lang={lang} />}
-        {type === "precip" && <PrecipDetail location={location} accent={accent} lang={lang} onOpenRadar={onOpenRadar} />}
+        {type === "precip" && <PrecipDetail location={location} accent={accent} lang={lang} onOpenRadar={() => onOpenRadar?.("rain")} />}
         {type === "pollen" && <PollenDetail location={location} accent={accent} lang={lang} />}
-        {type === "wind" && <WindDetail location={location} accent={accent} lang={lang} />}
+        {type === "wind" && <WindDetail location={location} accent={accent} lang={lang} onOpenRadar={() => onOpenRadar?.("wind")} />}
         {type === "humidity" && <HumidityDetail location={location} accent={accent} lang={lang} />}
         {type === "dewpoint" && <DewPointDetail location={location} accent={accent} lang={lang} />}
         {type === "pressure" && <PressureDetail location={location} accent={accent} lang={lang} />}
@@ -706,7 +733,7 @@ function PollenDetail({ location, accent, lang }: { location: Location; accent: 
   );
 }
 
-function WindDetail({ location, accent, lang }: { location: Location; accent: string; lang: Lang }) {
+function WindDetail({ location, accent, lang, onOpenRadar }: { location: Location; accent: string; lang: Lang; onOpenRadar?: () => void }) {
   const t = makeT(lang);
   const w = location.wind;
   const dirAngles: Record<string, number> = { N: 0, NE: 45, E: 90, SE: 135, S: 180, SW: 225, W: 270, NW: 315 };
@@ -743,6 +770,17 @@ function WindDetail({ location, accent, lang }: { location: Location; accent: st
           <p className="text-[11px]" style={{ color: accent }}>{t("Feels Refreshing")}</p>
         </div>
       </div>
+
+      {onOpenRadar && (
+        <button
+          onClick={onOpenRadar}
+          className="w-full py-3.5 rounded-2xl text-[14px] font-semibold text-black transition active:scale-[0.98] flex items-center justify-center gap-2 shadow-lg"
+          style={{ background: accent }}
+        >
+          <span>🚩</span>
+          <span>{t("Open Live Wind Radar Map")}</span>
+        </button>
+      )}
     </div>
   );
 }
