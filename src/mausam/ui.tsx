@@ -1194,7 +1194,7 @@ export function MoonCard({
   const cityName = cityKey ? cityKey.charAt(0).toUpperCase() + cityKey.slice(1) : "";
 
   return (
-    <div className="group relative flex h-full flex-col rounded-3xl p-4 mausam-glass transition-all duration-300 hover:border-white/18 overflow-hidden">
+    <div className="group relative flex h-full flex-col rounded-3xl p-4 mausam-glass transition-all duration-300 hover:border-white/18">
       {/* Top: header + large moon side-by-side */}
       <div className="flex flex-1 items-start justify-between gap-2">
         {/* Left column: label → phase name → illumination */}
@@ -1216,9 +1216,9 @@ export function MoonCard({
         </div>
 
         {/* Right: 3D moon sphere */}
-        <div className="relative -mr-1 mt-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
+        <div className="relative mt-2 flex-shrink-0" onClick={(e) => e.stopPropagation()}>
           <div className="transition-transform duration-300 hover:scale-[1.04]">
-            <RealisticMoon phase={phase} size={96} interactive={true} />
+            <RealisticMoon phase={phase} size={88} interactive={true} />
           </div>
         </div>
       </div>
