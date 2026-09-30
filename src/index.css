@@ -6,7 +6,7 @@
   --font-sans: "DM Sans", "Noto Sans Devanagari", system-ui, sans-serif;
   --font-mono: "DM Sans", "Noto Sans Devanagari", ui-monospace, monospace;
 
-  /* Dark glass base — translucent frosted glass matching Image 2 reference */
+  /* Dark glass base - translucent frosted glass matching Image 2 reference */
   --color-ink: #ffffff;
   --color-ink-soft: rgba(255, 255, 255, 0.75);
   --color-ink-faint: rgba(255, 255, 255, 0.50);
@@ -42,7 +42,7 @@ body {
 .scroll-hide { scrollbar-width: none; -ms-overflow-style: none; }
 .scroll-hide::-webkit-scrollbar { display: none; }
 
-/* Frosted glass cards — subtle dark tint with blur */
+/* Frosted glass cards - subtle dark tint with blur */
 .mausam-glass {
   background: rgba(15, 18, 28, 0.45) !important;
   backdrop-filter: blur(20px) saturate(1.2);
@@ -58,7 +58,7 @@ body {
   box-shadow: 8px 0 40px 0 rgba(0, 0, 0, 0.6);
 }
 
-/* "For you" insight card — slightly stronger frosted glass */
+/* "For you" insight card - slightly stronger frosted glass */
 .mausam-glass-strong {
   background: rgba(15, 18, 28, 0.50) !important;
   backdrop-filter: blur(24px) saturate(1.3);

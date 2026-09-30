@@ -300,7 +300,7 @@ function getMoonAltitude(d: Date, lat: number, lng: number) {
 }
 
 function formatTime(d: Date): string {
-  return d.toLocaleTimeString([], { hour: "numeric", minute: "2-digit" });
+  return d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit", hour12: true });
 }
 
 // In-memory cache for moonrise/moonset times to guarantee 60fps continuous timeline scrubbing

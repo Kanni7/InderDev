@@ -94,7 +94,7 @@ export function computeBehaviourScores(profile: UserProfile): Record<Interest, n
     raw[locInterest] += 60; // equivalent to 1 hour of signal
   }
 
-  // Module interactions — taps boost the primary interest, scrollPasts penalise
+  // Module interactions - taps boost the primary interest, scrollPasts penalise
   for (const [modId, inter] of Object.entries(profile.moduleInteractions)) {
     const primary = MODULE_PRIMARY_INTEREST[modId];
     if (primary) {

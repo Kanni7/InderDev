@@ -13,7 +13,7 @@ import { parseTimeStringToHours, calculateSolarPosition } from "./background/sol
 
 const PANEL = "#090d16";
 
-/* Weather-adaptive page ground — solid black */
+/* Weather-adaptive page ground - solid black */
 function pageGround(_accent?: string): CSSProperties {
   return {
     background: "#000000",
@@ -111,7 +111,7 @@ const PROFILE_COLORS: Record<string, string> = {
   event:    "#f59e0b",
 };
 
-/* ───────────── 1. Onboarding — User Type selection ───────────── */
+/* ───────────── 1. Onboarding - User Type selection ───────────── */
 export function Onboarding({
   value, onChange, onContinue, lang, onBack, accent,
 }: {
@@ -677,7 +677,7 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
   const air = location.air;
   return (
     <div className="space-y-3.5">
-      {/* AQI Overview — Borderless Home Glass */}
+      {/* AQI Overview - Borderless Home Glass */}
       <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
         <div className="flex items-center justify-between">
           <div>

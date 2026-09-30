@@ -32,7 +32,7 @@ const STATIC_WEEKLY: DailyPoint[] = [
   { day: "Sat", c: "sunny", hi: 33, lo: 24, rain: 15 },
 ];
 
-/** Blocks that render as small gauges — these pair up two-across in the grid,
+/** Blocks that render as small gauges - these pair up two-across in the grid,
  * everything else spans the full width. */
 const COMPACT = new Set<Block>(["wind", "humidity", "pressure", "moon", "dewpoint", "pollen"]);
 
@@ -257,7 +257,7 @@ export default function Home({
           }}
         />
       )}
-      {/* Location dropdown — rendered outside the scroll container so overflow-y-auto never clips it */}
+      {/* Location dropdown - rendered outside the scroll container so overflow-y-auto never clips it */}
       {showLocations && (
         <>
           <button className="absolute inset-0 z-20 cursor-default" aria-label="Close" onClick={() => setShowLocations(false)} />
@@ -350,7 +350,7 @@ export default function Home({
               <span>{t(location.summary)}</span>
             </div>
 
-            {/* Alert banner — rendered when location has an alert OR demo panel triggered one */}
+            {/* Alert banner - rendered when location has an alert OR demo panel triggered one */}
             {(location.alert || (alertOverrides && alertOverrides.length > 0)) && (() => {
               const demoAlert = alertOverrides && alertOverrides.length > 0
                 ? {
@@ -394,7 +394,7 @@ export default function Home({
 
         {/* ── Body ── */}
         <div className="relative z-10 space-y-3 px-5 pb-5">
-          {/* For You — neutral sleek frosted glass */}
+          {/* For You - neutral sleek frosted glass */}
           <section
             key={userType + location.key}
             className="animate-insight rounded-3xl border border-white/10 p-5 mausam-glass-strong"
@@ -422,7 +422,7 @@ export default function Home({
             </div>
           </section>
 
-          {/* Ranked blocks (non-pinned) — order determined by weight engine + live relevance.
+          {/* Ranked blocks (non-pinned) - order determined by weight engine + live relevance.
               Compact gauges pair 2-up; wide panels span full width.
               CSS transitions animate position changes, respecting prefers-reduced-motion. */}
           {layoutRows(rankedOrder).map((row, idx) =>
@@ -469,7 +469,7 @@ export default function Home({
         />
       )}
 
-      {/* ── Floating Mausam AI — icon at right, expands on hover ── */}
+      {/* ── Floating Mausam AI - icon at right, expands on hover ── */}
       {!activeDetail && (
         <FloatingAI onChat={onChat} accent={accent} lang={lang} />
       )}

@@ -3,7 +3,7 @@
  * 
  * Curated Unsplash photography featuring pure sky and cloud formations
  * for every single time-of-day phase and weather state.
- * No cityscapes, no artificial clutter — authentic atmospheric sky and clouds.
+ * No cityscapes, no artificial clutter - authentic atmospheric sky and clouds.
  */
 
 import type { TimeOfDayPhase, EnvironmentalWeatherCondition } from "./types";

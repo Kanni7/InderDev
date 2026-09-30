@@ -95,7 +95,7 @@ export default function App() {
         className="mausam-device relative w-full overflow-hidden text-white shadow-[0_50px_100px_-20px_rgba(0,0,0,0.9)] sm:w-[410px] sm:rounded-[44px] border border-white/10"
         style={deviceStyle}
       >
-        {/* Dynamic Environmental Background Engine — active on home & weather screens */}
+        {/* Dynamic Environmental Background Engine - active on home & weather screens */}
         {!isProfileSelection && (
           <BackgroundEngine
             location={location}
@@ -105,7 +105,7 @@ export default function App() {
           />
         )}
 
-        {/* Status bar — clicking the time opens the unofficial time switcher */}
+        {/* Status bar - clicking the time opens the unofficial time switcher */}
         <div className="absolute inset-x-0 top-0 z-50 flex items-center justify-between px-7 pt-3.5 text-[13px] font-semibold text-white pointer-events-auto">
           <button
             onClick={() => setShowTimePicker((s) => !s)}

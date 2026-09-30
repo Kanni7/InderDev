@@ -31,7 +31,7 @@ function extractAccent(img: HTMLImageElement): string | null {
   try {
     data = ctx.getImageData(0, 0, size, size).data;
   } catch {
-    return null; // tainted canvas (CORS) — keep the fallback
+    return null; // tainted canvas (CORS) - keep the fallback
   }
 
   // Bucket colors coarsely and score each by frequency * vibrancy.

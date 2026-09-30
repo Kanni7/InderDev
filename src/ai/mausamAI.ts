@@ -62,7 +62,7 @@ async function callGroqDirect(
       if (!res.ok) {
         const body = await res.text().catch(() => "");
         if (res.status === 401) return { error: "Groq key invalid (401)" };
-        if (res.status === 429) return { error: "Groq rate limit (429) — retry in a moment" };
+        if (res.status === 429) return { error: "Groq rate limit (429) - retry in a moment" };
         return { error: `Groq error ${res.status}: ${body.slice(0, 120)}` };
       }
       const data = await res.json();
@@ -178,7 +178,7 @@ export type AskWhyResult = {
  * 3. Fast path for current_value / out_of_scope (no AI)
  * 4. Try FastAPI server (xAI)
  * 5. Fall back to Groq direct
- * 6. Validate numbers — use template if hallucination detected
+ * 6. Validate numbers - use template if hallucination detected
  * 7. Use template as final fallback
  */
 export async function askWhy(
@@ -241,14 +241,14 @@ export async function askWhy(
       };
     }
     // Validation failed → use template
-    console.warn("[MausamAI] Number validation failed — using template");
+    console.warn("[MausamAI] Number validation failed - using template");
     return {
       text: buildTemplate(decision, effectiveLang),
       isOffline: true,
       interest,
       source: decision.source,
       confidence: decision.confidence,
-      errorReason: "Answer validated — numbers corrected",
+      errorReason: "Answer validated - numbers corrected",
     };
   }
 

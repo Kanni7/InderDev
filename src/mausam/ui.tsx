@@ -161,7 +161,7 @@ function RainLayer({ dense }: { dense?: boolean }) {
   );
 }
 
-/** Sun path arc — Refined Apple Weather-inspired diurnal horizon curve + sunrise & sunset metrics */
+/** Sun path arc - Refined Apple Weather-inspired diurnal horizon curve + sunrise & sunset metrics */
 export function SunArc({
   sun,
   accent,
@@ -483,7 +483,7 @@ export function SunArc({
   );
 }
 
-/** Precipitation widget — next rain, chance, and next-hours probability bars */
+/** Precipitation widget - next rain, chance, and next-hours probability bars */
 export function PrecipCard({ precip, accent, lang }: { precip: Precip; accent: string; lang: Lang }) {
   const t = makeT(lang);
   return (
@@ -554,7 +554,7 @@ function windVec(dir: string): { dx: number; dy: number } {
   return m[dir] ?? { dx: 0, dy: -1 };
 }
 
-/** Rain radar — geographic India map with real city positions and wind-driven precipitation cells */
+/** Rain radar - geographic India map with real city positions and wind-driven precipitation cells */
 export function RainMap({
   condition, chance, accent, city, lang, locationKey, wind,
 }: {
@@ -612,7 +612,7 @@ export function RainMap({
             </clipPath>
           </defs>
 
-          {/* Water — subtle teal for seas */}
+          {/* Water - subtle teal for seas */}
           <rect x="0" y="0" width="220" height="150" fill="rgba(30,60,90,0.28)" />
 
           {/* India landmass */}
@@ -633,7 +633,7 @@ export function RainMap({
             ))}
           </g>
 
-          {/* Radar sweep — rotates around the city pin */}
+          {/* Radar sweep - rotates around the city pin */}
           <g transform={`translate(${pin.x} ${pin.y})`} clipPath={`url(#clip_${uid})`}>
             <g>
               <animateTransform attributeName="transform" type="rotate" from="0 0 0" to="360 0 0" dur="5s" repeatCount="indefinite" />
@@ -677,7 +677,7 @@ export function RainMap({
   );
 }
 
-/** Pollen count — shown for every profile */
+/** Pollen count - shown for every profile */
 export function PollenCard({ pollen, lang }: { pollen: Pollen; lang: Lang }) {
   const t = makeT(lang);
   const color = pollenColor(pollen.level);
@@ -700,7 +700,7 @@ export function PollenCard({ pollen, lang }: { pollen: Pollen; lang: Lang }) {
   );
 }
 
-/** Travel & commute — flights, traffic, visibility */
+/** Travel & commute - flights, traffic, visibility */
 export function TravelCard({ travel, accent, lang }: { travel: Travel; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const trColor = trafficColor(travel.traffic);
@@ -739,7 +739,7 @@ export function TravelCard({ travel, accent, lang }: { travel: Travel; accent: s
   );
 }
 
-/** Packing tip — derived from the current sky */
+/** Packing tip - derived from the current sky */
 export function PackingCard({ condition, accent, lang }: { condition: Condition; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const tips = packingTips(condition);
@@ -760,7 +760,7 @@ export function PackingCard({ condition, accent, lang }: { condition: Condition;
   );
 }
 
-/** Wind — Refined Apple Weather-inspired meteorological compass rose + speed & gusts */
+/** Wind - Refined Apple Weather-inspired meteorological compass rose + speed & gusts */
 export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const w = wind ?? { speed: 0, dir: "N", gust: 0 };
@@ -820,7 +820,7 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
 
       {/* ── Center Content: Metrics + Precision Compass Rose ── */}
       <div className="my-auto flex items-center justify-between gap-2.5">
-        {/* Left: Speed, Bearing & Gusts — Stacked cleanly with zero truncation */}
+        {/* Left: Speed, Bearing & Gusts - Stacked cleanly with zero truncation */}
         <div className="min-w-0 flex-1">
           <div className="flex items-baseline gap-1">
             <span className="text-[30px] font-semibold leading-none text-[var(--color-ink)] tracking-tight">
@@ -923,7 +923,7 @@ export function WindCard({ wind, accent, lang }: { wind?: Wind; accent: string; 
   );
 }
 
-/** Humidity — ring gauge */
+/** Humidity - ring gauge */
 export function HumidityCard({ humidity: humidityIn, dewPoint: dewIn, accent, lang }: { humidity?: number; dewPoint?: number; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const humidity = humidityIn ?? 0;
@@ -950,7 +950,7 @@ export function HumidityCard({ humidity: humidityIn, dewPoint: dewIn, accent, la
   );
 }
 
-/** Dew point — comfort read */
+/** Dew point - comfort read */
 export function DewPointCard({ dewPoint: dewIn, lang }: { dewPoint?: number; lang: Lang }) {
   const t = makeT(lang);
   const dewPoint = dewIn ?? 0;
@@ -982,7 +982,7 @@ export function DewPointCard({ dewPoint: dewIn, lang }: { dewPoint?: number; lan
   );
 }
 
-/** Pressure — Refined Apple Weather Arc Gauge Card */
+/** Pressure - Refined Apple Weather Arc Gauge Card */
 export function PressureCard({
   pressure: pressureIn,
   accent,
@@ -1154,7 +1154,7 @@ export function PressureCard({
   );
 }
 
-/** Moon phase — Apple Weather inspired realistic lunar widget with astronomical data */
+/** Moon phase - Apple Weather inspired realistic lunar widget with astronomical data */
 export function MoonCard({
   moon: moonIn,
   cityKey,

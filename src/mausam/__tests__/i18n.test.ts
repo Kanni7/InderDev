@@ -12,13 +12,13 @@ describe("i18n translation engine", () => {
   });
 
   it("translates activity running logged headlines", () => {
-    expect(tHi("1 hrs of running logged — great work")).toBe("1 घंटे की दौड़ दर्ज की गई — शानदार कार्य!");
-    expect(tHi("2.5 hrs of running logged — great work")).toBe("2.5 घंटे की दौड़ दर्ज की गई — शानदार कार्य!");
+    expect(tHi("1 hrs of running logged - great work")).toBe("1 घंटे की दौड़ दर्ज की गई - शानदार कार्य!");
+    expect(tHi("2.5 hrs of running logged - great work")).toBe("2.5 घंटे की दौड़ दर्ज की गई - शानदार कार्य!");
   });
 
   it("translates running condition details with AQI & breeze", () => {
-    const en = "26°C, 8 km/h NW breeze, AQI 55. Moderate AQI — consider a mask on long runs.";
-    expect(tHi(en)).toBe("26°C, 8 किमी/घं हवा, AQI 55। मध्यम वायु गुणवत्ता — लंबी दौड़ में मास्क का प्रयोग करें।");
+    const en = "26°C, 8 km/h NW breeze, AQI 55. Moderate AQI - consider a mask on long runs.";
+    expect(tHi(en)).toBe("26°C, 8 किमी/घं हवा, AQI 55। मध्यम वायु गुणवत्ता - लंबी दौड़ में मास्क का प्रयोग करें।");
   });
 
   it("translates countdown badges for sun and moon events", () => {
