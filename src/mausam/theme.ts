@@ -22,7 +22,7 @@ export interface WeatherTheme {
  * to test time of day photos directly in code without touching UI!
  * Leave as null to use system clock or top status-bar time toggle.
  */
-export const DEV_TIME_OVERRIDE: number | null = null;
+export const DEV_TIME_OVERRIDE: number | null = 16.2; // 4:12 PM default display time
 
 export function getTimeOfDayFromHour(hour: number): TimeOfDay {
   if (hour >= 5 && hour < 8) return "dawn";
