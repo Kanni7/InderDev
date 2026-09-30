@@ -233,9 +233,12 @@ export function RainMapWidget({
         </div>
 
         {/* Expand icon */}
-        <div className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/40 backdrop-blur-sm">
-          <svg viewBox="0 0 16 16" className="h-3.5 w-3.5 text-white/70" fill="none" stroke="currentColor" strokeWidth="1.5">
-            <path d="M10 2h4v4M6 14H2v-4M14 2L9 7M2 14l5-5" />
+        <div className="absolute bottom-2 right-2 flex h-7 w-7 items-center justify-center rounded-full bg-black/50 backdrop-blur-md border border-white/10 shadow-md">
+          <svg viewBox="0 0 24 24" className="h-3.5 w-3.5 text-white/90" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+            <polyline points="15 3 21 3 21 9" />
+            <polyline points="9 21 3 21 3 15" />
+            <line x1="21" y1="3" x2="14" y2="10" />
+            <line x1="3" y1="21" x2="10" y2="14" />
           </svg>
         </div>
       </button>
@@ -324,10 +327,13 @@ export function FullScreenRadar({
         {/* Close */}
         <button
           onClick={onClose}
-          className="absolute left-4 top-12 z-20 grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur-md active:scale-95"
+          className="absolute left-4 top-12 z-20 grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 shadow-lg"
           aria-label="Close"
         >
-          <I.Close className="h-5 w-5 text-white" />
+          <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round" strokeLinejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18" />
+            <line x1="6" y1="6" x2="18" y2="18" />
+          </svg>
         </button>
 
         {/* Right-side buttons (layers, wind switch, navigate) */}
@@ -335,33 +341,35 @@ export function FullScreenRadar({
           {/* Layers */}
           <button
             onClick={() => setShowLegend((s) => !s)}
-            className="grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur-md active:scale-95"
+            className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 shadow-lg text-white"
             aria-label="Layers"
             title="Toggle Legend"
           >
-            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.8">
-              <path d="M12 4L3 9l9 5 9-5-9-5z" />
-              <path d="M3 14l9 5 9-5" />
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round">
+              <polygon points="12 2 2 7 12 12 22 7 12 2" fill="currentColor" fillOpacity="0.2" />
+              <polyline points="2 17 12 22 22 17" />
+              <polyline points="2 12 12 17 22 12" />
             </svg>
           </button>
           {/* Switch to Wind Radar */}
           {onSwitchLayer && (
             <button
               onClick={() => onSwitchLayer("wind")}
-              className="grid h-9 w-9 place-items-center rounded-full bg-blue-600/80 hover:bg-blue-600 backdrop-blur-md border border-blue-400 active:scale-95 transition shadow-lg"
+              className="grid h-10 w-10 place-items-center rounded-xl bg-blue-600/90 hover:bg-blue-600 backdrop-blur-md border border-blue-400 active:scale-95 transition shadow-lg"
               aria-label="Switch to Wind Radar"
               title="Switch to Wind Radar"
             >
-              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2.2">
-                <path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z" fill="currentColor" fillOpacity="0.4" />
-                <line x1="4" y1="22" x2="4" y2="15" />
+              <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M9.59 4.59A2 2 0 1 1 11 8H2" />
+                <path d="M12.59 19.41A2 2 0 1 0 14 16H2" />
+                <path d="M15.73 7.73A2.5 2.5 0 1 1 17.5 12H2" />
               </svg>
             </button>
           )}
           {/* Navigate */}
-          <button className="grid h-9 w-9 place-items-center rounded-full bg-black/50 backdrop-blur-md active:scale-95" aria-label="Navigate">
-            <svg viewBox="0 0 24 24" className="h-5 w-5" fill="none" stroke="#4dabf7" strokeWidth="2">
-              <path d="M3 11l19-9-9 19-2-8-8-2z" />
+          <button className="grid h-10 w-10 place-items-center rounded-xl bg-black/55 backdrop-blur-md border border-white/15 active:scale-95 shadow-lg" aria-label="Navigate">
+            <svg viewBox="0 0 24 24" className="h-5 w-5 text-sky-400" fill="currentColor">
+              <polygon points="3 11 22 2 13 21 11 13 3 11" />
             </svg>
           </button>
         </div>
@@ -397,8 +405,10 @@ export function FullScreenRadar({
               style={{ background: "rgba(50,60,80,0.78)", backdropFilter: "blur(12px)", border: "1px solid rgba(255,255,255,0.12)" }}
             >
               <span className="text-[22px] font-semibold">{temp ?? 31}°</span>
-              <svg viewBox="0 0 24 24" className="h-5 w-5 text-white/80" fill="currentColor">
-                <path d="M6 19a5 5 0 0 1-.56-9.97A7.002 7.002 0 0 1 18.83 10H19a4 4 0 0 1 0 8H6z" />
+              <svg viewBox="0 0 24 24" className="h-5 w-5 text-amber-300" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M14 14.76V3.5a2 2 0 0 0-4 0v11.26a4.5 4.5 0 1 0 4 0z" />
+                <line x1="12" y1="9" x2="12" y2="14" strokeWidth="2" stroke="currentColor" />
+                <circle cx="12" cy="16.5" r="2" fill="currentColor" stroke="none" />
               </svg>
             </div>
             <span className="mt-1 text-[11px] font-medium text-white/55">{t("My Location")}</span>
@@ -420,12 +430,13 @@ export function FullScreenRadar({
               aria-label={playing ? "Pause" : "Play"}
             >
               {playing ? (
-                <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="currentColor">
-                  <rect x="6" y="5" width="4" height="14" rx="1" /><rect x="14" y="5" width="4" height="14" rx="1" />
+                <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 text-white" fill="currentColor">
+                  <rect x="6" y="4" width="4" height="16" rx="1.5" />
+                  <rect x="14" y="4" width="4" height="16" rx="1.5" />
                 </svg>
               ) : (
-                <svg viewBox="0 0 24 24" className="h-5 w-5 text-white" fill="currentColor">
-                  <path d="M8 5v14l11-7z" />
+                <svg viewBox="0 0 24 24" className="h-4.5 w-4.5 translate-x-0.5 text-white" fill="currentColor">
+                  <path d="M7 4.77v14.46a1 1 0 0 0 1.5.86l12.05-7.23a1 1 0 0 0 0-1.72L8.5 3.91A1 1 0 0 0 7 4.77Z" />
                 </svg>
               )}
             </button>
