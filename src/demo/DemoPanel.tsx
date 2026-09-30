@@ -6,6 +6,8 @@ import { scenarios, type ScenarioDay } from "./scenarios";
 import { makeT, type Lang } from "../mausam/i18n";
 import type { Location } from "../mausam/data";
 import type { AlertOverride } from "../engine/ranking";
+import { parseActivityText } from "../engine/activityParser";
+import { runLSTMInference, initLSTMState, type LSTMState, type LSTMInferenceResult } from "../engine/lstmModel";
 
 const INTEREST_LABELS: Record<Interest, { en: string; hi: string }> = {
   health: { en: "Health", hi: "स्वास्थ्य" },
@@ -49,6 +51,24 @@ export default function DemoPanel({
   } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
+  // LSTM Activity Predictor state
+  const [activityInput, setActivityInput] = useState("");
+  const [lastLSTMResult, setLastLSTMResult] = useState<LSTMInferenceResult | null>(null);
+  const lstmStateRef = useRef<LSTMState>(initLSTMState());
+
+  const handleRunLSTM = (customText?: string) => {
+    const textToRun = (customText ?? activityInput).trim();
+    if (!textToRun) return;
+
+    const parsed = parseActivityText(textToRun);
+    const result = runLSTMInference(profile, parsed, lstmStateRef.current);
+
+    // Save updated profile with new weights
+    setProfile(result.updatedProfile);
+    setLastLSTMResult(result);
+    setActivityInput("");
+  };
+
   // Activity signal buttons — immediately recalculate weights for instant feedback
   const addSignal = (key: keyof typeof profile.activitySignals, amount: number) => {
     updateProfile((p) => {
@@ -78,6 +98,8 @@ export default function DemoPanel({
 
   // Reset profile
   const resetProfile = () => {
+    lstmStateRef.current = initLSTMState();
+    setLastLSTMResult(null);
     const fresh = {
       ...profile,
       interestWeights: initWeights(profile.selectedInterests),
@@ -311,10 +333,103 @@ export default function DemoPanel({
             </div>
           </div>
 
+          {/* AI Activity Weight Predictor (LSTM Neural Model) */}
+          <div className="rounded-2xl border border-sky-500/25 bg-gradient-to-b from-sky-500/10 to-transparent p-3 space-y-2.5 shadow-lg">
+            <div className="flex items-center justify-between">
+              <h4 className="text-[11px] font-semibold uppercase tracking-wide text-sky-300 flex items-center gap-1.5">
+                <span>⚡</span>
+                <span>{lang === "hi" ? "AI गतिविधि मॉडल (LSTM)" : "AI Activity Model (LSTM)"}</span>
+              </h4>
+              <span className="text-[9px] font-mono font-medium px-2 py-0.5 rounded-full bg-sky-400/20 text-sky-200 border border-sky-400/30">
+                Non-linear Recurrent
+              </span>
+            </div>
+
+            <p className="text-[10.5px] text-white/60 leading-tight">
+              {lang === "hi"
+                ? "गतिविधि दर्ज करें (उदा. 30 min cycling बनाम 1 hour cycling) और देखें कि LSTM मॉडल भार को कैसे अलग-अलग अपडेट करता है:"
+                : "Enter an activity (e.g. 30 min cycling vs 1 hour cycling) to test non-linear weight adaptation:"}
+            </p>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleRunLSTM();
+              }}
+              className="flex items-center gap-1.5"
+            >
+              <input
+                type="text"
+                value={activityInput}
+                onChange={(e) => setActivityInput(e.target.value)}
+                placeholder={lang === "hi" ? "उदा. 30 min cycling या 1 hour run..." : "e.g. 30 min cycling, 1 hour run..."}
+                className="flex-1 rounded-xl border border-white/15 bg-white/10 px-3 py-2 text-[11.5px] text-white outline-none placeholder:text-white/35 focus:border-sky-400 focus:bg-white/15 transition"
+              />
+              <button
+                type="submit"
+                className="rounded-xl bg-sky-400 hover:bg-sky-300 active:scale-95 px-3 py-2 text-[11px] font-semibold text-slate-950 transition shrink-0 shadow-md"
+              >
+                {lang === "hi" ? "अपडेट करें" : "Update"}
+              </button>
+            </form>
+
+            {/* Quick Presets for Instant 30m vs 60m Comparison */}
+            <div className="flex flex-wrap gap-1 pt-0.5">
+              {[
+                { label: "30m Cycling", text: "30 min cycling" },
+                { label: "1h Cycling", text: "1 hour cycling" },
+                { label: "45m Run", text: "45 min run" },
+                { label: "2h Commute", text: "2 hour commute" },
+                { label: "3h Road Trip", text: "3 hour road trip" },
+              ].map((chip) => (
+                <button
+                  key={chip.label}
+                  type="button"
+                  onClick={() => handleRunLSTM(chip.text)}
+                  className="rounded-lg bg-white/8 hover:bg-sky-500/20 hover:border-sky-400/40 active:scale-95 px-2 py-1 text-[9.5px] font-mono text-white/80 border border-white/8 transition"
+                >
+                  {chip.label}
+                </button>
+              ))}
+            </div>
+
+            {/* Live Model Inference Feedback */}
+            {lastLSTMResult && (
+              <div className="rounded-xl bg-black/50 border border-sky-400/25 p-2.5 text-[10.5px] space-y-1.5">
+                <div className="flex items-center justify-between text-white/80">
+                  <span className="font-semibold text-white">
+                    🎯 {lastLSTMResult.parsedActivity.activityName} ({lastLSTMResult.parsedActivity.durationMin}m)
+                  </span>
+                  <span className="font-mono text-sky-300 text-[10px]">
+                    Impact: {lastLSTMResult.durationScale.toFixed(2)}
+                  </span>
+                </div>
+                <div className="flex flex-wrap gap-x-2.5 gap-y-1 font-mono text-[10px]">
+                  {Object.entries(lastLSTMResult.deltas)
+                    .filter(([, delta]) => Math.abs(delta) >= 0.005)
+                    .sort(([, a], [, b]) => Math.abs(b) - Math.abs(a))
+                    .slice(0, 4)
+                    .map(([interest, delta]) => {
+                      const pct = Math.round(delta * 1000) / 10;
+                      const sign = pct >= 0 ? "+" : "";
+                      return (
+                        <span key={interest} className={`px-1.5 py-0.5 rounded ${pct >= 0 ? "bg-emerald-500/15 text-emerald-300" : "bg-rose-500/15 text-rose-300"}`}>
+                          {interest}: {sign}{pct}%
+                        </span>
+                      );
+                    })}
+                </div>
+                <p className="text-[9.5px] text-white/50 leading-tight pt-1 border-t border-white/10">
+                  {lastLSTMResult.explanation}
+                </p>
+              </div>
+            )}
+          </div>
+
           {/* Activity buttons */}
           <div>
             <h4 className="text-[11px] font-semibold uppercase tracking-wide text-white/50 mb-2">
-              {lang === "hi" ? "गतिविधि संकेत" : "Activity signals"}
+              {lang === "hi" ? "त्वरित गतिविधि संकेत" : "Quick activity signals"}
             </h4>
             <div className="flex flex-wrap gap-1.5">
               {[
