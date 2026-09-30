@@ -481,7 +481,7 @@ export function Chat({
   }
 
   return (
-    <div className="flex h-full flex-col text-[var(--color-ink)]" style={pageGround(accent)}>
+    <div className="flex h-full flex-col text-[var(--color-ink)] bg-[#0b101b]" style={{ background: "#0b101b" }}>
       <div className="flex items-center justify-between border-b border-white/8 px-5 pb-4 pt-14">
         <div className="flex items-center gap-3">
           <div className="relative grid h-9 w-9 place-items-center rounded-full text-[15px] font-bold text-black" style={{ background: accent }}>
