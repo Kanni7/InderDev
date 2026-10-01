@@ -6,7 +6,7 @@ import * as I from "./icons";
 import { askWhy } from "../ai/mausamAI";
 import { useProfile } from "../engine/profile";
 import { RealisticMoon } from "./RealisticMoon";
-import { LunarTimeline } from "./LunarTimeline";
+import { LunarTimeline, triggerMoonHaptic } from "./LunarTimeline";
 import { getCompleteMoonData, getUpcomingPhasesSchedule, CITY_COORDINATES } from "./astronomy";
 import BackgroundEngine from "./background/BackgroundEngine";
 import { parseTimeStringToHours, calculateSolarPosition } from "./background/solarEngine";
@@ -1782,19 +1782,23 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
           <div className="flex items-center rounded-full bg-black/40 p-1 border border-white/10">
             <button
               type="button"
-              onClick={() => setSelectedDate(new Date())}
-              className="rounded-full px-3.5 py-1 text-[11px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition"
+              onClick={() => {
+                triggerMoonHaptic(true);
+                setSelectedDate(new Date());
+              }}
+              className="rounded-full px-3.5 py-1 text-[11px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition active:scale-95"
             >
               {t("Today")}
             </button>
             <button
               type="button"
               onClick={() => {
+                triggerMoonHaptic(false);
                 const tomorrow = new Date();
                 tomorrow.setDate(tomorrow.getDate() + 1);
                 setSelectedDate(tomorrow);
               }}
-              className="rounded-full px-3.5 py-1 text-[11px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition"
+              className="rounded-full px-3.5 py-1 text-[11px] font-medium text-white/80 hover:text-white hover:bg-white/10 transition active:scale-95"
             >
               {t("Tomorrow")}
             </button>
@@ -1889,7 +1893,10 @@ function MoonDetail({ location, accent, lang }: { location: Location; accent: st
               <button
                 key={item.name}
                 type="button"
-                onClick={() => setSelectedDate(item.targetDate)}
+                onClick={() => {
+                  triggerMoonHaptic(true);
+                  setSelectedDate(item.targetDate);
+                }}
                 className={`flex flex-col items-center justify-between py-3 px-1.5 rounded-2xl transition-all duration-200 text-center group cursor-pointer ${
                   isCurrent
                     ? "bg-white/14 border border-white/25 shadow-[0_4px_20px_-2px_rgba(0,0,0,0.5)] ring-1 ring-white/20"
