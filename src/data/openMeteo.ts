@@ -15,14 +15,14 @@ const CITIES: Record<string, { lat: number; lon: number; city: string; region: s
 const cache = new Map<string, { data: Location; ts: number }>();
 const CACHE_TTL = 15 * 60 * 1000; // 15 minutes
 
-/** CPCB-style AQI bands from PM2.5 (simplified mapping from European AQI). */
+/** CPCB National AQI from PM2.5 (24-hr breakpoints, linear within each band, capped at 500). */
 function computeAqiFromPm25(pm25: number): { aqi: number; label: string } {
   if (pm25 <= 30) return { aqi: Math.round(pm25 * 50 / 30), label: "Good" };
   if (pm25 <= 60) return { aqi: Math.round(50 + (pm25 - 30) * 50 / 30), label: "Satisfactory" };
   if (pm25 <= 90) return { aqi: Math.round(100 + (pm25 - 60) * 100 / 30), label: "Moderate" };
   if (pm25 <= 120) return { aqi: Math.round(200 + (pm25 - 90) * 100 / 30), label: "Poor" };
   if (pm25 <= 250) return { aqi: Math.round(300 + (pm25 - 120) * 100 / 130), label: "Very Poor" };
-  return { aqi: Math.round(400 + (pm25 - 250) * 100 / 130), label: "Severe" };
+  return { aqi: Math.min(500, Math.round(400 + (pm25 - 250) * 100 / 130)), label: "Severe" };
 }
 
 function uvLabel(uv: number): string {

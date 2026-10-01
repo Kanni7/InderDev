@@ -45,7 +45,7 @@ export function computeLiveRelevance(location: Location): Record<Block, number> 
   }
 
   // Poor AQI boosts air, health-related
-  if (location.air.aqi >= 100) {
+  if (location.air.aqi > 100) {
     rel.air = Math.max(rel.air, 0.9);
     rel.pollen = 0.8;
     rel.humidity = 0.7;

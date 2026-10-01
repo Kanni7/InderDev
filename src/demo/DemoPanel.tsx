@@ -534,7 +534,7 @@ export default function DemoPanel({
                     action: () => {
                       handleRunLSTM("30 min run");
                       setWeatherOverride({
-                        air: { ...effectiveLocation.air, aqi: 165, aqiLabel: "Unhealthy" },
+                        air: { ...effectiveLocation.air, aqi: 165, aqiLabel: "Moderate" },
                       });
                     },
                   },

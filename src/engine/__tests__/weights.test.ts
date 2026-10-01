@@ -100,7 +100,7 @@ describe("ranking", () => {
     const location = {
       key: "pune", city: "Pune", region: "Maharashtra", condition: "sunny" as const,
       temp: 29, feels: 32, summary: "",
-      air: { aqi: 62, aqiLabel: "Moderate", uv: 8, uvLabel: "High", heat: 34, heatLabel: "Caution" },
+      air: { aqi: 62, aqiLabel: "Satisfactory", uv: 8, uvLabel: "High", heat: 34, heatLabel: "Caution" },
       sun: { sunrise: "5:58 AM", sunset: "6:21 PM", daylight: "12h 23m", progress: 0.28 },
       precip: { next: "Tomorrow", amount: "6 mm", rate: "0.2 mm/h", chance: 20, note: "Dry", bars: [] },
       pollen: { level: "Moderate", count: 5.4, types: "Grass", trend: "Rising" },
@@ -121,7 +121,7 @@ describe("ranking", () => {
     const location = {
       key: "pune", city: "Pune", region: "Maharashtra", condition: "sunny" as const,
       temp: 29, feels: 32, summary: "",
-      air: { aqi: 62, aqiLabel: "Moderate", uv: 8, uvLabel: "High", heat: 34, heatLabel: "Caution" },
+      air: { aqi: 62, aqiLabel: "Satisfactory", uv: 8, uvLabel: "High", heat: 34, heatLabel: "Caution" },
       sun: { sunrise: "5:58 AM", sunset: "6:21 PM", daylight: "12h 23m", progress: 0.28 },
       precip: { next: "Tomorrow", amount: "6 mm", rate: "0.2 mm/h", chance: 20, note: "Dry", bars: [] },
       pollen: { level: "Moderate", count: 5.4, types: "Grass", trend: "Rising" },
