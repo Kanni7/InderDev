@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, type SVGProps, type ReactElement, type CSSProperties } from "react";
-import { userTypes, alertsForLocation, tierMeta, packingTips, type UserTypeKey, type Location } from "./data";
+import { userTypes, alertsForLocation, tierMeta, packingTips, AQI_BANDS, aqiBandIndex, aqiColor, type UserTypeKey, type Location } from "./data";
 import { getWeatherTheme } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
 import * as I from "./icons";
@@ -701,6 +701,10 @@ export function WidgetDetailModal({
 function AirDetail({ location, accent, lang }: { location: Location; accent: string; lang: Lang }) {
   const t = makeT(lang);
   const air = location.air;
+  const band = aqiBandIndex(air.aqi);
+  const bandMin = band === 0 ? 0 : AQI_BANDS[band - 1].max;
+  const bandFrac = (Math.min(Math.max(air.aqi, bandMin), AQI_BANDS[band].max) - bandMin) / (AQI_BANDS[band].max - bandMin);
+  const markerLeft = ((band + bandFrac) / AQI_BANDS.length) * 100;
   return (
     <div className="space-y-3.5">
       {/* AQI Overview - Borderless Home Glass */}
@@ -710,21 +714,27 @@ function AirDetail({ location, accent, lang }: { location: Location; accent: str
             <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">{t("Air Quality Index")}</p>
             <h2 className="mt-1 text-[40px] font-semibold leading-none text-[var(--color-ink)]">{air.aqi} <span className="text-sm font-normal text-[var(--color-ink-soft)]">AQI</span></h2>
           </div>
-          <span className="rounded-full px-3 py-1 text-[11px] font-semibold bg-emerald-500/20 text-emerald-300">
+          <span className="rounded-full px-3 py-1 text-[11px] font-semibold" style={{ color: aqiColor(air.aqi), background: `${aqiColor(air.aqi)}33` }}>
             {t(air.aqiLabel)}
           </span>
         </div>
 
-        {/* Spectrum bar */}
-        <div className="space-y-1">
-          <div className="h-2 w-full rounded-full bg-gradient-to-r from-[#7bd88f] via-[#f2c53d] via-[#f0873a] to-[#e5484d] relative">
-            <span className="absolute -top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-[#0b111c] bg-white shadow-md" style={{ left: `${Math.min((air.aqi / 200) * 100, 100)}%` }} />
+        {/* Spectrum bar - CPCB National AQI bands */}
+        <div className="space-y-1.5">
+          <div className="relative flex h-2 w-full gap-[2px]">
+            {AQI_BANDS.map((b, i) => (
+              <span key={b.label} className={`h-full flex-1 ${i === 0 ? "rounded-l-full" : ""} ${i === AQI_BANDS.length - 1 ? "rounded-r-full" : ""}`} style={{ background: b.color }} />
+            ))}
+            <span className="absolute -top-1 h-4 w-4 -translate-x-1/2 rounded-full border-2 border-[#0b111c] bg-white shadow-md" style={{ left: `${markerLeft}%` }} />
           </div>
-          <div className="flex justify-between font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)] pt-0.5">
-            <span>0 {t("Good")}</span>
-            <span>50 {t("Mod")}</span>
-            <span>100 {t("Unhealthy")}</span>
-            <span>150+ {t("Hazard")}</span>
+          <div className="grid grid-cols-3 gap-x-2 gap-y-1 pt-0.5 text-[10px] text-[var(--color-ink-faint)]">
+            {AQI_BANDS.map((b, i) => (
+              <span key={b.label} className={`flex items-center gap-1.5 ${i === band ? "text-[var(--color-ink)] font-semibold" : ""}`}>
+                <span className="h-1.5 w-1.5 shrink-0 rounded-full" style={{ background: b.color }} />
+                <span className="truncate">{t(b.label)}</span>
+                <span className="font-mono text-[9px] opacity-70">{i === 0 ? 0 : AQI_BANDS[i - 1].max + 1}{i === AQI_BANDS.length - 1 ? "+" : `-${b.max}`}</span>
+              </span>
+            ))}
           </div>
         </div>
 

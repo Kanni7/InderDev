@@ -41,7 +41,7 @@ describe("LightGBM / GBDT 'For You' Engine", () => {
   it("selects RUNNING_POLLUTION when running meets high AQI", () => {
     const pollutedPune = {
       ...pune,
-      air: { ...pune.air, aqi: 165, aqiLabel: "Unhealthy" },
+      air: { ...pune.air, aqi: 165, aqiLabel: "Moderate" },
     };
 
     const runnerProfile = {

@@ -779,7 +779,7 @@ function formatIntentInsight(
     case "RUNNING_POLLUTION": {
       return {
         headline: `Elevated AQI ${features.aqi} - switch run indoors or wear a sports mask`,
-        detail: `Air quality is ${features.aqi > 150 ? "Unhealthy" : "Moderate to Poor"}. Treadmill or indoor HIIT protects lung recovery.`,
+        detail: `Air quality is ${location.air.aqiLabel}. Treadmill or indoor HIIT protects lung recovery.`,
         window: "Health advisory",
       };
     }
@@ -909,7 +909,7 @@ function formatIntentInsight(
     }
 
     case "HEALTH_AIR_POLLEN": {
-      if (features.aqi >= 120) {
+      if (features.aqi > 200) {
         return {
           headline: `Poor air quality - stay indoors today`,
           detail: `AQI is ${features.aqi} (${location.air.aqiLabel}). Keep windows closed and avoid strenuous outdoor exercise.`,
@@ -932,7 +932,7 @@ function formatIntentInsight(
       }
       return {
         headline: `Pollen ${location.pollen.level} today, AQI ${features.aqi}`,
-        detail: `${features.aqi <= 50 ? "Air quality is fresh and clean - great time for home ventilation." : "Moderate conditions - N95 mask advised if sensitive to dust."}`,
+        detail: `${features.aqi <= 50 ? "Air quality is fresh and clean - great time for home ventilation." : features.aqi <= 100 ? "Satisfactory air - N95 mask advised if sensitive to dust." : "Moderate air - people with asthma or heart conditions should limit outdoor time."}`,
         window: "Health check",
       };
     }

@@ -74,7 +74,7 @@ export function buildDecision(parsed: ParsedIntent, location: Location): Decisio
         reasons.push(`${facts.precipChance}% rain chance - outdoor activity not recommended`);
       } else if (facts.aqi > 200) {
         verdict = "no";
-        reasons.push(`AQI ${facts.aqi} (${facts.aqiLabel}) - hazardous for physical exertion`);
+        reasons.push(`AQI ${facts.aqi} (${facts.aqiLabel}) - unsafe for physical exertion`);
       } else {
         if (facts.feels > 38) {
           verdict = "caution";

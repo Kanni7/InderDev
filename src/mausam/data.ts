@@ -187,7 +187,7 @@ export const locations: Location[] = [
   {
     key: "pune", city: "Pune", region: "Maharashtra", condition: "sunny", temp: 29, feels: 32,
     summary: "Clear morning, heating up fast after 9 AM",
-    air: { aqi: 62, aqiLabel: "Moderate", uv: 8, uvLabel: "Very high by 1 PM", heat: 34, heatLabel: "Caution by noon" },
+    air: { aqi: 62, aqiLabel: "Satisfactory", uv: 8, uvLabel: "Very high by 1 PM", heat: 34, heatLabel: "Caution by noon" },
     sun: { sunrise: "5:58 AM", sunset: "6:21 PM", daylight: "12h 23m", progress: 0.28 },
     precip: { next: "Tomorrow 3 PM", amount: "6 mm", rate: "0.2 mm/h", chance: 20, note: "Dry through the day", bars: [{ t: "10", v: 5 }, { t: "12", v: 8 }, { t: "2", v: 12 }, { t: "4", v: 20 }, { t: "6", v: 10 }] },
     pollen: { level: "Moderate", count: 5.4, types: "Grass, Neem", trend: "Rising towards midday" },
@@ -198,7 +198,7 @@ export const locations: Location[] = [
     key: "mumbai", city: "Mumbai", region: "Maharashtra", condition: "cloudy", temp: 31, feels: 35,
     summary: "Humid and overcast, sea breeze by evening",
     alert: { tier: "warning", title: "Orange Alert · Heavy rainfall", body: "115 to 140 mm expected in 24h. Low-lying areas at flood risk." },
-    air: { aqi: 88, aqiLabel: "Moderate", uv: 6, uvLabel: "High", heat: 35, heatLabel: "Muggy" },
+    air: { aqi: 88, aqiLabel: "Satisfactory", uv: 6, uvLabel: "High", heat: 35, heatLabel: "Muggy" },
     sun: { sunrise: "6:12 AM", sunset: "6:28 PM", daylight: "12h 16m", progress: 0.3 },
     precip: { next: "Today 5 PM", amount: "18 mm", rate: "3 mm/h", chance: 55, note: "Showers likely at dusk", bars: [{ t: "10", v: 20 }, { t: "12", v: 30 }, { t: "2", v: 40 }, { t: "4", v: 55 }, { t: "6", v: 45 }] },
     pollen: { level: "High", count: 7.8, types: "Grass, Weed", trend: "Steady in the humidity" },
@@ -209,7 +209,7 @@ export const locations: Location[] = [
     key: "delhi", city: "Delhi", region: "NCR", condition: "storm", temp: 27, feels: 29,
     summary: "Thundershowers building through the afternoon",
     alert: { tier: "critical", title: "Red Alert · Severe thunderstorm", body: "IMD warns of lightning and gusty winds up to 70 km/h between 3 and 8 PM. Stay indoors." },
-    air: { aqi: 168, aqiLabel: "Unhealthy for sensitive groups", uv: 4, uvLabel: "Moderate", heat: 30, heatLabel: "Warm" },
+    air: { aqi: 168, aqiLabel: "Moderate", uv: 4, uvLabel: "Moderate", heat: 30, heatLabel: "Warm" },
     sun: { sunrise: "6:14 AM", sunset: "6:02 PM", daylight: "11h 48m", progress: 0.34 },
     precip: { next: "Today 4 PM", amount: "38 mm", rate: "9 mm/h", chance: 85, note: "Storm cells approaching", bars: [{ t: "10", v: 25 }, { t: "12", v: 45 }, { t: "2", v: 70 }, { t: "4", v: 85 }, { t: "6", v: 60 }] },
     pollen: { level: "Very High", count: 9.6, types: "Dust, Weed", trend: "Drops after the rain" },
@@ -230,7 +230,7 @@ export const locations: Location[] = [
     key: "chennai", city: "Chennai", region: "Tamil Nadu", condition: "sunny", temp: 33, feels: 38,
     summary: "Hot and bright, high UV near midday",
     alert: { tier: "advisory", title: "Yellow Advisory · Extreme Heat & UV", body: "Feels like 38°C with UV index 10. Avoid direct sun 12–4 PM. Hydrate frequently." },
-    air: { aqi: 71, aqiLabel: "Moderate", uv: 10, uvLabel: "Extreme by noon", heat: 38, heatLabel: "Hydrate often" },
+    air: { aqi: 71, aqiLabel: "Satisfactory", uv: 10, uvLabel: "Extreme by noon", heat: 38, heatLabel: "Hydrate often" },
     sun: { sunrise: "6:00 AM", sunset: "6:10 PM", daylight: "12h 10m", progress: 0.26 },
     precip: { next: "Fri 1 PM", amount: "3 mm", rate: "0.1 mm/h", chance: 10, note: "No rain expected today", bars: [{ t: "10", v: 3 }, { t: "12", v: 5 }, { t: "2", v: 8 }, { t: "4", v: 10 }, { t: "6", v: 6 }] },
     pollen: { level: "High", count: 7.2, types: "Grass, Palm", trend: "Peaks in the afternoon" },
@@ -241,7 +241,7 @@ export const locations: Location[] = [
     key: "kolkata", city: "Kolkata", region: "West Bengal", condition: "fog", temp: 23, feels: 24,
     summary: "Dense fog on outer roads until 8 AM",
     alert: { tier: "advisory", title: "Yellow Advisory · Dense fog", body: "Visibility below 400 m on EM Bypass and airport approach roads until 8 AM." },
-    air: { aqi: 121, aqiLabel: "Unhealthy for sensitive groups", uv: 2, uvLabel: "Low in fog", heat: 24, heatLabel: "Cool" },
+    air: { aqi: 121, aqiLabel: "Moderate", uv: 2, uvLabel: "Low in fog", heat: 24, heatLabel: "Cool" },
     sun: { sunrise: "5:52 AM", sunset: "5:58 PM", daylight: "12h 06m", progress: 0.36 },
     precip: { next: "Sat 9 AM", amount: "2 mm", rate: "0.1 mm/h", chance: 15, note: "Fog, no measurable rain", bars: [{ t: "10", v: 10 }, { t: "12", v: 12 }, { t: "2", v: 15 }, { t: "4", v: 12 }, { t: "6", v: 10 }] },
     pollen: { level: "Moderate", count: 4.7, types: "Weed, Grass", trend: "Trapped by the fog" },
@@ -457,17 +457,17 @@ export function getDynamicInsight(
     case "fitness": {
       if (isWet) return { headline: "Rain outside - switch to an indoor workout today", detail: `${condition === "storm" ? "Thunderstorm" : "Rainfall"} makes outdoor training risky. A gym session or home HIIT keeps your streak alive.` };
       if (isHot && afternoon) return { headline: `Avoid midday runs - feels like ${feels}°C outside`, detail: `UV is ${air.uv >= 7 ? "very high" : "elevated"} and the heat index is ${air.heat}°C. Go out before 8 AM or after 6 PM.`, window: "before 8 AM / after 6 PM" };
-      if (isCool && morning) return { headline: "Perfect morning for a long run right now", detail: `${temp}°C with ${wind.dir} breeze at ${wind.speed} km/h. AQI is ${air.aqi <= 50 ? "good" : "moderate"} - ideal conditions for a tempo effort.`, window: "Now" };
+      if (isCool && morning) return { headline: "Perfect morning for a long run right now", detail: `${temp}°C with ${wind.dir} breeze at ${wind.speed} km/h. AQI is ${air.aqiLabel.toLowerCase()} - ideal conditions for a tempo effort.`, window: "Now" };
       if (highWind) return { headline: `Strong ${wind.speed} km/h winds - adjust your route`, detail: "Run with the wind in the first half so you have a tailwind on the way back. Avoid exposed ridge paths." };
       if (isClear && morning) return { headline: "Great morning - get out before 9 AM", detail: `Clear skies and ${temp}°C. AQI ${air.aqi} keeps breathing easy. Window closes as feels-like rises after 10 AM.`, window: "Now - 9 AM" };
       return { headline: `${feels}°C feels-like - comfortable training window open`, detail: `${wind.speed} km/h ${wind.dir} breeze and AQI ${air.aqi}. Good conditions for an easy or recovery run.` };
     }
     case "health": {
-      if (air.aqi >= 150) return { headline: "Poor air quality - stay indoors today", detail: `AQI is ${air.aqi} (${air.aqiLabel}). Avoid outdoor exercise and keep windows closed, especially ${afternoon ? "this afternoon" : "midday"}.` };
+      if (air.aqi > 200) return { headline: "Poor air quality - stay indoors today", detail: `AQI is ${air.aqi} (${air.aqiLabel}). Avoid outdoor exercise and keep windows closed, especially ${afternoon ? "this afternoon" : "midday"}.` };
       if (air.uv >= 8) return { headline: `UV index ${air.uv} - high sun risk today`, detail: `Peak UV between 11 AM and 3 PM. Apply SPF 50+, wear a hat, and avoid direct sun for more than 20 minutes.`, window: "11 AM - 3 PM" };
       if (isWet) return { headline: "Rain keeps pollen low - a good day for outdoor walks", detail: `Rainfall washes pollen from the air. AQI is ${air.aqi}. Take advantage before skies clear and counts rise again.` };
       if (air.aqi <= 50 && isClear) return { headline: "Air quality excellent - safe to open windows", detail: `AQI ${air.aqi} and ${condition === "sunny" ? "clear skies" : "calm conditions"}. Great time for ventilation and outdoor activity.` };
-      return { headline: `Pollen ${loc.pollen.level} today, AQI ${air.aqi}`, detail: `${air.aqi > 100 ? "Keep windows shut and prefer indoors." : "Moderate conditions - N95 advised if sensitive."} UV peaks around noon.` };
+      return { headline: `Pollen ${loc.pollen.level} today, AQI ${air.aqi}`, detail: `${air.aqi > 100 ? "Keep windows shut and prefer indoors." : "Satisfactory air - N95 advised if sensitive."} UV peaks around noon.` };
     }
     case "agri": {
       if (isWet) return { headline: "Rain today - hold off on irrigation and spraying", detail: `${precip.amount} expected. Soil will absorb natural moisture. Resume field work only when it drains, likely ${condition === "storm" ? "by tomorrow evening" : "by afternoon"}.` };
@@ -497,7 +497,7 @@ export function getDynamicInsight(
       if (isWet && morning) return { headline: "Rain during the school run - leave 10 min early", detail: `Showers are heaviest before 9 AM. Pack an umbrella and raincoat. Roads will be slower than usual.`, window: "7:30 - 9:00 AM" };
       if (isWet) return { headline: "Wet roads for the afternoon pickup", detail: `${precip.chance}% rain chance. Allow extra travel time and ensure kids have waterproof footwear.` };
       if (isHot && afternoon) return { headline: `Hot ${feels}°C pickup - bring water for the kids`, detail: "Feels-like peaks between 1 and 4 PM. Keep children in the shade and ensure they're well-hydrated after school." };
-      if (air.aqi >= 100) return { headline: `Air quality poor - skip outdoor play today`, detail: `AQI ${air.aqi}. Keep windows closed and stick to indoor activities. Sensitive children should avoid exertion.` };
+      if (air.aqi > 100) return { headline: `${air.aqiLabel} air quality - skip outdoor play today`, detail: `AQI ${air.aqi}. Keep windows closed and stick to indoor activities. Sensitive children should avoid exertion.` };
       return { headline: isClear ? `Clear and ${temp}°C - great day for outdoor play` : `Comfortable ${temp}°C for the ${commute}`, detail: `${wind.speed < 15 ? "Light breeze" : `${wind.speed} km/h wind`}, UV ${air.uv}. ${air.uv >= 6 ? "Apply sunscreen before school." : "No special precautions needed today."}` };
     }
     case "commuter": {
@@ -519,12 +519,23 @@ export function getDynamicInsight(
   }
 }
 
+/** CPCB National AQI bands (0-500). */
+export const AQI_BANDS = [
+  { max: 50, label: "Good", color: "#2fb36d" },
+  { max: 100, label: "Satisfactory", color: "#9ad85c" },
+  { max: 200, label: "Moderate", color: "#f2c53d" },
+  { max: 300, label: "Poor", color: "#f0873a" },
+  { max: 400, label: "Very Poor", color: "#e5484d" },
+  { max: 500, label: "Severe", color: "#991b1b" },
+] as const;
+
+export function aqiBandIndex(aqi: number) {
+  const i = AQI_BANDS.findIndex((b) => aqi <= b.max);
+  return i === -1 ? AQI_BANDS.length - 1 : i;
+}
+
 export function aqiColor(aqi: number) {
-  if (aqi <= 50) return "#7bd88f";
-  if (aqi <= 100) return "#f2c53d";
-  if (aqi <= 150) return "#f0873a";
-  if (aqi <= 200) return "#e5484d";
-  return "#991b1b";
+  return AQI_BANDS[aqiBandIndex(aqi)].color;
 }
 export function uvColor(uv: number) {
   if (uv <= 2) return "#7bd88f";
@@ -640,9 +651,9 @@ export function alertsForLocation(loc: Location): AlertItem[] {
 
   // Air quality - severity scales with the reading
   const aqi = loc.air.aqi;
-  if (aqi >= 150) {
-    out.push({ tier: "warning", title: "Orange Alert: Poor air quality", body: `AQI at ${aqi} (${loc.air.aqiLabel}). Sensitive groups should limit outdoor exertion.`, time: "4 hrs ago", area });
-  } else if (aqi >= 100) {
+  if (aqi > 200) {
+    out.push({ tier: "warning", title: "Orange Alert: Poor air quality", body: `AQI at ${aqi} (${loc.air.aqiLabel}). Avoid prolonged outdoor exertion.`, time: "4 hrs ago", area });
+  } else if (aqi > 100) {
     out.push({ tier: "advisory", title: "Yellow Advisory: Air quality dipping", body: `AQI at ${aqi} (${loc.air.aqiLabel}) with low wind dispersion.`, time: "4 hrs ago", area });
   } else {
     out.push({ tier: "info", title: "Notice: Air quality acceptable", body: `AQI at ${aqi} (${loc.air.aqiLabel}). Good conditions for time outdoors today.`, time: "Today", area });

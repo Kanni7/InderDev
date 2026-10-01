@@ -21,7 +21,7 @@ export function getFallbackAnswer(interest: Interest, lang: string, wx?: Weather
   const isRainy = condition === "rainy" || condition === "storm" || precipChance > 60;
   const isHot = feels > 35;
   const isCold = temp < 16;
-  const isGoodAir = aqi < 100;
+  const isGoodAir = aqi <= 100;
   const isHighUV = uv >= 7;
 
   switch (interest) {
@@ -40,7 +40,7 @@ export function getFallbackAnswer(interest: Interest, lang: string, wx?: Weather
     }
 
     case "health": {
-      const aqiMsg = aqi < 50 ? (hi ? "हवा साफ है" : "air is clean") : aqi < 100 ? (hi ? "हवा मध्यम है" : "air quality is moderate") : (hi ? "AQI खराब है, बाहर कम जाएं" : "AQI is poor, limit outdoor exposure");
+      const aqiMsg = aqi <= 50 ? (hi ? "हवा साफ है" : "air is clean") : aqi <= 100 ? (hi ? "हवा संतोषजनक है" : "air quality is satisfactory") : aqi <= 200 ? (hi ? "हवा मध्यम है" : "air quality is moderate") : (hi ? "AQI खराब है, बाहर कम जाएं" : "AQI is poor, limit outdoor exposure");
       return hi
         ? `अभी AQI ${aqi} (${aqiMsg}), UV ${uv} और आर्द्रता ${humidity}%। ${isHighUV ? "दोपहर 11 बजे से 3 बजे तक धूप से बचें।" : ""} ${!isGoodAir ? "N95 मास्क पहनें।" : "बाहर जाना सुरक्षित है।"}`
         : `Current AQI is ${aqi} (${aqiMsg}), UV ${uv}, humidity ${humidity}%. ${isHighUV ? "Avoid direct sun between 11 AM and 3 PM." : ""} ${!isGoodAir ? "Wear an N95 mask outdoors." : "Safe to go outside."}`;
@@ -105,7 +105,7 @@ export function getFallbackAnswer(interest: Interest, lang: string, wx?: Weather
         return hi
           ? `आज ${precipChance}% बारिश की संभावना है - आउटडोर इवेंट के लिए इनडोर बैकअप प्लान रखें। ${temp}°C तापमान है।`
           : `${precipChance}% rain chance today - have an indoor backup for outdoor events. Temp ${temp}°C, conditions may be uncomfortable.`;
-      const comfort = feels < 30 && aqi < 100 && !isHighUV;
+      const comfort = feels < 30 && aqi <= 100 && !isHighUV;
       return hi
         ? `${temp}°C (महसूस ${feels}°C), AQI ${aqi} - आउटडोर इवेंट के लिए मौसम ${comfort ? "अच्छा" : "ठीक"} है। ${isHighUV ? "UV " + uv + " है, शेड की व्यवस्था करें।" : "सूर्यास्त " + wx.sunset + " पर होगा।"}`
         : `${temp}°C (feels ${feels}°C), AQI ${aqi} - ${comfort ? "excellent" : "acceptable"} conditions for an outdoor event. ${isHighUV ? "UV " + uv + ", provide shaded seating." : "Sunset at " + wx.sunset + " for golden-hour timing."}`;

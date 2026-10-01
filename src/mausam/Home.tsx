@@ -187,7 +187,7 @@ export default function Home({
     ),
     air: (
       <div key="air" className="grid grid-cols-3 gap-3 cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("air"); setActiveDetail("air"); }}>
-        <AirTile label="AQI" value={String(location.air.aqi)} sub={t(location.air.aqiLabel)} color={aqiColor(location.air.aqi)} ring={location.air.aqi} max={200} />
+        <AirTile label="AQI" value={String(location.air.aqi)} sub={t(location.air.aqiLabel)} color={aqiColor(location.air.aqi)} ring={location.air.aqi} max={500} />
         <AirTile label="UV" value={String(location.air.uv)} sub={t(location.air.uvLabel)} color={uvColor(location.air.uv)} ring={location.air.uv} max={11} />
         <AirTile label={t("Heat idx")} value={formatTemp(location.air.heat, unit)} sub={t(location.air.heatLabel)} color={accent} ring={location.air.heat} max={45} />
       </div>
