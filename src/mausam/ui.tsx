@@ -112,7 +112,7 @@ export function HourlyInteractiveGraph({
   return (
     <div
       onClick={() => onOpenDetail?.(selectedIndex)}
-      className="group rounded-3xl p-4 mausam-glass space-y-3 cursor-pointer transition-all duration-200 hover:border-white/20 active:scale-[0.99]"
+      className="group rounded-3xl p-4 mausam-glass space-y-3 cursor-pointer transition-transform duration-100 ease-out hover:border-white/20 active:scale-[0.99] transform-gpu widget-tap"
       title={t("Tap to view 24-hour detailed forecast")}
     >
       <div className="flex items-center justify-between">
@@ -139,7 +139,7 @@ export function HourlyInteractiveGraph({
                 setSelectedIndex(i);
                 onOpenDetail?.(i);
               }}
-              className={`flex min-w-[68px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border py-3 px-2 transition active:scale-95 ${
+              className={`flex min-w-[68px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border py-3 px-2 transition-transform duration-100 ease-out active:scale-95 transform-gpu widget-tap ${
                 active ? "border-white/30 bg-white/15 shadow-xl scale-[1.03]" : "border-white/5 bg-white/5 hover:bg-white/10"
               }`}
             >

@@ -666,7 +666,7 @@ export function WidgetDetailModal({
   const theme = getWeatherTheme(location.condition, currentHour);
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col text-[var(--color-ink)] animate-in fade-in duration-200 overflow-hidden">
+    <div className="absolute inset-0 z-50 flex flex-col text-[var(--color-ink)] animate-modal-enter overflow-hidden bg-black/55 backdrop-blur-xl">
       {/* Header bar matching Home Screen header aesthetics without blurring the sky backdrop */}
       <div className="relative z-10 flex items-center justify-between px-5 pb-4 pt-14 border-b border-white/8 bg-black/15">
         <div>

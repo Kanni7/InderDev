@@ -1,4 +1,4 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useRef } from "react";
 import {
   vocations, tierMeta, locations,
   aqiColor, uvColor, formatTemp, getDynamicInsight, type TemperatureUnit,
@@ -124,29 +124,38 @@ export default function Home({
     l.region.toLowerCase().includes(citySearchQuery.toLowerCase())
   );
 
-  // Track module taps in the local profile
-  const trackTap = (moduleId: string) => {
-    updateProfile((p) => {
-      const prev = p.moduleInteractions[moduleId] ?? { taps: 0, scrollPasts: 0 };
-      return {
-        ...p,
-        moduleInteractions: {
-          ...p.moduleInteractions,
-          [moduleId]: { ...prev, taps: prev.taps + 1 },
-        },
-      };
-    });
-  };
+  // Non-blocking interaction telemetry: does not freeze main thread or trigger synchronous re-renders
+  const tapTimerRef = useRef<number | null>(null);
+  const pendingTapsRef = useRef<Record<string, number>>({});
+
+  const trackTap = useCallback((moduleId: string) => {
+    pendingTapsRef.current[moduleId] = (pendingTapsRef.current[moduleId] ?? 0) + 1;
+    if (tapTimerRef.current) clearTimeout(tapTimerRef.current);
+    tapTimerRef.current = window.setTimeout(() => {
+      const tapsToApply = { ...pendingTapsRef.current };
+      pendingTapsRef.current = {};
+      updateProfile((p) => {
+        let changed = false;
+        const nextInteractions = { ...p.moduleInteractions };
+        for (const [mod, count] of Object.entries(tapsToApply)) {
+          const prev = nextInteractions[mod] ?? { taps: 0, scrollPasts: 0 };
+          nextInteractions[mod] = { ...prev, taps: prev.taps + count };
+          changed = true;
+        }
+        return changed ? { ...p, moduleInteractions: nextInteractions } : p;
+      });
+    }, 500);
+  }, [updateProfile]);
 
   // ── the reorderable widget blocks (all present, order varies per vocation) ──
   const blocks: Record<Block, React.ReactNode> = {
     pollen: (
-      <div key="pollen" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("pollen"); setActiveDetail("pollen"); }}>
+      <div key="pollen" className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("pollen"); setActiveDetail("pollen"); }}>
         <PollenCard pollen={location.pollen} lang={lang} />
       </div>
     ),
     rainmap: (
-      <div key="rainmap">
+      <div key="rainmap" className="transform-gpu widget-tap">
         <RainMapWidget
           condition={location.condition}
           chance={location.precip.chance}
@@ -164,19 +173,19 @@ export default function Home({
       </div>
     ),
     travel: (
-      <div key="travel" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("travel"); setActiveDetail("travel"); }}>
+      <div key="travel" className="cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("travel"); setActiveDetail("travel"); }}>
         <TravelCard travel={location.travel} accent={accent} lang={lang} />
       </div>
     ),
     packing: (
-      <div key="packing" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("packing"); setActiveDetail("packing"); }}>
+      <div key="packing" className="cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("packing"); setActiveDetail("packing"); }}>
         <PackingCard condition={location.condition} accent={accent} lang={lang} />
       </div>
     ),
     wind: (
       <div
         key="wind"
-        className="h-full cursor-pointer transition active:scale-[0.98]"
+        className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap"
         onClick={() => {
           trackTap("wind");
           setRadarLayer("wind");
@@ -187,44 +196,44 @@ export default function Home({
       </div>
     ),
     humidity: (
-      <div key="humidity" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("humidity"); setActiveDetail("humidity"); }}>
+      <div key="humidity" className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("humidity"); setActiveDetail("humidity"); }}>
         <HumidityCard humidity={location.humidity} dewPoint={location.dewPoint} accent={accent} lang={lang} />
       </div>
     ),
     dewpoint: (
-      <div key="dewpoint" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("dewpoint"); setActiveDetail("dewpoint"); }}>
+      <div key="dewpoint" className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("dewpoint"); setActiveDetail("dewpoint"); }}>
         <DewPointCard dewPoint={location.dewPoint} lang={lang} />
       </div>
     ),
     pressure: (
-      <div key="pressure" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("pressure"); setActiveDetail("pressure"); }}>
+      <div key="pressure" className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("pressure"); setActiveDetail("pressure"); }}>
         <PressureCard pressure={location.pressure} accent={accent} lang={lang} />
       </div>
     ),
     moon: (
-      <div key="moon" className="h-full cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("moon"); setActiveDetail("moon"); }}>
+      <div key="moon" className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("moon"); setActiveDetail("moon"); }}>
         <MoonCard moon={location.moon} cityKey={location.key} lang={lang} />
       </div>
     ),
     air: (
-      <div key="air" className="grid grid-cols-3 gap-3 cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("air"); setActiveDetail("air"); }}>
+      <div key="air" className="grid grid-cols-3 gap-3 cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("air"); setActiveDetail("air"); }}>
         <AirTile label="AQI" value={String(location.air.aqi)} sub={t(location.air.aqiLabel)} color={aqiColor(location.air.aqi)} ring={location.air.aqi} max={500} />
         <AirTile label="UV" value={String(location.air.uv)} sub={t(location.air.uvLabel)} color={uvColor(location.air.uv)} ring={location.air.uv} max={11} />
         <AirTile label={t("Heat idx")} value={formatTemp(location.air.heat, unit)} sub={t(location.air.heatLabel)} color={accent} ring={location.air.heat} max={45} />
       </div>
     ),
     precip: (
-      <div key="precip" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("precip"); setActiveDetail("precip"); }}>
+      <div key="precip" className="cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("precip"); setActiveDetail("precip"); }}>
         <PrecipCard precip={location.precip} accent={accent} lang={lang} />
       </div>
     ),
     sun: (
-      <div key="sun" className="cursor-pointer transition active:scale-[0.98]" onClick={() => { trackTap("sun"); setActiveDetail("sun"); }}>
+      <div key="sun" className="cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("sun"); setActiveDetail("sun"); }}>
         <SunArc sun={location.sun} accent={accent} lang={lang} currentHour={currentHour} />
       </div>
     ),
     metrics: (
-      <div key="metrics">
+      <div key="metrics" className="transform-gpu">
         <BlockTitle>{t(voc.metricsLabel)}</BlockTitle>
         <div className="grid gap-3" style={{ gridTemplateColumns: `repeat(${voc.metrics.length}, minmax(0, 1fr))` }}>
           {voc.metrics.map((m) => (
@@ -240,7 +249,7 @@ export default function Home({
     hourly: (
       <div
         key="hourly"
-        className="cursor-pointer transition active:scale-[0.99]"
+        className="cursor-pointer transition-transform duration-100 ease-out active:scale-[0.99] transform-gpu widget-tap"
         onClick={() => {
           trackTap("hourly");
           setDetailIndex(0);
@@ -263,7 +272,7 @@ export default function Home({
     weekly: (
       <div
         key="weekly"
-        className="cursor-pointer transition active:scale-[0.99] group"
+        className="cursor-pointer transition-transform duration-100 ease-out active:scale-[0.99] transform-gpu widget-tap group"
         onClick={() => {
           trackTap("weekly");
           setDetailIndex(0);
@@ -291,7 +300,7 @@ export default function Home({
                 setDetailIndex(i);
                 setActiveDetail("weekly");
               }}
-              className={`flex items-center gap-3 px-4 py-3 transition hover:bg-white/6 ${i !== arr.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}
+              className={`flex items-center gap-3 px-4 py-3 transition-colors duration-100 hover:bg-white/6 ${i !== arr.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}
             >
               <span className="w-12 text-[13px] font-medium text-[var(--color-ink)]">{t(d.day)}</span>
               <CondIcon c={d.c} className="h-5 w-5 text-[var(--color-ink-soft)]" />
@@ -510,7 +519,7 @@ export default function Home({
             row.length === 2 ? (
               <div
                 key={row[0] + "-" + row[1]}
-                className="grid grid-cols-2 items-stretch gap-3 transition-all duration-500 motion-reduce:transition-none"
+                className="grid grid-cols-2 items-stretch gap-3"
                 style={{ order: idx }}
               >
                 {blocks[row[0]]}
@@ -519,7 +528,6 @@ export default function Home({
             ) : (
               <div
                 key={row[0]}
-                className="transition-all duration-500 motion-reduce:transition-none"
                 style={{ order: idx }}
               >
                 {blocks[row[0]]}

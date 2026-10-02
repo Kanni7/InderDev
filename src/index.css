@@ -72,6 +72,23 @@ body {
 @keyframes fade-in { 0% { opacity: 0; } 100% { opacity: 1; } }
 @keyframes pulse-soft { 0%, 100% { opacity: 0.35; transform: scale(0.85); } 50% { opacity: 1; transform: scale(1); } }
 @keyframes theme-wash { 0% { opacity: 0; } 100% { opacity: 1; } }
+@keyframes modal-enter {
+  0% { opacity: 0; transform: scale(0.98) translateY(8px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
 
 .animate-insight { animation: insight-in 0.55s cubic-bezier(0.16, 1, 0.3, 1) both; }
 .animate-fade { animation: fade-in 0.4s ease both; }
+.animate-modal-enter {
+  animation: modal-enter 0.15s cubic-bezier(0.16, 1, 0.3, 1) both;
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+.widget-tap {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  user-select: none;
+}
