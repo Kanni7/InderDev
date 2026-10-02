@@ -166,7 +166,20 @@ export interface HourlyPoint {
   humidity?: number;
   windSpeed?: number;
 }
-export interface DailyPoint { day: string; c: Condition; hi: number; lo: number; rain: number; }
+export interface DailyPoint {
+  day: string;
+  c: Condition;
+  hi: number;
+  lo: number;
+  rain: number;
+  date?: string;
+  uvMax?: number;
+  sunrise?: string;
+  sunset?: string;
+  windMax?: number;
+  humidity?: number;
+  summary?: string;
+}
 
 export interface Location {
   key: string;

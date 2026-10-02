@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef, useMemo, type SVGProps, type ReactElement, type CSSProperties } from "react";
-import { userTypes, alertsForLocation, tierMeta, packingTips, AQI_BANDS, aqiBandIndex, aqiColor, formatTemp, type UserTypeKey, type Location, type TemperatureUnit, type HourlyPoint } from "./data";
+import { userTypes, alertsForLocation, tierMeta, packingTips, AQI_BANDS, aqiBandIndex, aqiColor, formatTemp, type UserTypeKey, type Location, type TemperatureUnit, type HourlyPoint, type DailyPoint, weekly as STATIC_WEEKLY_FALLBACK } from "./data";
 import { getWeatherTheme, type Condition } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
 import * as I from "./icons";
@@ -630,10 +630,10 @@ export function Alerts({ onClose, lang, accent, location }: { onClose: () => voi
 /* ───────────── 5. Widget Detail Modal Overlay (Exact Home Screen Glass Design) ───────────── */
 export type DetailType =
   | "air" | "sun" | "precip" | "pollen" | "wind"
-  | "humidity" | "dewpoint" | "pressure" | "moon" | "travel" | "packing" | "hourly";
+  | "humidity" | "dewpoint" | "pressure" | "moon" | "travel" | "packing" | "hourly" | "weekly";
 
 export function WidgetDetailModal({
-  type, location, accent, lang, currentHour, onClose, onOpenRadar, unit = "C",
+  type, location, accent, lang, currentHour, onClose, onOpenRadar, unit = "C", initialIndex = 0,
 }: {
   type: DetailType;
   location: Location;
@@ -643,6 +643,7 @@ export function WidgetDetailModal({
   onClose: () => void;
   onOpenRadar?: (layer?: "rain" | "wind") => void;
   unit?: TemperatureUnit;
+  initialIndex?: number;
 }) {
   const t = makeT(lang);
 
@@ -659,6 +660,7 @@ export function WidgetDetailModal({
     travel: "Travel & Commute Status",
     packing: "Packing & Outfit Advisor",
     hourly: "24-Hour Forecast Timeline",
+    weekly: "7-Day Weather Forecast",
   };
 
   const theme = getWeatherTheme(location.condition, currentHour);
@@ -694,6 +696,7 @@ export function WidgetDetailModal({
         {type === "travel" && <TravelDetail location={location} accent={accent} lang={lang} />}
         {type === "packing" && <PackingDetail location={location} accent={accent} lang={lang} />}
         {type === "hourly" && <HourlyDetail location={location} accent={accent} lang={lang} unit={unit} currentHour={currentHour} />}
+        {type === "weekly" && <WeeklyDetail location={location} accent={accent} lang={lang} unit={unit} initialIndex={initialIndex} />}
       </div>
     </div>
   );
@@ -2473,6 +2476,386 @@ function HourlyDetail({
               </div>
             );
           })}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────── 7-DAY FORECAST DETAIL VIEW ───────────────────── */
+
+function getUvRisk(uv: number): { label: string; advice: string } {
+  if (uv <= 2) return { label: "Low", advice: "Minimal danger from the sun. Sunglasses recommended." };
+  if (uv <= 5) return { label: "Moderate", advice: "Moderate risk. Wear sunscreen & sunglasses during midday." };
+  if (uv <= 7) return { label: "High", advice: "High risk. Reduce exposure between 11 AM - 3 PM." };
+  if (uv <= 10) return { label: "Very High", advice: "Very high risk. Seek shade, wear SPF 30+ and a hat." };
+  return { label: "Extreme", advice: "Extreme risk! Full sun precautions required outdoors." };
+}
+
+function WeeklyDetail({
+  location,
+  accent,
+  lang,
+  unit = "C",
+  initialIndex = 0,
+}: {
+  location: Location;
+  accent: string;
+  lang: Lang;
+  unit?: TemperatureUnit;
+  initialIndex?: number;
+}) {
+  const t = makeT(lang);
+
+  // Normalize or fallback to 7 days
+  const days: DailyPoint[] = useMemo(() => {
+    if (location.weeklyForecast && location.weeklyForecast.length > 0) {
+      return location.weeklyForecast;
+    }
+    return STATIC_WEEKLY_FALLBACK.map((d) => ({
+      ...d,
+      uvMax: 7,
+      sunrise: location.sun.sunrise,
+      sunset: location.sun.sunset,
+      windMax: location.wind.speed,
+      date: d.day,
+    }));
+  }, [location]);
+
+  const [selectedIndex, setSelectedIndex] = useState(() =>
+    Math.max(0, Math.min(days.length - 1, initialIndex ?? 0))
+  );
+
+  useEffect(() => {
+    if (typeof initialIndex === "number" && initialIndex >= 0 && initialIndex < days.length) {
+      setSelectedIndex(initialIndex);
+    }
+  }, [initialIndex, days.length]);
+
+  const active = days[selectedIndex] ?? days[0];
+  const ActiveIco = I.conditionIcon(active.c);
+
+  // Extreme weekly bounds for temperature spectrum bar
+  const weekMin = useMemo(() => Math.min(...days.map((d) => d.lo)), [days]);
+  const weekMax = useMemo(() => Math.max(...days.map((d) => d.hi)), [days]);
+  const tempRange = Math.max(1, weekMax - weekMin);
+
+  // Notable weekly meteorological markers
+  const warmestDay = useMemo(() => days.reduce((best, cur) => (cur.hi > best.hi ? cur : best), days[0]), [days]);
+  const coolestDay = useMemo(() => days.reduce((best, cur) => (cur.lo < best.lo ? cur : best), days[0]), [days]);
+  const rainiestDay = useMemo(() => days.reduce((best, cur) => (cur.rain > best.rain ? cur : best), days[0]), [days]);
+
+  const conditionLabels: Record<Condition, string> = {
+    sunny: "Clear & Sunny Skies",
+    cloudy: "Partly Cloudy",
+    rainy: "Precipitation & Rain",
+    storm: "Thunderstorm Activity",
+    fog: "Foggy & Hazy",
+    night: "Clear Celestial Night",
+  };
+
+  const uvRisk = getUvRisk(active.uvMax ?? 7);
+
+  return (
+    <div className="space-y-3.5 pb-6">
+      {/* 1. Selected Day Synoptic Hero Tile */}
+      <div className="rounded-3xl p-5 mausam-glass space-y-3.5">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10.5px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+                {active.day === "Today" ? t("Today's Outlook") : `${t(active.day)} · ${t("Day Overview")}`}
+              </span>
+              {active.date && (
+                <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[9.5px] text-white/70">
+                  {active.date}
+                </span>
+              )}
+            </div>
+            <div className="mt-2 flex items-baseline gap-2">
+              <h2 className="text-[38px] font-bold leading-none text-white font-mono">
+                {formatTemp(active.hi, unit)}
+              </h2>
+              <span className="text-[17px] font-medium text-white/50 font-mono">
+                / {formatTemp(active.lo, unit)}
+              </span>
+            </div>
+            <p className="mt-1 text-[14px] font-medium text-white/90">
+              {t(conditionLabels[active.c])}
+            </p>
+          </div>
+
+          <div className="grid h-16 w-16 place-items-center rounded-2xl bg-white/10 border border-white/10 shadow-lg">
+            <ActiveIco className={`h-9 w-9 ${
+              active.c === "sunny" ? "text-amber-300" :
+              active.c === "night" ? "text-slate-100" :
+              active.c === "rainy" ? "text-sky-300" :
+              active.c === "storm" ? "text-yellow-400" : "text-slate-300"
+            }`} />
+          </div>
+        </div>
+
+        {/* Dynamic Condition Guidance */}
+        <p className="rounded-2xl bg-white/5 p-3 text-[12.5px] leading-relaxed text-[var(--color-ink-soft)] border border-white/5">
+          {active.c === "rainy" || active.c === "storm"
+            ? t("Precipitation expected with elevated humidity. Plan commutes with wet-weather precautions.")
+            : active.c === "sunny"
+            ? t("Predominantly clear conditions with strong solar elevation. Carry hydration and sunglasses.")
+            : active.c === "fog"
+            ? t("Morning mist and particulate haze may reduce road visibility. Clearer conditions in afternoon.")
+            : t("Partly cloudy skies with comfortable temperature modulation throughout daytime hours.")}
+        </p>
+
+        {/* Selected Day Fast Key Metrics Pills */}
+        <div className="grid grid-cols-4 gap-2 pt-0.5">
+          <div className="flex flex-col items-center rounded-2xl bg-white/5 p-2 text-center border border-white/5">
+            <span className="text-[10px] text-white/50">{t("Rain")}</span>
+            <span className="mt-0.5 text-[13px] font-bold text-sky-300 font-mono">
+              {active.rain > 0 ? `${active.rain}%` : "0%"}
+            </span>
+          </div>
+          <div className="flex flex-col items-center rounded-2xl bg-white/5 p-2 text-center border border-white/5">
+            <span className="text-[10px] text-white/50">{t("Max UV")}</span>
+            <span className="mt-0.5 text-[13px] font-bold text-amber-300 font-mono">
+              {active.uvMax ?? 7}
+            </span>
+          </div>
+          <div className="flex flex-col items-center rounded-2xl bg-white/5 p-2 text-center border border-white/5">
+            <span className="text-[10px] text-white/50">{t("Sunrise")}</span>
+            <span className="mt-0.5 text-[11px] font-bold text-white/80 font-mono">
+              {active.sunrise ?? location.sun.sunrise}
+            </span>
+          </div>
+          <div className="flex flex-col items-center rounded-2xl bg-white/5 p-2 text-center border border-white/5">
+            <span className="text-[10px] text-white/50">{t("Sunset")}</span>
+            <span className="mt-0.5 text-[11px] font-bold text-white/80 font-mono">
+              {active.sunset ?? location.sun.sunset}
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Apple Weather-style 7-Day Temperature Range Envelope */}
+      <div className="rounded-3xl p-5 mausam-glass space-y-4">
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+            🌡️ {t("7-Day Temperature Spectrum")}
+          </p>
+          <span className="font-mono text-[10px] text-white/50">
+            {formatTemp(weekMin, unit)} - {formatTemp(weekMax, unit)}
+          </span>
+        </div>
+
+        <div className="space-y-2">
+          {days.map((d, i) => {
+            const isSel = i === selectedIndex;
+            const Ico = I.conditionIcon(d.c);
+            const leftPct = ((d.lo - weekMin) / tempRange) * 100;
+            const widthPct = Math.max(12, ((d.hi - d.lo) / tempRange) * 100);
+
+            // Calculate current temperature indicator dot for Today
+            const isToday = d.day === "Today";
+            const curTempPct = isToday
+              ? Math.max(0, Math.min(100, ((location.temp - weekMin) / tempRange) * 100))
+              : null;
+
+            return (
+              <div
+                key={i}
+                onClick={() => {
+                  triggerMoonHaptic(false);
+                  setSelectedIndex(i);
+                }}
+                className={`group flex items-center gap-3 p-2.5 rounded-2xl cursor-pointer transition-all ${
+                  isSel
+                    ? "bg-white/16 border border-white/25 shadow-md"
+                    : "bg-white/4 hover:bg-white/8 border border-white/4"
+                }`}
+              >
+                {/* Day Name */}
+                <span className={`w-14 text-[13px] font-medium font-mono ${isSel ? "text-white font-bold" : "text-white/80"}`}>
+                  {t(d.day)}
+                </span>
+
+                {/* Weather Condition Icon */}
+                <Ico className={`h-5 w-5 shrink-0 ${
+                  d.c === "sunny" ? "text-amber-300" :
+                  d.c === "night" ? "text-slate-100" :
+                  d.c === "rainy" ? "text-sky-300" :
+                  d.c === "storm" ? "text-yellow-400" : "text-slate-300"
+                }`} />
+
+                {/* Rain percentage */}
+                <span className="w-10 text-[11px] font-semibold text-sky-400 font-mono text-center">
+                  {d.rain > 0 ? `${d.rain}%` : "--"}
+                </span>
+
+                {/* Min Temp */}
+                <span className="w-8 text-right font-mono text-[12px] text-white/50">
+                  {formatTemp(d.lo, unit)}
+                </span>
+
+                {/* Horizontal Range Bar Track */}
+                <div className="relative h-2 flex-1 rounded-full bg-white/10 overflow-hidden">
+                  <div
+                    className="absolute top-0 bottom-0 rounded-full transition-all duration-300"
+                    style={{
+                      left: `${leftPct}%`,
+                      width: `${widthPct}%`,
+                      background: "linear-gradient(90deg, #38bdf8, #fbbf24, #f97316)",
+                    }}
+                  />
+                  {curTempPct !== null && (
+                    <span
+                      className="absolute top-1/2 h-3 w-3 -translate-y-1/2 -translate-x-1/2 rounded-full border border-black bg-white shadow-md z-10"
+                      style={{ left: `${curTempPct}%` }}
+                      title={`Current: ${formatTemp(location.temp, unit)}`}
+                    />
+                  )}
+                </div>
+
+                {/* Max Temp */}
+                <span className="w-8 font-mono text-[12px] font-bold text-white text-right">
+                  {formatTemp(d.hi, unit)}
+                </span>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 3. Horizontal 7-Day Quick-Select Scrubber Rail */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+          {t("7-Day Timeline Scrubber")}
+        </p>
+
+        <div className="scroll-hide -mx-2 flex gap-2 overflow-x-auto px-2 py-1.5 touch-pan-x">
+          {days.map((d, i) => {
+            const activeCard = i === selectedIndex;
+            const Ico = I.conditionIcon(d.c);
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  triggerMoonHaptic(false);
+                  setSelectedIndex(i);
+                }}
+                className={`flex min-w-[76px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border py-3 px-2 transition-all duration-150 active:scale-95 ${
+                  activeCard
+                    ? "border-white/35 bg-white/20 shadow-xl scale-[1.04] ring-1 ring-white/25"
+                    : "border-white/6 bg-white/6 hover:bg-white/12"
+                }`}
+              >
+                <span className={`text-[11px] font-medium ${activeCard ? "text-white font-bold" : "text-[var(--color-ink-faint)]"}`}>
+                  {t(d.day)}
+                </span>
+                <Ico className={`h-5 w-5 ${
+                  d.c === "sunny" ? "text-amber-300" :
+                  d.c === "night" ? "text-slate-100" :
+                  d.c === "rainy" ? "text-sky-300" :
+                  d.c === "storm" ? "text-yellow-400" : "text-slate-300"
+                }`} />
+                <div className="flex items-center gap-1 text-[11px] font-mono">
+                  <span className="font-bold text-white">{formatTemp(d.hi, unit)}</span>
+                  <span className="text-white/40">{formatTemp(d.lo, unit)}</span>
+                </div>
+                {typeof d.rain === "number" && d.rain > 0 ? (
+                  <span className="text-[9.5px] font-semibold text-sky-400 -mt-1 font-mono">💧 {d.rain}%</span>
+                ) : (
+                  <span className="text-[9px] text-white/30 -mt-1 font-mono">--</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 4. Selected Day Deep-Dive Atmospheric Metrics */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+          {active.day === "Today" ? t("Today's Detailed Metrics") : `${t(active.day)} · ${t("Detailed Metrics")}`}
+        </p>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">🌡️ {t("Diurnal Spread")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-amber-300 font-mono">
+              {active.hi - active.lo}°{unit} <span className="text-xs font-normal text-white/70">{t("Spread")}</span>
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">
+              {active.hi - active.lo > 10 ? t("Wide day-to-night temperature swing") : t("Moderate thermal variance")}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">💧 {t("Rain Probability")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-sky-300 font-mono">
+              {active.rain}%
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">
+              {active.rain > 50 ? t("Precipitation probable") : active.rain > 20 ? t("Isolated shower risk") : t("Dry conditions expected")}
+            </p>
+          </div>
+
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">☀️ {t("UV Index Peak")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-white font-mono">
+              {active.uvMax ?? 7} <span className="text-xs font-normal text-white/70">({uvRisk.label})</span>
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">{uvRisk.advice}</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">🌅 {t("Daylight Span")}</p>
+            <p className="mt-1 text-[15px] font-semibold text-white font-mono">
+              {active.sunrise ?? location.sun.sunrise} - {active.sunset ?? location.sun.sunset}
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">{t("Daylight cycle")}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. 7-Day Synoptic Summary & Highlights Card */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+          {t("Week-at-a-Glance Synoptic Highlights")}
+        </p>
+
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">🔥</span>
+              <div>
+                <p className="text-[12.5px] font-semibold text-white">{t("Warmest Day")}</p>
+                <p className="text-[11px] text-[var(--color-ink-soft)]">{t(warmestDay.day)} · {warmestDay.date ?? ""}</p>
+              </div>
+            </div>
+            <span className="text-sm font-bold text-amber-300 font-mono">{formatTemp(warmestDay.hi, unit)}</span>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">❄️</span>
+              <div>
+                <p className="text-[12.5px] font-semibold text-white">{t("Coolest Night")}</p>
+                <p className="text-[11px] text-[var(--color-ink-soft)]">{t(coolestDay.day)} · {coolestDay.date ?? ""}</p>
+              </div>
+            </div>
+            <span className="text-sm font-bold text-sky-300 font-mono">{formatTemp(coolestDay.lo, unit)}</span>
+          </div>
+
+          <div className="flex items-center justify-between p-3 rounded-2xl bg-white/5 border border-white/5">
+            <div className="flex items-center gap-2.5">
+              <span className="text-base">💧</span>
+              <div>
+                <p className="text-[12.5px] font-semibold text-white">{t("Highest Rain Risk")}</p>
+                <p className="text-[11px] text-[var(--color-ink-soft)]">{t(rainiestDay.day)} · {rainiestDay.date ?? ""}</p>
+              </div>
+            </div>
+            <span className="text-sm font-bold text-white font-mono">{rainiestDay.rain}%</span>
+          </div>
         </div>
       </div>
     </div>

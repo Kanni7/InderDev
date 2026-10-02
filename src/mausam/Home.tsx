@@ -44,13 +44,13 @@ const STATIC_HOURLY: HourlyPoint[] = [
   { t: "8 AM", c: "sunny", temp: 27, feels: 28, rain: 0, humidity: 65, windSpeed: 11 },
 ];
 const STATIC_WEEKLY: DailyPoint[] = [
-  { day: "Today", c: "sunny", hi: 34, lo: 24, rain: 10 },
-  { day: "Mon", c: "cloudy", hi: 33, lo: 24, rain: 30 },
-  { day: "Tue", c: "rainy", hi: 30, lo: 23, rain: 70 },
-  { day: "Wed", c: "storm", hi: 28, lo: 22, rain: 85 },
-  { day: "Thu", c: "rainy", hi: 29, lo: 22, rain: 60 },
-  { day: "Fri", c: "cloudy", hi: 31, lo: 23, rain: 25 },
-  { day: "Sat", c: "sunny", hi: 33, lo: 24, rain: 15 },
+  { day: "Today", c: "sunny", hi: 34, lo: 24, rain: 10, uvMax: 8, sunrise: "6:14 AM", sunset: "6:22 PM", windMax: 14, date: "Today" },
+  { day: "Mon", c: "cloudy", hi: 33, lo: 24, rain: 30, uvMax: 7, sunrise: "6:15 AM", sunset: "6:21 PM", windMax: 16, date: "Mon, Oct 5" },
+  { day: "Tue", c: "rainy", hi: 30, lo: 23, rain: 70, uvMax: 4, sunrise: "6:15 AM", sunset: "6:20 PM", windMax: 22, date: "Tue, Oct 6" },
+  { day: "Wed", c: "storm", hi: 28, lo: 22, rain: 85, uvMax: 3, sunrise: "6:16 AM", sunset: "6:19 PM", windMax: 28, date: "Wed, Oct 7" },
+  { day: "Thu", c: "rainy", hi: 29, lo: 22, rain: 60, uvMax: 5, sunrise: "6:16 AM", sunset: "6:18 PM", windMax: 20, date: "Thu, Oct 8" },
+  { day: "Fri", c: "cloudy", hi: 31, lo: 23, rain: 25, uvMax: 6, sunrise: "6:17 AM", sunset: "6:17 PM", windMax: 15, date: "Fri, Oct 9" },
+  { day: "Sat", c: "sunny", hi: 33, lo: 24, rain: 15, uvMax: 8, sunrise: "6:17 AM", sunset: "6:16 PM", windMax: 12, date: "Sat, Oct 10" },
 ];
 
 /** Blocks that render as small gauges - these pair up two-across in the grid,
@@ -117,6 +117,7 @@ export default function Home({
   const [showRadar, setShowRadar] = useState(false);
   const [radarLayer, setRadarLayer] = useState<"rain" | "wind" | "temp" | "satellite">("wind");
   const [activeDetail, setActiveDetail] = useState<DetailType | null>(null);
+  const [detailIndex, setDetailIndex] = useState<number>(0);
 
   const filteredLocations = locations.filter((l) =>
     l.city.toLowerCase().includes(citySearchQuery.toLowerCase()) ||
@@ -242,6 +243,7 @@ export default function Home({
         className="cursor-pointer transition active:scale-[0.99]"
         onClick={() => {
           trackTap("hourly");
+          setDetailIndex(0);
           setActiveDetail("hourly");
         }}
       >
@@ -250,19 +252,47 @@ export default function Home({
           unit={unit}
           accent={accent}
           lang={lang}
-          onOpenDetail={() => {
+          onOpenDetail={(i) => {
             trackTap("hourly");
+            setDetailIndex(i ?? 0);
             setActiveDetail("hourly");
           }}
         />
       </div>
     ),
     weekly: (
-      <div key="weekly">
-        <BlockTitle>{t("7-day forecast")}</BlockTitle>
-        <div className="overflow-hidden rounded-2xl border border-white/8 mausam-glass">
+      <div
+        key="weekly"
+        className="cursor-pointer transition active:scale-[0.99] group"
+        onClick={() => {
+          trackTap("weekly");
+          setDetailIndex(0);
+          setActiveDetail("weekly");
+        }}
+      >
+        <div className="flex items-center justify-between pb-0.5">
+          <BlockTitle>
+            <span className="flex items-center gap-1.5">
+              <span>{t("7-day forecast")}</span>
+              <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-0.5 transition-all text-xs font-bold">›</span>
+            </span>
+          </BlockTitle>
+          <span className="font-mono text-[10px] text-white/40 group-hover:text-white/70 transition mr-1 mb-1">
+            {t("View Details")}
+          </span>
+        </div>
+        <div className="overflow-hidden rounded-2xl border border-white/8 mausam-glass group-hover:border-white/20 transition">
           {(location.weeklyForecast ?? STATIC_WEEKLY).map((d, i, arr) => (
-            <div key={d.day} className={`flex items-center gap-3 px-4 py-3 ${i !== arr.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}>
+            <div
+              key={d.day}
+              onClick={(e) => {
+                e.stopPropagation();
+                trackTap("weekly");
+                setDetailIndex(i);
+                setActiveDetail("weekly");
+              }}
+              className={`flex items-center gap-3 px-4 py-3 transition hover:bg-white/6 ${i !== arr.length - 1 ? "border-b border-[var(--color-line)]" : ""}`}
+            >
               <span className="w-12 text-[13px] font-medium text-[var(--color-ink)]">{t(d.day)}</span>
               <CondIcon c={d.c} className="h-5 w-5 text-[var(--color-ink-soft)]" />
               <span className="w-10 text-[11px] text-[var(--color-tier-info)]">{d.rain}%</span>
@@ -511,6 +541,7 @@ export default function Home({
           accent={accent}
           lang={lang}
           unit={unit}
+          initialIndex={detailIndex}
           currentHour={currentHour}
           onClose={() => setActiveDetail(null)}
           onOpenRadar={(layer = "rain") => {

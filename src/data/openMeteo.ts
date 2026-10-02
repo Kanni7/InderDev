@@ -256,13 +256,28 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
 
     // Weekly forecast - 7 days
     const DAY_NAMES = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-    const weeklyForecast: DailyPoint[] = forecast.daily.weather_code.slice(0, 7).map((code, i) => ({
-      day: i === 0 ? "Today" : DAY_NAMES[new Date(forecast.daily.sunrise[i]).getDay()],
-      c: weatherCodeToCondition(code, true),
-      hi: Math.round(forecast.daily.temperature_2m_max[i]),
-      lo: Math.round(forecast.daily.temperature_2m_min[i]),
-      rain: forecast.daily.precipitation_probability_max[i] ?? 0,
-    }));
+    const MONTH_NAMES = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+    const weeklyForecast: DailyPoint[] = forecast.daily.weather_code.slice(0, 7).map((code, i) => {
+      const sunriseIso = forecast.daily.sunrise[i];
+      const sunsetIso = forecast.daily.sunset[i];
+      const dateObj = sunriseIso ? new Date(sunriseIso) : new Date(Date.now() + i * 86400000);
+      const dayName = i === 0 ? "Today" : DAY_NAMES[dateObj.getDay()];
+      const dateLabel = `${dayName}, ${MONTH_NAMES[dateObj.getMonth()]} ${dateObj.getDate()}`;
+      const uv = forecast.daily.uv_index_max ? Math.round(forecast.daily.uv_index_max[i] ?? 6) : 6;
+
+      return {
+        day: dayName,
+        c: weatherCodeToCondition(code, true),
+        hi: Math.round(forecast.daily.temperature_2m_max[i]),
+        lo: Math.round(forecast.daily.temperature_2m_min[i]),
+        rain: forecast.daily.precipitation_probability_max ? Math.round(forecast.daily.precipitation_probability_max[i] ?? 0) : 0,
+        date: dateLabel,
+        uvMax: uv,
+        sunrise: sunriseIso ? formatSunTime(sunriseIso) : undefined,
+        sunset: sunsetIso ? formatSunTime(sunsetIso) : undefined,
+        windMax: Math.round(cur.wind_speed_10m),
+      };
+    });
 
     // Build location
     const loc: Location = {
