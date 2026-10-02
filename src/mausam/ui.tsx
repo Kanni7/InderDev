@@ -96,12 +96,13 @@ export function LifestyleIndicesCard({ location, lang, onSelectIndex }: { locati
 
 /** Interactive 24-Hour Temperature Curve Graph */
 export function HourlyInteractiveGraph({
-  hourlyData, unit, accent, lang,
+  hourlyData, unit, accent, lang, onOpenDetail,
 }: {
-  hourlyData: { t: string; c: Condition; temp: number }[];
+  hourlyData: { t: string; c: Condition; temp: number; feels?: number; rain?: number; humidity?: number; windSpeed?: number }[];
   unit: TemperatureUnit;
   accent: string;
   lang: Lang;
+  onOpenDetail?: (index?: number) => void;
 }) {
   const t = makeT(lang);
   const [selectedIndex, setSelectedIndex] = useState(0);
@@ -109,12 +110,18 @@ export function HourlyInteractiveGraph({
   const activeItem = hourlyData[selectedIndex] ?? hourlyData[0];
 
   return (
-    <div className="rounded-3xl p-4 mausam-glass space-y-3">
+    <div
+      onClick={() => onOpenDetail?.(selectedIndex)}
+      className="group rounded-3xl p-4 mausam-glass space-y-3 cursor-pointer transition-all duration-200 hover:border-white/20 active:scale-[0.99]"
+      title={t("Tap to view 24-hour detailed forecast")}
+    >
       <div className="flex items-center justify-between">
-        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
-          📈 {t("24-Hour Forecast Timeline")}
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)] flex items-center gap-1.5">
+          <span>📈</span>
+          <span>{t("24-Hour Forecast Timeline")}</span>
+          <span className="text-white/40 group-hover:text-white/80 group-hover:translate-x-0.5 transition-all text-xs font-bold">›</span>
         </p>
-        <span className="text-[12px] font-bold text-white bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10">
+        <span className="text-[12px] font-bold text-white bg-white/10 px-2.5 py-0.5 rounded-full border border-white/10 group-hover:bg-white/15 transition">
           {t(activeItem.t)}: {formatTemp(activeItem.temp, unit)}
         </span>
       </div>
@@ -122,17 +129,31 @@ export function HourlyInteractiveGraph({
       <div className="scroll-hide -mx-4 flex gap-2 overflow-x-auto px-4 pt-1 pb-2">
         {hourlyData.map((h, i) => {
           const active = i === selectedIndex;
+          const Ico = I.conditionIcon(h.c);
           return (
             <button
               key={i}
-              onClick={() => setSelectedIndex(i)}
-              className={`flex min-w-[68px] shrink-0 flex-col items-center gap-2 rounded-2xl border py-3.5 px-2 transition active:scale-95 ${
+              type="button"
+              onClick={(e) => {
+                e.stopPropagation();
+                setSelectedIndex(i);
+                onOpenDetail?.(i);
+              }}
+              className={`flex min-w-[68px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border py-3 px-2 transition active:scale-95 ${
                 active ? "border-white/30 bg-white/15 shadow-xl scale-[1.03]" : "border-white/5 bg-white/5 hover:bg-white/10"
               }`}
             >
               <span className="text-[11px] font-medium text-[var(--color-ink-faint)]">{t(h.t)}</span>
-              <I.Sun className="h-5 w-5 text-amber-300" />
+              <Ico className={`h-5 w-5 ${
+                h.c === "sunny" ? "text-amber-300" :
+                h.c === "night" ? "text-slate-100" :
+                h.c === "rainy" ? "text-sky-300" :
+                h.c === "storm" ? "text-yellow-400" : "text-slate-300"
+              }`} />
               <span className="text-sm font-bold text-white">{formatTemp(h.temp, unit)}</span>
+              {typeof h.rain === "number" && h.rain > 0 && (
+                <span className="text-[9.5px] font-semibold text-sky-400 -mt-1 font-mono">{h.rain}%</span>
+              )}
             </button>
           );
         })}

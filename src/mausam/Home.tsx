@@ -18,10 +18,30 @@ import { runGBDTInference } from "../engine/forYouGBDT";
 
 /** Minimal static fallbacks used only if live data hasn't loaded yet. */
 const STATIC_HOURLY: HourlyPoint[] = [
-  { t: "Now", c: "sunny", temp: 29 }, { t: "10 AM", c: "sunny", temp: 31 },
-  { t: "11 AM", c: "cloudy", temp: 32 }, { t: "12 PM", c: "cloudy", temp: 33 },
-  { t: "1 PM", c: "sunny", temp: 34 }, { t: "2 PM", c: "cloudy", temp: 33 },
-  { t: "3 PM", c: "rainy", temp: 30 }, { t: "4 PM", c: "rainy", temp: 28 },
+  { t: "Now", c: "sunny", temp: 29, feels: 31, rain: 0, humidity: 48, windSpeed: 12 },
+  { t: "10 AM", c: "sunny", temp: 31, feels: 33, rain: 0, humidity: 45, windSpeed: 14 },
+  { t: "11 AM", c: "sunny", temp: 32, feels: 34, rain: 0, humidity: 42, windSpeed: 15 },
+  { t: "12 PM", c: "sunny", temp: 33, feels: 35, rain: 5, humidity: 40, windSpeed: 16 },
+  { t: "1 PM", c: "sunny", temp: 34, feels: 36, rain: 10, humidity: 38, windSpeed: 18 },
+  { t: "2 PM", c: "cloudy", temp: 34, feels: 36, rain: 15, humidity: 42, windSpeed: 17 },
+  { t: "3 PM", c: "cloudy", temp: 33, feels: 35, rain: 20, humidity: 45, windSpeed: 15 },
+  { t: "4 PM", c: "rainy", temp: 31, feels: 32, rain: 45, humidity: 62, windSpeed: 19 },
+  { t: "5 PM", c: "rainy", temp: 30, feels: 31, rain: 40, humidity: 68, windSpeed: 18 },
+  { t: "6 PM", c: "cloudy", temp: 29, feels: 30, rain: 20, humidity: 65, windSpeed: 14 },
+  { t: "7 PM", c: "night", temp: 28, feels: 29, rain: 10, humidity: 68, windSpeed: 12 },
+  { t: "8 PM", c: "night", temp: 27, feels: 28, rain: 5, humidity: 72, windSpeed: 11 },
+  { t: "9 PM", c: "night", temp: 26, feels: 27, rain: 0, humidity: 75, windSpeed: 10 },
+  { t: "10 PM", c: "night", temp: 25, feels: 26, rain: 0, humidity: 78, windSpeed: 9 },
+  { t: "11 PM", c: "night", temp: 25, feels: 26, rain: 0, humidity: 80, windSpeed: 8 },
+  { t: "12 AM", c: "night", temp: 24, feels: 25, rain: 0, humidity: 82, windSpeed: 8 },
+  { t: "1 AM", c: "night", temp: 24, feels: 25, rain: 0, humidity: 84, windSpeed: 7 },
+  { t: "2 AM", c: "night", temp: 23, feels: 24, rain: 0, humidity: 85, windSpeed: 7 },
+  { t: "3 AM", c: "night", temp: 23, feels: 24, rain: 0, humidity: 86, windSpeed: 6 },
+  { t: "4 AM", c: "night", temp: 22, feels: 23, rain: 0, humidity: 88, windSpeed: 6 },
+  { t: "5 AM", c: "night", temp: 22, feels: 23, rain: 0, humidity: 90, windSpeed: 7 },
+  { t: "6 AM", c: "sunny", temp: 23, feels: 24, rain: 0, humidity: 85, windSpeed: 8 },
+  { t: "7 AM", c: "sunny", temp: 25, feels: 26, rain: 0, humidity: 75, windSpeed: 9 },
+  { t: "8 AM", c: "sunny", temp: 27, feels: 28, rain: 0, humidity: 65, windSpeed: 11 },
 ];
 const STATIC_WEEKLY: DailyPoint[] = [
   { day: "Today", c: "sunny", hi: 34, lo: 24, rain: 10 },
@@ -217,8 +237,24 @@ export default function Home({
       </div>
     ),
     hourly: (
-      <div key="hourly">
-        <HourlyInteractiveGraph hourlyData={location.hourlyForecast ?? STATIC_HOURLY} unit={unit} accent={accent} lang={lang} />
+      <div
+        key="hourly"
+        className="cursor-pointer transition active:scale-[0.99]"
+        onClick={() => {
+          trackTap("hourly");
+          setActiveDetail("hourly");
+        }}
+      >
+        <HourlyInteractiveGraph
+          hourlyData={location.hourlyForecast ?? STATIC_HOURLY}
+          unit={unit}
+          accent={accent}
+          lang={lang}
+          onOpenDetail={() => {
+            trackTap("hourly");
+            setActiveDetail("hourly");
+          }}
+        />
       </div>
     ),
     weekly: (
@@ -474,6 +510,7 @@ export default function Home({
           location={location}
           accent={accent}
           lang={lang}
+          unit={unit}
           currentHour={currentHour}
           onClose={() => setActiveDetail(null)}
           onOpenRadar={(layer = "rain") => {

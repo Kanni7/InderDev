@@ -235,15 +235,22 @@ export async function fetchWeather(cityKey: string): Promise<Location | null> {
       gust: Math.round(cur.wind_gusts_10m),
     };
 
-    // Hourly forecast - current hour + next 7 hours (8 slots)
+    // Hourly forecast - current hour + next 23 hours (full 24-hour timeline)
     const hourlyForecast: HourlyPoint[] = [];
-    for (let i = 0; i < 8; i++) {
+    for (let i = 0; i < 24; i++) {
       const idx = currentHourIdx + i;
       if (idx >= forecast.hourly.time.length) break;
+      const hDate = new Date(forecast.hourly.time[idx]);
+      const hourNum = hDate.getHours();
+      const isDayHour = hourNum >= 6 && hourNum < 19;
       hourlyForecast.push({
         t: i === 0 ? "Now" : formatTime(forecast.hourly.time[idx]),
-        c: weatherCodeToCondition(forecast.hourly.weather_code[idx] ?? cur.weather_code, cur.is_day === 1),
+        c: weatherCodeToCondition(forecast.hourly.weather_code[idx] ?? cur.weather_code, isDayHour),
         temp: Math.round(forecast.hourly.temperature_2m[idx] ?? cur.temperature_2m),
+        feels: Math.round(forecast.hourly.temperature_2m[idx] ?? cur.temperature_2m),
+        rain: forecast.hourly.precipitation_probability ? Math.round(forecast.hourly.precipitation_probability[idx] ?? 0) : 0,
+        humidity: Math.round(cur.relative_humidity_2m),
+        windSpeed: Math.round(cur.wind_speed_10m),
       });
     }
 

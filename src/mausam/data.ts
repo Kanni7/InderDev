@@ -157,7 +157,15 @@ export interface Moon { phase: number; name: string; illum: number; }
 
 export interface LocationAlert { tier: Tier; title: string; body: string; }
 
-export interface HourlyPoint { t: string; c: Condition; temp: number; }
+export interface HourlyPoint {
+  t: string;
+  c: Condition;
+  temp: number;
+  feels?: number;
+  rain?: number;
+  humidity?: number;
+  windSpeed?: number;
+}
 export interface DailyPoint { day: string; c: Condition; hi: number; lo: number; rain: number; }
 
 export interface Location {

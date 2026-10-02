@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef, useMemo, type SVGProps, type ReactElement, type CSSProperties } from "react";
-import { userTypes, alertsForLocation, tierMeta, packingTips, AQI_BANDS, aqiBandIndex, aqiColor, type UserTypeKey, type Location } from "./data";
-import { getWeatherTheme } from "./theme";
+import { userTypes, alertsForLocation, tierMeta, packingTips, AQI_BANDS, aqiBandIndex, aqiColor, formatTemp, type UserTypeKey, type Location, type TemperatureUnit, type HourlyPoint } from "./data";
+import { getWeatherTheme, type Condition } from "./theme";
 import { makeT, langNames, type Lang } from "./i18n";
 import * as I from "./icons";
 import { askWhy } from "../ai/mausamAI";
@@ -630,10 +630,10 @@ export function Alerts({ onClose, lang, accent, location }: { onClose: () => voi
 /* ───────────── 5. Widget Detail Modal Overlay (Exact Home Screen Glass Design) ───────────── */
 export type DetailType =
   | "air" | "sun" | "precip" | "pollen" | "wind"
-  | "humidity" | "dewpoint" | "pressure" | "moon" | "travel" | "packing";
+  | "humidity" | "dewpoint" | "pressure" | "moon" | "travel" | "packing" | "hourly";
 
 export function WidgetDetailModal({
-  type, location, accent, lang, currentHour, onClose, onOpenRadar,
+  type, location, accent, lang, currentHour, onClose, onOpenRadar, unit = "C",
 }: {
   type: DetailType;
   location: Location;
@@ -642,6 +642,7 @@ export function WidgetDetailModal({
   currentHour?: number;
   onClose: () => void;
   onOpenRadar?: (layer?: "rain" | "wind") => void;
+  unit?: TemperatureUnit;
 }) {
   const t = makeT(lang);
 
@@ -657,6 +658,7 @@ export function WidgetDetailModal({
     moon: "Moon Phase & Astronomy",
     travel: "Travel & Commute Status",
     packing: "Packing & Outfit Advisor",
+    hourly: "24-Hour Forecast Timeline",
   };
 
   const theme = getWeatherTheme(location.condition, currentHour);
@@ -691,6 +693,7 @@ export function WidgetDetailModal({
         {type === "moon" && <MoonDetail location={location} accent={accent} lang={lang} />}
         {type === "travel" && <TravelDetail location={location} accent={accent} lang={lang} />}
         {type === "packing" && <PackingDetail location={location} accent={accent} lang={lang} />}
+        {type === "hourly" && <HourlyDetail location={location} accent={accent} lang={lang} unit={unit} currentHour={currentHour} />}
       </div>
     </div>
   );
@@ -2009,6 +2012,467 @@ function PackingDetail({ location, accent, lang }: { location: Location; accent:
               <span className="text-[13.5px] font-medium text-[var(--color-ink)]">{t(item.tip)}</span>
             </div>
           ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+/* ───────────────────── 24-HOUR FORECAST TIMELINE DETAIL VIEW ───────────────────── */
+
+function HourlyDetail({
+  location,
+  accent,
+  lang,
+  unit = "C",
+  currentHour,
+}: {
+  location: Location;
+  accent: string;
+  lang: Lang;
+  unit?: TemperatureUnit;
+  currentHour?: number;
+}) {
+  const t = makeT(lang);
+
+  // Synthesize or use complete 24-hour meteorological dataset
+  const hourlyList = useMemo(() => {
+    const list: HourlyPoint[] = [];
+    const existing = location.hourlyForecast ?? [];
+    const now = new Date();
+    const baseH = typeof currentHour === "number" ? currentHour : now.getHours();
+    const hi = location.temp + 4;
+    const lo = location.temp - 6;
+
+    for (let i = 0; i < 24; i++) {
+      if (existing[i]) {
+        list.push({
+          ...existing[i],
+          feels: existing[i].feels ?? (existing[i].temp + 1),
+          rain: existing[i].rain ?? location.precip.chance,
+          humidity: existing[i].humidity ?? location.humidity,
+          windSpeed: existing[i].windSpeed ?? location.wind.speed,
+        });
+      } else {
+        const h = (baseH + i) % 24;
+        const ampm = h >= 12 ? "PM" : "AM";
+        const h12 = h % 12 || 12;
+        const timeLabel = i === 0 ? "Now" : `${h12} ${ampm}`;
+        const isDay = h >= 6 && h < 19;
+        const solarCycle = Math.sin(((h - 8.5) / 12) * Math.PI);
+        const temp = Math.round(lo + ((solarCycle + 1) / 2) * (hi - lo));
+        const cond: Condition = isDay ? (temp > 32 ? "sunny" : location.condition) : "night";
+        const rainProb = Math.max(0, Math.min(100, Math.round(location.precip.chance + (h >= 14 && h <= 18 ? 20 : -10))));
+
+        list.push({
+          t: timeLabel,
+          c: cond,
+          temp,
+          feels: temp + 1,
+          rain: rainProb,
+          humidity: Math.round(Math.min(95, Math.max(30, location.humidity + (isDay ? -8 : 12)))),
+          windSpeed: Math.round(Math.max(4, location.wind.speed + (isDay ? 3 : -2))),
+        });
+      }
+    }
+    return list;
+  }, [location, currentHour]);
+
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const active = hourlyList[selectedIndex] ?? hourlyList[0];
+  const ActiveIco = I.conditionIcon(active.c);
+
+  // Min and Max temperatures across the 24 hours
+  const temps = hourlyList.map((h) => h.temp);
+  const minTemp = Math.min(...temps);
+  const maxTemp = Math.max(...temps);
+
+  // Find peak warmth hour and coolest hour
+  const peakHour = useMemo(() => {
+    let max = -999;
+    let idx = 0;
+    hourlyList.forEach((h, i) => {
+      if (h.temp > max) { max = h.temp; idx = i; }
+    });
+    return hourlyList[idx];
+  }, [hourlyList]);
+
+  const coolHour = useMemo(() => {
+    let min = 999;
+    let idx = 0;
+    hourlyList.forEach((h, i) => {
+      if (h.temp < min) { min = h.temp; idx = i; }
+    });
+    return hourlyList[idx];
+  }, [hourlyList]);
+
+  // Max rain chance
+  const maxRain = useMemo(() => {
+    return Math.max(...hourlyList.map((h) => h.rain ?? 0));
+  }, [hourlyList]);
+
+  // Condition descriptions mapping
+  const conditionLabels: Record<Condition, string> = {
+    sunny: "Clear & Sunny Skies",
+    cloudy: "Partly Cloudy",
+    rainy: "Precipitation & Rain",
+    storm: "Thunderstorm Activity",
+    fog: "Foggy & Hazy",
+    night: "Clear Celestial Night",
+  };
+
+  // SVG Spline geometry calculations
+  const svgWidth = 600;
+  const svgHeight = 150;
+  const padX = 24;
+  const padTop = 28;
+  const padBottom = 26;
+  const usableWidth = svgWidth - padX * 2;
+  const usableHeight = svgHeight - padTop - padBottom;
+  const tempRange = Math.max(1, maxTemp - minTemp);
+
+  const points = useMemo(() => {
+    return hourlyList.map((h, i) => {
+      const x = padX + (i / (hourlyList.length - 1)) * usableWidth;
+      const normalized = (h.temp - minTemp) / tempRange;
+      const y = padTop + (1 - normalized) * usableHeight;
+      return { x, y, temp: h.temp, t: h.t };
+    });
+  }, [hourlyList, minTemp, tempRange, padX, padTop, usableWidth, usableHeight]);
+
+  // Smooth Catmull-Rom to Cubic Bezier curve path generator
+  const { curvePath, areaPath } = useMemo(() => {
+    if (points.length < 2) return { curvePath: "", areaPath: "" };
+
+    let d = `M ${points[0].x.toFixed(1)} ${points[0].y.toFixed(1)}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = points[i === 0 ? 0 : i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = points[i + 2 < points.length ? i + 2 : i + 1];
+
+      const cp1x = p1.x + (p2.x - p0.x) / 6;
+      const cp1y = p1.y + (p2.y - p0.y) / 6;
+      const cp2x = p2.x - (p3.x - p1.x) / 6;
+      const cp2y = p2.y - (p3.y - p1.y) / 6;
+
+      d += ` C ${cp1x.toFixed(1)} ${cp1y.toFixed(1)}, ${cp2x.toFixed(1)} ${cp2y.toFixed(1)}, ${p2.x.toFixed(1)} ${p2.y.toFixed(1)}`;
+    }
+
+    const last = points[points.length - 1];
+    const first = points[0];
+    const bottomY = svgHeight - padBottom + 10;
+    const a = `${d} L ${last.x.toFixed(1)} ${bottomY} L ${first.x.toFixed(1)} ${bottomY} Z`;
+
+    return { curvePath: d, areaPath: a };
+  }, [points, svgHeight, padBottom]);
+
+  const activePoint = points[selectedIndex] ?? points[0];
+
+  return (
+    <div className="space-y-3.5">
+      {/* 1. Selected Hour Overview Hero Card */}
+      <div className="rounded-3xl p-5 mausam-glass space-y-4">
+        <div className="flex items-start justify-between">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+                {t("Timeline Forecast")}
+              </span>
+              <span className="rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] font-semibold text-white">
+                {t(active.t)}
+              </span>
+            </div>
+            <h2 className="mt-1 text-[44px] font-semibold leading-none tracking-tight text-[var(--color-ink)]">
+              {formatTemp(active.temp, unit)}
+            </h2>
+            <div className="mt-2 flex items-center gap-2">
+              <ActiveIco className={`h-5 w-5 ${
+                active.c === "sunny" ? "text-amber-300" :
+                active.c === "night" ? "text-slate-100" :
+                active.c === "rainy" ? "text-sky-300" :
+                active.c === "storm" ? "text-yellow-400" : "text-slate-300"
+              }`} />
+              <p className="text-[14px] font-medium text-white/90">
+                {t(conditionLabels[active.c])}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right">
+            <span className="inline-block rounded-full px-3 py-1 text-[11px] font-semibold border border-white/15 bg-white/10 text-white">
+              {t("High")} {formatTemp(maxTemp, unit)} · {t("Low")} {formatTemp(minTemp, unit)}
+            </span>
+          </div>
+        </div>
+
+        {/* 4 Quick Metrics for the focused hour */}
+        <div className="grid grid-cols-4 gap-2 border-t border-white/8 pt-3">
+          <div className="rounded-2xl bg-white/6 p-2.5 text-center">
+            <p className="font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Feels Like")}</p>
+            <p className="mt-0.5 text-[15px] font-bold text-white">{formatTemp(active.feels ?? active.temp + 1, unit)}</p>
+          </div>
+          <div className="rounded-2xl bg-white/6 p-2.5 text-center">
+            <p className="font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Rain Chance")}</p>
+            <p className="mt-0.5 text-[15px] font-bold text-sky-400">{active.rain ?? 0}%</p>
+          </div>
+          <div className="rounded-2xl bg-white/6 p-2.5 text-center">
+            <p className="font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Wind")}</p>
+            <p className="mt-0.5 text-[15px] font-bold text-white">{active.windSpeed ?? location.wind.speed} <span className="text-[10px] font-normal text-white/60">km/h</span></p>
+          </div>
+          <div className="rounded-2xl bg-white/6 p-2.5 text-center">
+            <p className="font-mono text-[9.5px] uppercase tracking-wider text-[var(--color-ink-faint)]">{t("Humidity")}</p>
+            <p className="mt-0.5 text-[15px] font-bold text-white">{active.humidity ?? location.humidity}%</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 2. Interactive SVG 24-Hour Temperature Spline Curve Chart */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <div className="flex items-center justify-between">
+          <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+            📈 {t("24-Hour Temperature Curve")}
+          </p>
+          <span className="text-[11px] font-medium text-white/70">
+            {t("Tap or drag points to inspect")}
+          </span>
+        </div>
+
+        <div className="relative overflow-hidden rounded-2xl bg-black/30 p-2 border border-white/8 select-none">
+          <svg viewBox={`0 0 ${svgWidth} ${svgHeight}`} className="w-full h-auto overflow-visible">
+            <defs>
+              <linearGradient id="hourlyAreaGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stopColor={accent} stopOpacity="0.45" />
+                <stop offset="85%" stopColor={accent} stopOpacity="0.03" />
+                <stop offset="100%" stopColor={accent} stopOpacity="0" />
+              </linearGradient>
+            </defs>
+
+            {/* Area Fill */}
+            {areaPath && (
+              <path d={areaPath} fill="url(#hourlyAreaGrad)" />
+            )}
+
+            {/* Spline Stroke Curve */}
+            {curvePath && (
+              <path d={curvePath} fill="none" stroke={accent} strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" />
+            )}
+
+            {/* Vertical Guide Line at Selected Hour */}
+            {activePoint && (
+              <line
+                x1={activePoint.x}
+                y1={padTop - 8}
+                x2={activePoint.x}
+                y2={svgHeight - padBottom}
+                stroke="#ffffff"
+                strokeWidth="1.5"
+                strokeDasharray="3 3"
+                opacity="0.65"
+              />
+            )}
+
+            {/* Focus Point Glow & Circle */}
+            {activePoint && (
+              <g>
+                <circle cx={activePoint.x} cy={activePoint.y} r="8" fill={accent} opacity="0.35" />
+                <circle cx={activePoint.x} cy={activePoint.y} r="5.5" fill="#ffffff" stroke={accent} strokeWidth="2.5" />
+                <text
+                  x={activePoint.x}
+                  y={Math.max(16, activePoint.y - 12)}
+                  textAnchor="middle"
+                  fill="#ffffff"
+                  fontSize="12"
+                  fontWeight="bold"
+                  fontFamily="monospace"
+                >
+                  {formatTemp(activePoint.temp, unit)}
+                </text>
+              </g>
+            )}
+
+            {/* Time Reference Labels along Bottom Axis */}
+            {points.map((p, i) => {
+              // Show label every 4 hours + last point
+              if (i % 4 !== 0 && i !== points.length - 1) return null;
+              return (
+                <text
+                  key={i}
+                  x={p.x}
+                  y={svgHeight - 6}
+                  textAnchor="middle"
+                  fill={i === selectedIndex ? "#ffffff" : "rgba(255,255,255,0.45)"}
+                  fontSize="9.5"
+                  fontWeight={i === selectedIndex ? "bold" : "normal"}
+                  fontFamily="monospace"
+                >
+                  {t(p.t)}
+                </text>
+              );
+            })}
+
+            {/* Interactive Touch / Click Columns across the SVG width */}
+            {points.map((p, i) => {
+              const colWidth = usableWidth / points.length;
+              return (
+                <rect
+                  key={i}
+                  x={p.x - colWidth / 2}
+                  y={0}
+                  width={colWidth}
+                  height={svgHeight}
+                  fill="transparent"
+                  className="cursor-pointer"
+                  onClick={() => {
+                    triggerMoonHaptic(false);
+                    setSelectedIndex(i);
+                  }}
+                />
+              );
+            })}
+          </svg>
+        </div>
+      </div>
+
+      {/* 3. Horizontal Scrollable 24-Hour Quick-Selector Rail */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+          {t("24-Hour Timeline Scrubber")}
+        </p>
+
+        <div className="scroll-hide -mx-2 flex gap-2 overflow-x-auto px-2 py-1.5 touch-pan-x">
+          {hourlyList.map((h, i) => {
+            const activeCard = i === selectedIndex;
+            const Ico = I.conditionIcon(h.c);
+            return (
+              <button
+                key={i}
+                type="button"
+                onClick={() => {
+                  triggerMoonHaptic(false);
+                  setSelectedIndex(i);
+                }}
+                className={`flex min-w-[70px] shrink-0 flex-col items-center gap-1.5 rounded-2xl border py-3 px-2 transition-all duration-150 active:scale-95 ${
+                  activeCard
+                    ? "border-white/35 bg-white/20 shadow-xl scale-[1.04] ring-1 ring-white/25"
+                    : "border-white/6 bg-white/6 hover:bg-white/12"
+                }`}
+              >
+                <span className={`text-[11px] font-medium ${activeCard ? "text-white font-bold" : "text-[var(--color-ink-faint)]"}`}>
+                  {t(h.t)}
+                </span>
+                <Ico className={`h-5 w-5 ${
+                  h.c === "sunny" ? "text-amber-300" :
+                  h.c === "night" ? "text-slate-100" :
+                  h.c === "rainy" ? "text-sky-300" :
+                  h.c === "storm" ? "text-yellow-400" : "text-slate-300"
+                }`} />
+                <span className="text-sm font-bold text-white">{formatTemp(h.temp, unit)}</span>
+                {typeof h.rain === "number" && h.rain > 0 ? (
+                  <span className="text-[9.5px] font-semibold text-sky-400 -mt-1 font-mono">{h.rain}%</span>
+                ) : (
+                  <span className="text-[9px] text-white/30 -mt-1 font-mono">--</span>
+                )}
+              </button>
+            );
+          })}
+        </div>
+      </div>
+
+      {/* 4. Diurnal 24-Hour Highlights Card */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+          {t("Key Diurnal Meteorological Trends")}
+        </p>
+
+        <div className="grid grid-cols-2 gap-2.5">
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">🔥 {t("Peak Warmth")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-amber-300">
+              {formatTemp(peakHour.temp, unit)} <span className="text-xs font-normal text-white/70">at {t(peakHour.t)}</span>
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">{t("Afternoon zenith heating")}</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">❄️ {t("Coolest Window")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-sky-300">
+              {formatTemp(coolHour.temp, unit)} <span className="text-xs font-normal text-white/70">at {t(coolHour.t)}</span>
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">{t("Radiational cooling at dawn")}</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">💧 {t("Precipitation Risk")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-white">
+              {maxRain > 30 ? `${maxRain}% ${t("Rain likely")}` : maxRain > 0 ? `${maxRain}% ${t("Low chance")}` : t("Dry conditions")}
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">{t("24-hour Doppler horizon")}</p>
+          </div>
+
+          <div className="rounded-2xl bg-white/6 p-3">
+            <p className="text-[11px] text-[var(--color-ink-faint)]">🌡️ {t("Diurnal Range")}</p>
+            <p className="mt-1 text-[17px] font-semibold text-white">
+              {maxTemp - minTemp}°{unit} <span className="text-xs font-normal text-white/70">{t("Spread")}</span>
+            </p>
+            <p className="text-[11px] text-[var(--color-ink-soft)] mt-0.5">{t("Comfortable nocturnal drop")}</p>
+          </div>
+        </div>
+      </div>
+
+      {/* 5. Comprehensive Hour-by-Hour Breakdown List */}
+      <div className="rounded-3xl p-4.5 mausam-glass space-y-3">
+        <p className="font-mono text-[10px] uppercase tracking-[0.22em] text-[var(--color-ink-faint)]">
+          {t("Hour-by-Hour Full Schedule")}
+        </p>
+
+        <div className="space-y-1.5">
+          {hourlyList.map((h, i) => {
+            const isSel = i === selectedIndex;
+            const Ico = I.conditionIcon(h.c);
+            return (
+              <div
+                key={i}
+                onClick={() => {
+                  triggerMoonHaptic(false);
+                  setSelectedIndex(i);
+                }}
+                className={`flex items-center justify-between p-3 rounded-2xl cursor-pointer transition-all ${
+                  isSel
+                    ? "bg-white/16 border border-white/25 shadow-md"
+                    : "bg-white/4 hover:bg-white/8 border border-white/4"
+                }`}
+              >
+                <div className="flex items-center gap-3">
+                  <span className={`w-14 font-mono text-[12px] ${isSel ? "text-white font-bold" : "text-white/70"}`}>
+                    {t(h.t)}
+                  </span>
+                  <Ico className={`h-5 w-5 ${
+                    h.c === "sunny" ? "text-amber-300" :
+                    h.c === "night" ? "text-slate-100" :
+                    h.c === "rainy" ? "text-sky-300" :
+                    h.c === "storm" ? "text-yellow-400" : "text-slate-300"
+                  }`} />
+                  <span className="text-[12.5px] font-medium text-white/85">
+                    {t(conditionLabels[h.c])}
+                  </span>
+                </div>
+
+                <div className="flex items-center gap-4">
+                  {typeof h.rain === "number" && h.rain > 0 ? (
+                    <span className="w-12 text-right text-[11px] font-semibold text-sky-400 font-mono">
+                      💧 {h.rain}%
+                    </span>
+                  ) : (
+                    <span className="w-12 text-right text-[11px] text-white/30 font-mono">--</span>
+                  )}
+                  <span className="text-[14px] font-bold text-white font-mono w-10 text-right">
+                    {formatTemp(h.temp, unit)}
+                  </span>
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
