@@ -666,7 +666,7 @@ export function WidgetDetailModal({
   const theme = getWeatherTheme(location.condition, currentHour);
 
   return (
-    <div className="absolute inset-0 z-50 flex flex-col text-[var(--color-ink)] animate-modal-enter overflow-hidden">
+    <div className="absolute inset-0 z-50 flex flex-col text-[var(--color-ink)] animate-modal-enter overflow-hidden transform-gpu">
       {/* Header bar matching Home Screen header aesthetics without blurring the sky backdrop */}
       <div className="relative z-10 flex items-center justify-between px-5 pb-4 pt-14 border-b border-white/8 bg-black/15">
         <div>
@@ -683,7 +683,7 @@ export function WidgetDetailModal({
       </div>
 
       {/* Content scroll using Home Screen glass cards */}
-      <div className="scroll-hide relative z-10 flex-1 space-y-3.5 overflow-y-auto px-5 py-5">
+      <div className="scroll-hide relative z-10 flex-1 space-y-3.5 overflow-y-auto px-5 py-5 overscroll-contain">
         {type === "air" && <AirDetail location={location} accent={accent} lang={lang} />}
         {type === "sun" && <SunDetail location={location} accent={accent} lang={lang} currentHour={currentHour} />}
         {type === "precip" && <PrecipDetail location={location} accent={accent} lang={lang} onOpenRadar={() => onOpenRadar?.("rain")} />}

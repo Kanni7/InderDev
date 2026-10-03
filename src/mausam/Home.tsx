@@ -104,6 +104,7 @@ export default function Home({
     () => rankModules(profile.interestWeights, location, alertOverrides),
     [profile.interestWeights, location, alertOverrides],
   );
+  const rows = useMemo(() => layoutRows(rankedOrder), [rankedOrder]);
 
   const t = makeT(lang);
   const gbdtResult = useMemo(
@@ -148,7 +149,7 @@ export default function Home({
   }, [updateProfile]);
 
   // ── the reorderable widget blocks (all present, order varies per vocation) ──
-  const blocks: Record<Block, React.ReactNode> = {
+  const blocks: Record<Block, React.ReactNode> = useMemo(() => ({
     pollen: (
       <div key="pollen" className="h-full cursor-pointer transition-transform duration-100 ease-out active:scale-[0.98] transform-gpu widget-tap" onClick={() => { trackTap("pollen"); setActiveDetail("pollen"); }}>
         <PollenCard pollen={location.pollen} lang={lang} />
@@ -317,7 +318,7 @@ export default function Home({
         </div>
       </div>
     ),
-  };
+  }), [location, accent, lang, unit, currentHour, theme, voc, t, trackTap]);
 
   return (
     <div className="relative z-10 h-full">
@@ -515,7 +516,7 @@ export default function Home({
           {/* Ranked blocks (non-pinned) - order determined by weight engine + live relevance.
               Compact gauges pair 2-up; wide panels span full width.
               CSS transitions animate position changes, respecting prefers-reduced-motion. */}
-          {layoutRows(rankedOrder).map((row, idx) =>
+          {rows.map((row, idx) =>
             row.length === 2 ? (
               <div
                 key={row[0] + "-" + row[1]}
